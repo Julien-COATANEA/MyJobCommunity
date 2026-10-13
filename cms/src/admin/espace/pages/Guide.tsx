@@ -3,6 +3,7 @@ import * as React from 'react';
 import { Box, Flex, Grid, Typography } from '@strapi/design-system';
 import { Layouts, Page } from '@strapi/strapi/admin';
 import { Link } from 'react-router-dom';
+import { rouvrirBienvenue } from '../Bienvenue';
 
 const support = process.env.STRAPI_ADMIN_SUPPORT_EMAIL || '';
 
@@ -40,11 +41,14 @@ export default function Guide() {
           <Grid.Item col={6} s={12} direction="column" alignItems="stretch">
             <Fiche titre="1. Enregistrer, prévisualiser, publier">
               <ol>
-                <li><strong>Enregistrer</strong> garde un brouillon : rien ne change sur le site.</li>
+                <li><strong>Enregistrer et publier</strong> met en ligne : le site est à jour quelques secondes plus tard.</li>
+                <li><strong>Enregistrer</strong> (pages et articles) garde un brouillon : rien ne change sur le site. Vous pouvez aussi programmer une date de mise en ligne.</li>
                 <li><strong>Aperçu</strong> (en haut de la fiche) montre la page telle qu’elle sera, avant publication.</li>
-                <li><strong>Publier</strong> met en ligne : le site est à jour quelques secondes plus tard.</li>
+                <li>L’encart <strong>Avant de publier</strong> signale les oublis : image sans description, lien cassé, titre trop long…</li>
+                <li>Un rédacteur n’a pas le bouton de publication : il <strong>demande la publication</strong> et un responsable la valide.</li>
               </ol>
-              <p>L’indicateur en bas à droite affiche l’état du site et les brouillons qui attendent d’être publiés.</p>
+              <p>L’indicateur en bas du menu affiche l’état du site. Astuce : <strong>Ctrl + K</strong> retrouve n’importe quel contenu.</p>
+              <p><a href="#" onClick={(e) => { e.preventDefault(); rouvrirBienvenue(); }}>Revoir la fenêtre de bienvenue</a></p>
             </Fiche>
           </Grid.Item>
           <Grid.Item col={6} s={12} direction="column" alignItems="stretch">
@@ -78,8 +82,10 @@ export default function Guide() {
             <Fiche titre="4. Événements et inscriptions">
               <ul>
                 <li>Cochez <strong>Inscription en ligne sur le site</strong> pour afficher le formulaire ; indiquez si besoin un nombre de places et une date limite.</li>
-                <li>Les inscrits apparaissent dans l’encart <strong>Inscriptions</strong> de la fiche, avec un export pour Excel.</li>
-                <li>Chaque inscrit reçoit un e-mail de confirmation ; vous recevez une notification (adresse dans Informations du site).</li>
+                <li>Les inscrits apparaissent dans l’encart <strong>Inscriptions</strong> de la fiche : export Excel, liste d’émargement à imprimer, message à tous les inscrits.</li>
+                <li>Quand l’événement est complet, une <strong>liste d’attente</strong> prend le relais : si quelqu’un annule (lien dans son e-mail), le suivant est prévenu.</li>
+                <li>Chaque inscrit reçoit une confirmation puis un rappel la veille ; vous recevez une notification (adresse dans Informations du site).</li>
+                <li>Les inscriptions sont supprimées automatiquement 12 mois après l’événement (RGPD).</li>
               </ul>
             </Fiche>
           </Grid.Item>
@@ -88,7 +94,7 @@ export default function Guide() {
               <ul>
                 <li>Les offres se créent dans <strong>Gestmax</strong> et arrivent seules sur le site (toutes les 30 minutes).</li>
                 <li>Pour relier une offre à une fiche de l’annuaire, renseignez le <strong>Nom dans Gestmax</strong> de l’entreprise.</li>
-                <li>Le suivi est dans <Link to="/mes-offres">Mes offres d’emploi</Link>.</li>
+                <li>Elles ne se créent ni ne se modifient ici. Dans <Link to="/mes-offres">Mes offres d’emploi</Link>, vous pouvez seulement en mettre à la une ou en masquer.</li>
               </ul>
             </Fiche>
           </Grid.Item>
@@ -105,7 +111,8 @@ export default function Guide() {
             <Fiche titre="7. Besoin d’aide ?">
               <p>
                 Logo, couleurs : <Link to="/apparence">Apparence</Link>. Menus : <Link to="/content-manager/single-types/api::navigation.navigation">Menus du site</Link>.
-                Candidatures : <Link to="/site-carriere">Site carrière</Link>.
+                Candidatures : <Link to="/site-carriere">Site carrière</Link>. Collègues : <Link to="/equipe">Mon équipe</Link>.
+                Points à corriger : <Link to="/sante">Santé du site</Link>. Plusieurs fiches d’un coup : <Link to="/importer-entreprises">Importer des entreprises</Link>.
               </p>
               {support && (
                 <p>

@@ -1,5 +1,6 @@
 import type { Core } from '@strapi/strapi';
 import { lireDerniereSynchro } from '../../../utils/synchro';
+import { OFFRES_VISIBLES } from '../../../utils/garde-offres';
 
 const UID = {
   page: 'api::page.page',
@@ -33,7 +34,10 @@ async function etatBuilder() {
 
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   const db = (uid: string) => strapi.db.query(uid as any);
+  // Types sans brouillon (événements, entreprises) : tout est publié, pas de filtre à appliquer.
+  const avecBrouillon = (uid: string) => !!(strapi.contentTypes as any)[uid]?.options?.draftAndPublish;
   const publies = { publishedAt: { $notNull: true } };
+  const pub = (uid: string) => (avecBrouillon(uid) ? publies : {});
 
   /** « Votre site est prêt à X % » : étapes de mise en route d'une nouvelle collectivité. */
   const listeDemarrage = async (p: any, c: { pages: number; articles: number; entreprises: number; evenementsAVenir: number }) => {
@@ -60,12 +64,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const [pages, articles, entreprises, offres, evenementsAVenir, inscriptions30j, prochains, recentes, parametres] = await Promise.all([
         db(UID.page).count({ where: publies }),
         db(UID.article).count({ where: publies }),
-        db(UID.entreprise).count({ where: publies }),
-        db(UID.offre).count({}),
-        db(UID.evenement).count({ where: { ...publies, dateDebut: { $gte: maintenant } } }),
+        db(UID.entreprise).count({ where: pub(UID.entreprise) }),
+        db(UID.offre).count({ where: OFFRES_VISIBLES }),
+        db(UID.evenement).count({ where: { ...pub(UID.evenement), dateDebut: { $gte: maintenant } } }),
         db(UID.inscription).count({ where: { createdAt: { $gte: il30Jours }, statut: 'confirmee' } }),
         db(UID.evenement).findMany({
-          where: { ...publies, dateDebut: { $gte: maintenant } },
+          where: { ...pub(UID.evenement), dateDebut: { $gte: maintenant } },
           orderBy: { dateDebut: 'asc' },
           limit: 5,
           select: ['documentId', 'titre', 'slug', 'dateDebut', 'placesMax', 'inscriptionActive', 'inscriptionExterneUrl'],
@@ -109,13 +113,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     async offres(ctx: any) {
       const toutes = await db(UID.offre).findMany({
-        select: ['documentId', 'titre', 'slug', 'typeContrat', 'lieu', 'nomEntreprise', 'dateActivation', 'dateFinPublication', 'urlDetailGestmax'],
+        select: ['documentId', 'titre', 'slug', 'typeContrat', 'lieu', 'nomEntreprise', 'dateActivation', 'dateFinPublication', 'urlDetailGestmax', 'aLaUne', 'masquee'],
         populate: { entreprise: { select: ['documentId', 'nom'] } },
         orderBy: { dateActivation: 'desc' },
       });
+      const visibles = toutes.filter((o: any) => !o.masquee);
       const compter = (cle: (o: any) => string | null) =>
         Object.entries(
-          toutes.reduce((acc: Record<string, number>, o: any) => {
+          visibles.reduce((acc: Record<string, number>, o: any) => {
             const k = cle(o) ?? 'Non renseigné';
             acc[k] = (acc[k] ?? 0) + 1;
             return acc;
@@ -126,17 +131,35 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const parametres = await db(UID.parametres).findOne({ select: ['gestmaxUrlFront'] });
 
       ctx.body = {
-        total: toutes.length,
+        total: visibles.length,
+        masquees: toutes.length - visibles.length,
+        alaUne: visibles.filter((o: any) => o.aLaUne).length,
         parContrat: compter((o) => o.typeContrat),
         parEntreprise: compter((o) => o.nomEntreprise).slice(0, 8),
-        nonRattachees: toutes.filter((o: any) => !o.entreprise).length,
-        dernieres: toutes.slice(0, 15),
+        nonRattachees: visibles.filter((o: any) => !o.entreprise).length,
+        dernieres: [...toutes].sort((a: any, b: any) => Number(!!b.aLaUne) - Number(!!a.aLaUne)).slice(0, 100),
         synchro: await lireDerniereSynchro(strapi),
         mock: strapi.config.get('gestmax.mock'),
         frequence: process.env.GESTMAX_SYNC_CRON ?? '*/30 * * * *',
         urlFront: parametres?.gestmaxUrlFront ?? null,
         urlSite: urlSite(),
       };
+    },
+
+    /** « À la une » et « masquée » : les deux seuls réglages éditoriaux d'une offre (le reste vient de Gestmax). */
+    async reglerOffre(ctx: any) {
+      const corps = ctx.request.body ?? {};
+      const data: Record<string, boolean> = {};
+      for (const cle of ['aLaUne', 'masquee'] as const) if (typeof corps[cle] === 'boolean') data[cle] = corps[cle];
+      if (!Object.keys(data).length) {
+        ctx.status = 400;
+        ctx.body = { error: { message: 'Aucun réglage reconnu.' } };
+        return;
+      }
+      // Masquer une offre la retire aussi de la une.
+      if (data.masquee) data.aLaUne = false;
+      await strapi.documents(UID.offre).update({ documentId: ctx.params.documentId, data } as any);
+      ctx.body = data;
     },
 
     async synchroniserOffres(ctx: any) {

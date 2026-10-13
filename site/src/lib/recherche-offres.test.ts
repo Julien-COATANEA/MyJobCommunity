@@ -33,7 +33,7 @@ describe('requeteStrapi', () => {
     expect(p.get('filters[$and][0][typeContrat][$eq]')).toBe('CDI');
     expect(p.get('filters[$and][1][lieu][$containsi]')).toBe('Lyon');
     expect(p.get('filters[$and][2][$or][0][titre][$containsi]')).toBe('dev');
-    expect(p.get('sort')).toBe('dateActivation:desc');
+    expect(p.get('sort')).toBe('aLaUne:desc,dateActivation:desc');
   });
 
   it('remplace la ville par la zone géographique et peut ignorer le contrat (comptage)', () => {

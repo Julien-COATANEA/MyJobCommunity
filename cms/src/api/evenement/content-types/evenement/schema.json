@@ -7,7 +7,7 @@
     "displayName": "Événements"
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
   "pluginOptions": {},
   "attributes": {
@@ -105,6 +105,20 @@
     },
     "dateLimiteInscription": {
       "type": "datetime",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "inscriptionActive"
+            },
+            true
+          ]
+        }
+      }
+    },
+    "listeAttente": {
+      "type": "boolean",
+      "default": false,
       "conditions": {
         "visible": {
           "==": [

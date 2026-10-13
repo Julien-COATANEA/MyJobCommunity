@@ -5,7 +5,7 @@
     "singularName": "offre",
     "pluralName": "offres",
     "displayName": "Offres d'emploi",
-    "description": "Synchronisée automatiquement depuis Gestmax : ne pas modifier à la main"
+    "description": "Importée de Gestmax : jamais créée ni modifiée ici (seuls « à la une » et « masquée » se règlent dans le BO)"
   },
   "options": {
     "draftAndPublish": false
@@ -70,6 +70,14 @@
     },
     "logoUrl": {
       "type": "string"
+    },
+    "aLaUne": {
+      "type": "boolean",
+      "default": false
+    },
+    "masquee": {
+      "type": "boolean",
+      "default": false
     },
     "latitude": {
       "type": "decimal"

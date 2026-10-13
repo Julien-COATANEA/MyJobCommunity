@@ -1,6 +1,8 @@
 // Suivi éditorial pour le back-office : état du site public, brouillons non publiés,
 // lien public d'une fiche et inscrits d'un événement (avec export CSV).
 import type { Core } from '@strapi/strapi';
+import { envoyerEmail, lireIdentite } from '../../../utils/emails';
+import { formatDate } from '../../../utils/inscriptions';
 
 const urlSite = () => (process.env.SITE_URL ?? '').replace(/\/+$/, '');
 const urlBuilder = () => (process.env.BUILDER_WEBHOOK_URL ?? '').replace(/\/build$/, '');
@@ -100,28 +102,69 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const confirmes = inscrits.filter((i) => i.statut === 'confirmee');
       ctx.body = {
         titre: evenement.titre,
+        dateDebut: evenement.dateDebut,
+        lieu: evenement.enLigne ? 'En ligne' : [evenement.lieu, evenement.adresse].filter(Boolean).join(', '),
         inscriptionActive: evenement.inscriptionActive,
         inscriptionExterneUrl: evenement.inscriptionExterneUrl,
         placesMax: evenement.placesMax ?? null,
         nombre: confirmes.length,
-        liste: inscrits.slice(0, 50).map((i) => ({
+        attente: inscrits.filter((i) => i.statut === 'attente').length,
+        presents: confirmes.filter((i) => i.present).length,
+        liste: inscrits.map((i) => ({
           documentId: i.documentId,
           nom: `${i.prenom} ${i.nom}`,
+          prenom: i.prenom,
+          nomFamille: i.nom,
           email: i.email,
           telephone: i.telephone,
           structure: i.structure,
           statut: i.statut,
+          present: !!i.present,
           createdAt: i.createdAt,
         })),
       };
     },
 
+    /** Message à tous les inscrits confirmés (changement de lieu, informations pratiques…). */
+    async messageInscrits(ctx: any) {
+      const { evenement, inscrits } = await inscritsEvenement(ctx.params.documentId);
+      if (!evenement) return ctx.notFound();
+      const sujet = String(ctx.request.body?.sujet ?? '').trim().slice(0, 150);
+      const corps = String(ctx.request.body?.corps ?? '').trim().slice(0, 5000);
+      const aussiAttente = !!ctx.request.body?.aussiAttente;
+      if (!sujet || !corps) {
+        ctx.status = 400;
+        ctx.body = { error: { message: 'Indiquez un objet et un message.' } };
+        return;
+      }
+      const destinataires = inscrits.filter((i) => i.statut === 'confirmee' || (aussiAttente && i.statut === 'attente'));
+      const { nomSite } = await lireIdentite(strapi);
+      let envoyes = 0;
+      let echecs = 0;
+      // Un message par personne : les adresses des autres inscrits ne sont jamais visibles.
+      for (const i of destinataires) {
+        try {
+          await envoyerEmail(strapi, {
+            to: i.email,
+            sujet: `${sujet} (${evenement.titre})`,
+            texte: `Bonjour ${i.prenom},\n\n${corps}\n\nÉvénement concerné : ${evenement.titre}, ${formatDate(evenement.dateDebut)}.\n\nL'équipe ${nomSite}`,
+          });
+          envoyes++;
+        } catch (e) {
+          echecs++;
+          strapi.log.error(`[message-inscrits] ${i.email} : ${(e as Error).message}`);
+        }
+      }
+      ctx.body = { envoyes, echecs, total: destinataires.length };
+    },
+
     async inscriptionsCsv(ctx: any) {
       const { evenement, inscrits } = await inscritsEvenement(ctx.params.documentId);
       if (!evenement) return ctx.notFound();
-      const entetes = ['Prénom', 'Nom', 'E-mail', 'Téléphone', 'Entreprise ou organisme', 'Statut', "Date d'inscription"];
+      const entetes = ['Prénom', 'Nom', 'E-mail', 'Téléphone', 'Entreprise ou organisme', 'Statut', 'Présent', "Date d'inscription"];
+      const statuts: Record<string, string> = { confirmee: 'Confirmée', attente: "Liste d'attente", annulee: 'Annulée' };
       const lignes = inscrits.map((i) =>
-        [i.prenom, i.nom, i.email, i.telephone, i.structure, i.statut === 'confirmee' ? 'Confirmée' : 'Annulée',
+        [i.prenom, i.nom, i.email, i.telephone, i.structure, statuts[i.statut] ?? i.statut, i.present ? 'Oui' : '',
           new Date(i.createdAt).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' })].map(echapperCsv).join(';'),
       );
       // BOM UTF-8 + séparateur « ; » : s'ouvre directement et correctement dans Excel.

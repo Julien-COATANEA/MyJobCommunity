@@ -12,7 +12,8 @@
       "required": true
     },
     "url": {
-      "type": "string",
+      "type": "customField",
+      "customField": "global::lien",
       "required": true
     },
     "nouvelOnglet": {

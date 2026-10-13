@@ -113,6 +113,28 @@ Limite : le menu à libellés repose sur la structure HTML du BO Strapi ; à rev
 **Sécurité** : l'API publique de Strapi renvoyait les brouillons avec `?status=draft`. Le middleware `global::brouillons`
 les réserve désormais à l'aperçu.
 
+## 3 quater. Confort d'administration (13/10/2026)
+
+**Principe intangible : les offres ne se créent ni ne se modifient dans le BO.** Elles viennent de Gestmax. Le garde
+`cms/src/utils/garde-offres.ts` (middleware des documents) refuse toute création, suppression, publication ou
+modification venant d'ailleurs que de la synchronisation ; seuls deux réglages éditoriaux passent : `aLaUne` et
+`masquee` (écran « Mes offres d'emploi »). Une offre masquée disparaît de l'API publique (`OFFRES_VISIBLES`) et donc du
+site. Un échec de synchronisation prévient la collectivité par e-mail (une seule fois par série d'échecs).
+
+| Besoin | Mise en œuvre |
+|---|---|
+| Publication simple | Brouillon supprimé pour événements et entreprises (`draftAndPublish: false`) ; bouton « Enregistrer et publier » ; publication programmée (`publierLe`, cron à la minute) pour pages et articles |
+| Liens sans taper d'URL | Champ personnalisé `global::lien` (`LienInput.tsx`) alimenté par `GET /espace/liens` (pages, articles, événements, entreprises, filtres d'offres, raccourcis Gestmax) |
+| Avant de publier | Encart `PanneauQualite` : texte alternatif, ordre des titres, liens peu explicites ou cassés, longueurs, dates, aperçu Google (`admin/espace/qualite.ts`, fonctions pures) |
+| Santé du site | Page + widget « À traiter » : synchro, entreprises sans fiche, offres bientôt expirées, événements peu remplis, images sans alt, liens cassés, brouillons oubliés, adresse de notification (`controllers/sante.ts`) |
+| Inscriptions | Liste d'attente automatique, lien d'annulation personnel (jeton) avec promotion du suivant, message groupé (envois individuels), émargement imprimable, rappel J-1 (cron 8 h), purge RGPD à 12 mois (cron 3 h 30) |
+| Équipe | Rôles « Responsable » (publie, gère l'équipe) et « Rédacteur » (prépare, demande la publication par e-mail), créés au démarrage à partir du rôle Éditeur ; page « Mon équipe » avec invitation par e-mail |
+| Gagner du temps | Modèles de pages (`utils/modeles.ts`, page créée en brouillon), import CSV d'entreprises (simulation puis import, 500 lignes max), recherche globale Ctrl + K, fenêtre de bienvenue |
+| Fréquentation | Widget lisant l'API Plausible (`PLAUSIBLE_URL`, `PLAUSIBLE_SITE`, `PLAUSIBLE_API_KEY`) ; sans configuration, le widget explique quoi renseigner |
+
+Toutes les routes `/espace/*` sont des routes d'admin (`strapi.server.routes({ type: 'admin' })`) protégées par
+`admin::isAuthenticatedAdmin`. La gestion d'équipe est réservée aux rôles Responsable, Éditeur et super administrateur.
+
 ## 4. Offres d'emploi
 
 ### Synchronisation (choix retenu par défaut)
@@ -245,7 +267,8 @@ Premier bilan de ce montage :
   production, il faudra un petit service Node qui exécute `site/dist/server/entry.mjs` (construit par le même build) et
   renseigner `APERCU_URL` avec son adresse.
 - **Recherche autour d'une ville** : jusqu'à 100 offres dans la zone (au-delà, il faudra paginer côté serveur).
-- Liste d'attente quand un événement est complet ; lien d'annulation dans l'e-mail de confirmation.
+- Édition visuelle directement dans l'aperçu (clic sur un texte de la page) : non faite, l'aperçu actuel est en lecture seule.
+- Statistiques de visite : le suivi Plausible côté site (script et objectif « Postuler ») reste à brancher avec l'instance du client.
 - Jauge d'inscription : deux inscriptions simultanées sur la dernière place peuvent passer (verrou à ajouter si nécessaire).
 - Liste des offres sans JS limitée aux 24 plus récentes (les autres restent accessibles par le sitemap et les fiches entreprises) ; une pagination statique est possible.
 - Déploiement de production : image Strapi `build` + `start`, reverse proxy HTTPS (Traefik), sauvegardes MariaDB et `uploads`, supervision du builder.

@@ -50,6 +50,9 @@
       "type": "boolean",
       "default": false
     },
+    "publierLe": {
+      "type": "datetime"
+    },
     "seo": {
       "type": "component",
       "component": "shared.seo",

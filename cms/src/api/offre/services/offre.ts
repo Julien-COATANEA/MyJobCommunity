@@ -1,5 +1,6 @@
 import { join } from 'node:path';
-import { factories } from '@strapi/strapi';
+import { factories, type Core } from '@strapi/strapi';
+import { executerSynchro } from '../../../utils/garde-offres';
 import { convertirOffre, estCandidatureSpontanee, recupererOffresGestmax, type ConfigGestmax } from '../../../utils/gestmax';
 import { enregistrerSynchro } from '../../../utils/synchro';
 import { creerGeocodeur } from '../../../utils/geocodage';
@@ -7,8 +8,18 @@ import { creerGeocodeur } from '../../../utils/geocodage';
 const UID = 'api::offre.offre';
 
 export default factories.createCoreService(UID, ({ strapi }) => ({
-  /** Importe les offres en ligne de Gestmax : crée, met à jour et supprime pour refléter l'ATS. */
-  async synchroniserDepuisGestmax() {
+  /**
+   * Importe les offres en ligne de Gestmax : crée, met à jour et supprime pour refléter l'ATS.
+   * C'est le SEUL chemin d'écriture sur les offres (voir utils/garde-offres.ts). Les réglages « à la une » et
+   * « masquée » ne font pas partie des données importées : ils sont conservés d'une synchronisation à l'autre.
+   */
+  synchroniserDepuisGestmax() {
+    return executerSynchro(() => synchroniser(strapi));
+  },
+}));
+
+async function synchroniser(strapi: Core.Strapi) {
+  {
     const conf = strapi.config.get('gestmax') as ConfigGestmax;
     if (!conf.mock && !(conf.url && conf.user)) {
       strapi.log.debug('[gestmax] synchronisation désactivée (GESTMAX_URL / GESTMAX_REST_USER absents)');
@@ -28,7 +39,7 @@ export default factories.createCoreService(UID, ({ strapi }) => ({
     // Rattachement à l'annuaire via le nom de l'entité Gestmax (customer_company).
     const entreprises = await strapi.db.query('api::entreprise.entreprise').findMany({
       select: ['documentId', 'nomEntiteGestmax'],
-      where: { nomEntiteGestmax: { $notNull: true }, publishedAt: { $notNull: true } },
+      where: { nomEntiteGestmax: { $notNull: true } },
     });
     const entrepriseParNom = new Map(
       entreprises.map((e: any) => [e.nomEntiteGestmax.trim().toLowerCase(), e.documentId]),
@@ -69,5 +80,5 @@ export default factories.createCoreService(UID, ({ strapi }) => ({
     strapi.log.info(`[gestmax] synchronisation : ${JSON.stringify(bilan)}`);
     await enregistrerSynchro(strapi, { statut: 'ok', bilan });
     return bilan;
-  },
-}));
+  }
+}

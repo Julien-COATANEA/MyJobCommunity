@@ -91,6 +91,7 @@ export interface Evenement {
   placesMax: number | null;
   dateLimiteInscription: string | null;
   inscriptionExterneUrl: string | null;
+  listeAttente: boolean;
   seo: Seo | null;
   updatedAt: string;
 }
@@ -116,6 +117,7 @@ export interface Offre {
   logoUrl: string | null;
   latitude: number | null;
   longitude: number | null;
+  aLaUne: boolean;
   updatedAt: string;
 }
 
@@ -153,7 +155,8 @@ export const lirePages = () => lireTous<Page>('pages', { sort: 'titre:asc' });
 export const lireArticles = () => lireTous<Article>('articles', { sort: 'datePublication:desc' });
 export const lireEvenements = () => lireTous<Evenement>('evenements', { sort: 'dateDebut:asc' });
 export const lireEntreprises = () => lireTous<Entreprise>('entreprises', { sort: 'nom:asc' });
-export const lireOffres = () => lireTous<Offre>('offres', { sort: 'dateActivation:desc' });
+// Les offres masquées par la collectivité ne sont pas servies par l'API. Les offres « à la une » passent en premier.
+export const lireOffres = () => lireTous<Offre>('offres', { sort: 'aLaUne:desc,dateActivation:desc' });
 
 /** Événements à venir (ou en cours) à la date du build. */
 export async function lireEvenementsAVenir(): Promise<Evenement[]> {

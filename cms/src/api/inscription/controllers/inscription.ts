@@ -1,9 +1,11 @@
 import { factories } from '@strapi/strapi';
+import { alerterCollectivite } from '../../../utils/emails';
+import {
+  EVENEMENT, INSCRIPTION, emailConfirmation, etatInscriptions, formatDate, lieuEvenement, nouveauJeton, promouvoirListeAttente,
+} from '../../../utils/inscriptions';
+import { tropDeRequetes } from '../../../utils/limiteur';
 
-const EVENEMENT = 'api::evenement.evenement';
-const INSCRIPTION = 'api::inscription.inscription';
-
-type Statut = 'ok' | 'invalide' | 'ferme' | 'complet' | 'deja-inscrit';
+type Statut = 'ok' | 'attente' | 'invalide' | 'ferme' | 'complet' | 'deja-inscrit' | 'trop-de-demandes';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TELEPHONE = /^[0-9+().\s-]{6,20}$/;
@@ -29,31 +31,12 @@ function valider(corps: Record<string, unknown>) {
   return { donnees, erreurs };
 }
 
-/** État des inscriptions d'un événement publié. */
-async function etatInscriptions(strapi: any, documentId: string) {
-  const evenement = await strapi.documents(EVENEMENT).findOne({ documentId, status: 'published' });
-  if (!evenement) return null;
-  const maintenant = new Date();
-  const limite = evenement.dateLimiteInscription ?? evenement.dateDebut;
-  const inscrits = await strapi.documents(INSCRIPTION).count({
-    filters: { evenement: { documentId }, statut: 'confirmee' },
-  });
-  const placesRestantes = evenement.placesMax ? Math.max(evenement.placesMax - inscrits, 0) : null;
-  const ouvert =
-    evenement.inscriptionActive && !evenement.inscriptionExterneUrl && new Date(limite) > maintenant && placesRestantes !== 0;
-  return { evenement, ouvert, placesMax: evenement.placesMax ?? null, placesRestantes };
-}
-
-const formatDate = (iso: string) =>
-  new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Europe/Paris' }).format(new Date(iso));
-
 export default factories.createCoreController(INSCRIPTION, ({ strapi }) => ({
   async places(ctx) {
     const etat = await etatInscriptions(strapi, ctx.params.evenementId);
     if (!etat) return ctx.notFound();
-    const { ouvert, placesMax, placesRestantes } = etat;
     ctx.set('Cache-Control', 'no-store');
-    ctx.body = { ouvert, placesMax, placesRestantes };
+    ctx.body = { ouvert: etat.ouvert, placesMax: etat.placesMax, placesRestantes: etat.placesRestantes, listeAttente: etat.listeAttente };
   },
 
   /**
@@ -70,10 +53,12 @@ export default factories.createCoreController(INSCRIPTION, ({ strapi }) => ({
         ctx.body = { statut, ...extra };
         return;
       }
-      const page = statut === 'ok' ? 'inscription-confirmee' : 'inscription-impossible';
+      const page = statut === 'ok' || statut === 'attente' ? 'inscription-confirmee' : 'inscription-impossible';
       ctx.status = 303;
       ctx.redirect(`${origineSite(ctx)}/evenements/${page}/?raison=${statut}`);
     };
+
+    if (tropDeRequetes('inscription', ctx.ip)) return repondre('trop-de-demandes', 429);
 
     // Champ piège invisible : un robot le remplit, un humain non. On simule un succès.
     if (nettoyer(corps.site_web)) return repondre('ok', 201);
@@ -83,24 +68,65 @@ export default factories.createCoreController(INSCRIPTION, ({ strapi }) => ({
 
     const etat = await etatInscriptions(strapi, nettoyer(corps.evenement, 64));
     if (!etat) return repondre('ferme', 404);
-    if (!etat.ouvert) return repondre(etat.placesRestantes === 0 ? 'complet' : 'ferme', 409);
+    if (!etat.ouvert) return repondre(etat.complet ? 'complet' : 'ferme', 409);
 
     const doublon = await strapi.documents(INSCRIPTION).count({
-      filters: { evenement: { documentId: etat.evenement.documentId }, email: { $eqi: donnees.email }, statut: 'confirmee' },
+      filters: { evenement: { documentId: etat.evenement.documentId }, email: { $eqi: donnees.email }, statut: { $in: ['confirmee', 'attente'] } },
     });
     if (doublon) return repondre('deja-inscrit', 409);
 
+    const enAttente = etat.complet;
+    const jeton = nouveauJeton();
     await strapi.documents(INSCRIPTION).create({
-      data: { ...donnees, statut: 'confirmee', evenement: etat.evenement.documentId } as any,
+      data: { ...donnees, jeton, statut: enAttente ? 'attente' : 'confirmee', evenement: etat.evenement.documentId } as any,
     });
 
-    await envoyerEmails(strapi, etat.evenement, donnees).catch((e: Error) =>
-      strapi.log.error(`[inscription] envoi des e-mails impossible : ${e.message}`),
+    await emailConfirmation(strapi, etat.evenement, { ...donnees, jeton }, enAttente).catch((e: Error) =>
+      strapi.log.error(`[inscription] e-mail au participant impossible : ${e.message}`),
     );
+    await alerterCollectivite(
+      strapi,
+      `${enAttente ? 'Liste d’attente' : 'Nouvelle inscription'} : ${etat.evenement.titre}`,
+      `${donnees.prenom} ${donnees.nom} (${donnees.email}${donnees.telephone ? `, ${donnees.telephone}` : ''}${donnees.structure ? `, ${donnees.structure}` : ''}) ` +
+        `${enAttente ? 'a rejoint la liste d’attente de' : 's’est inscrit(e) à'} « ${etat.evenement.titre} » du ${formatDate(etat.evenement.dateDebut)}.`,
+    ).catch((e: Error) => strapi.log.error(`[inscription] notification impossible : ${e.message}`));
 
-    return repondre('ok', 201, {
-      placesRestantes: etat.placesRestantes === null ? null : etat.placesRestantes - 1,
+    return repondre(enAttente ? 'attente' : 'ok', 201, {
+      placesRestantes: etat.placesRestantes === null ? null : Math.max(etat.placesRestantes - (enAttente ? 0 : 1), 0),
     });
+  },
+
+  /** Informations pour la page d'annulation du site (titre et date, sans données personnelles). */
+  async infoAnnulation(ctx) {
+    const jeton = nettoyer(ctx.query.jeton, 64);
+    const inscription: any = jeton ? await strapi.db.query(INSCRIPTION).findOne({ where: { jeton }, populate: { evenement: true } }) : null;
+    if (!inscription?.evenement) return ctx.notFound();
+    ctx.set('Cache-Control', 'no-store');
+    ctx.body = {
+      titre: inscription.evenement.titre,
+      date: inscription.evenement.dateDebut,
+      lieu: lieuEvenement(inscription.evenement),
+      statut: inscription.statut,
+      attente: inscription.statut === 'attente',
+    };
+  },
+
+  /** Annulation par le participant (lien de l'e-mail) : libère la place et prévient le suivant en liste d'attente. */
+  async annuler(ctx) {
+    if (tropDeRequetes('annulation', ctx.ip, 12)) {
+      ctx.status = 429;
+      ctx.body = { statut: 'trop-de-demandes' };
+      return;
+    }
+    const jeton = nettoyer((ctx.request.body as any)?.jeton, 64);
+    const inscription: any = jeton ? await strapi.db.query(INSCRIPTION).findOne({ where: { jeton }, populate: { evenement: true } }) : null;
+    if (!inscription?.evenement) return ctx.notFound();
+
+    if (inscription.statut !== 'annulee') {
+      await strapi.db.query(INSCRIPTION).update({ where: { id: inscription.id }, data: { statut: 'annulee' } });
+      await promouvoirListeAttente(strapi, inscription.evenement.documentId);
+    }
+    ctx.body = { statut: 'annulee', titre: inscription.evenement.titre };
   },
 }));
 
@@ -118,32 +144,4 @@ function origineSite(ctx: any): string {
   return autorisees.includes(origine) ? origine : (process.env.SITE_URL ?? '').replace(/\/+$/, '');
 }
 
-async function envoyerEmails(strapi: any, evenement: any, d: { prenom: string; nom: string; email: string; telephone: string; structure: string }) {
-  const parametres = await strapi.db.query('api::parametres.parametres').findOne({});
-  const nomSite = parametres?.nomSite ?? 'My Job Community';
-  const quand = formatDate(evenement.dateDebut);
-  const ou = evenement.enLigne ? 'En ligne' : [evenement.lieu, evenement.adresse].filter(Boolean).join(', ');
-  const email = strapi.plugin('email').service('email');
-
-  await email.send({
-    to: d.email,
-    subject: `Inscription confirmée : ${evenement.titre}`,
-    text: [
-      `Bonjour ${d.prenom},`,
-      '',
-      `Votre inscription à « ${evenement.titre} » est confirmée.`,
-      `Date : ${quand}`,
-      ou ? `Lieu : ${ou}` : '',
-      '',
-      `L'équipe ${nomSite}`,
-    ].filter((l) => l !== null).join('\n'),
-  });
-
-  if (parametres?.emailNotificationInscriptions) {
-    await email.send({
-      to: parametres.emailNotificationInscriptions,
-      subject: `Nouvelle inscription : ${evenement.titre}`,
-      text: `${d.prenom} ${d.nom} (${d.email}${d.telephone ? `, ${d.telephone}` : ''}${d.structure ? `, ${d.structure}` : ''}) s'est inscrit(e) à « ${evenement.titre} » du ${quand}.`,
-    });
-  }
-}
+export { EVENEMENT };

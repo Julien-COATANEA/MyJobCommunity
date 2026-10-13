@@ -50,6 +50,9 @@
         "blocs.iframe"
       ]
     },
+    "publierLe": {
+      "type": "datetime"
+    },
     "seo": {
       "type": "component",
       "component": "shared.seo",

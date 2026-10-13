@@ -5,6 +5,8 @@ import { initialiserDonneesDemo } from './bootstrap/demo';
 import { creerComptesDemo } from './bootstrap/comptes-demo';
 import { configurerBackOffice } from './bootstrap/back-office';
 import { routesEspace } from './api/espace/routes-admin';
+import { protegerOffres, UID_OFFRE } from './utils/garde-offres';
+import { INSCRIPTION, promouvoirListeAttente } from './utils/inscriptions';
 
 // Lecture publique (rôle « Public ») : le site statique lit l'API sans jeton.
 const LECTURE_PUBLIQUE = [
@@ -33,6 +35,28 @@ export default {
   register({ strapi }: { strapi: Core.Strapi }) {
     strapi.server.routes(routesEspace as any);
 
+    // Champ « Lien » des formulaires : liste des pages du site, raccourcis Gestmax ou adresse libre (voir admin/espace/LienInput).
+    strapi.customFields.register({ name: 'lien', type: 'string' });
+
+    // Les offres viennent de Gestmax : jamais créées ni modifiées depuis le BO.
+    protegerOffres(strapi);
+
+    // Une inscription annulée ou supprimée dans le BO libère une place : on prévient le suivant de la liste d'attente.
+    strapi.documents.use(async (context, next) => {
+      if (context.uid !== INSCRIPTION || !['update', 'delete'].includes(context.action)) return next();
+      const documentId = (context.params as any).documentId;
+      const avant: any = documentId
+        ? await strapi.db.query(INSCRIPTION).findOne({ where: { documentId }, populate: { evenement: { select: ['documentId'] } } })
+        : null;
+      const resultat = await next();
+      if (avant?.evenement) {
+        await promouvoirListeAttente(strapi, avant.evenement.documentId).catch((e) =>
+          strapi.log.error(`[inscription] liste d'attente : ${(e as Error).message}`),
+        );
+      }
+      return resultat;
+    });
+
     // Refuse l'enregistrement de couleurs non conformes RGAA : le message s'affiche dans le BO.
     strapi.documents.use(async (context, next) => {
       if (context.uid === 'api::parametres.parametres' && (context.action === 'create' || context.action === 'update')) {
@@ -47,6 +71,9 @@ export default {
 
   async bootstrap({ strapi }: { strapi: Core.Strapi }) {
     await accorderLecturePublique(strapi);
+    // Anciennes lignes sans valeur : « offre visible » repose sur « masquée = faux ».
+    await strapi.db.query(UID_OFFRE).updateMany({ where: { masquee: { $null: true } }, data: { masquee: false } });
+    await strapi.db.query(UID_OFFRE).updateMany({ where: { aLaUne: { $null: true } }, data: { aLaUne: false } });
     await assurerWebhookRebuild(strapi);
     await configurerBackOffice(strapi).catch((e) => strapi.log.error(`[back-office] ${e.stack ?? e}`));
 

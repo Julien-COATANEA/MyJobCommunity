@@ -76,8 +76,8 @@ const champs = [
   </form>
 
   <div class="alerte alerte--succes" data-succes tabindex="-1" hidden>
-    <h3 class="alerte__titre">Votre inscription est confirmée</h3>
-    <p>Un e-mail de confirmation vient de vous être envoyé.</p>
+    <h3 class="alerte__titre" data-succes-titre>Votre inscription est confirmée</h3>
+    <p data-succes-texte>Un e-mail de confirmation vient de vous être envoyé. Il contient un lien pour annuler si vous avez un empêchement.</p>
   </div>
 </div>
 
@@ -86,6 +86,7 @@ const champs = [
     ferme: 'Les inscriptions à cet événement sont closes.',
     complet: 'Cet événement est complet.',
     'deja-inscrit': 'Vous êtes déjà inscrit(e) à cet événement avec cette adresse e-mail.',
+    'trop-de-demandes': 'Trop de tentatives en peu de temps. Réessayez dans quelques minutes.',
     erreur: "L'inscription n'a pas pu être enregistrée. Réessayez dans quelques instants.",
   };
 
@@ -98,14 +99,20 @@ const champs = [
     const succes = bloc.querySelector<HTMLElement>('[data-succes]')!;
     const statutPlaces = bloc.querySelector<HTMLElement>('[data-places-statut]')!;
     const bouton = bloc.querySelector<HTMLButtonElement>('[data-envoyer]')!;
+    let libelleBouton = bouton.textContent ?? "Je m'inscris";
 
     // Validation gérée par le script : messages en français, cohérents avec ceux du serveur.
     formulaire.noValidate = true;
 
-    const afficherPlaces = (p: { ouvert: boolean; placesRestantes: number | null }) => {
+    const afficherPlaces = (p: { ouvert: boolean; placesRestantes: number | null; listeAttente?: boolean }) => {
       if (!p.ouvert) {
         statutPlaces.textContent = p.placesRestantes === 0 ? MESSAGES.complet : MESSAGES.ferme;
         formulaire.hidden = true;
+      } else if (p.listeAttente) {
+        // Complet, mais la liste d'attente est ouverte : le formulaire reste utilisable.
+        statutPlaces.textContent = "L'événement est complet. Vous pouvez rejoindre la liste d'attente : vous serez prévenu(e) si une place se libère.";
+        bouton.textContent = "Rejoindre la liste d'attente";
+        libelleBouton = "Rejoindre la liste d'attente";
       } else if (p.placesRestantes !== null) {
         statutPlaces.textContent = `Il reste ${p.placesRestantes} place${p.placesRestantes > 1 ? 's' : ''}.`;
       }
@@ -188,10 +195,14 @@ const champs = [
           body: JSON.stringify(donnees),
         });
         const json = await reponse.json().catch(() => ({ statut: 'erreur' }));
-        if (json.statut === 'ok') {
+        if (json.statut === 'ok' || json.statut === 'attente') {
           formulaire.hidden = true;
-          afficherPlaces({ ouvert: true, placesRestantes: json.placesRestantes ?? null });
+          if (json.statut === 'ok') afficherPlaces({ ouvert: true, placesRestantes: json.placesRestantes ?? null });
           statutPlaces.textContent = '';
+          if (json.statut === 'attente') {
+            succes.querySelector('[data-succes-titre]')!.textContent = "Vous êtes sur la liste d'attente";
+            succes.querySelector('[data-succes-texte]')!.textContent = "L'événement est complet. Un e-mail vient de vous être envoyé : vous serez prévenu(e) automatiquement si une place se libère.";
+          }
           succes.hidden = false;
           succes.focus();
         } else if (json.statut === 'invalide') {
@@ -203,7 +214,7 @@ const champs = [
         afficherMessageGlobal(MESSAGES.erreur);
       } finally {
         bouton.disabled = false;
-        bouton.textContent = "Je m'inscris";
+        bouton.textContent = libelleBouton;
       }
     });
   }

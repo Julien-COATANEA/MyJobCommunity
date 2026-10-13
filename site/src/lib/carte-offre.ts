@@ -12,6 +12,7 @@ export interface OffreCarte {
   salaire: string | null;
   dateActivation: string | null;
   logoUrl: string | null;
+  aLaUne?: boolean;
   /** Distance en km (recherche autour d'une ville). */
   distance?: number | null;
 }
@@ -36,6 +37,7 @@ export function htmlCarteOffre(o: OffreCarte, { niveauTitre = 3, maintenant = Da
       ? `<span class="offre__logo offre__logo--initiales" aria-hidden="true">${echapper(initiales(o.nomEntreprise))}</span>`
       : '';
   const badges = [
+    o.aLaUne ? '<span class="badge-une">★ À la une</span>' : '',
     o.typeContrat ? `<span class="badge-contrat badge-contrat--${classeContrat(o.typeContrat)}">${echapper(o.typeContrat)}</span>` : '',
     estNouveau(o.dateActivation, maintenant) ? '<span class="badge-nouveau">Nouveau</span>' : '',
   ].join('');

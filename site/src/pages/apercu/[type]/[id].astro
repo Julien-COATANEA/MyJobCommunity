@@ -10,7 +10,7 @@ import VueArticle from '../../../components/vues/VueArticle.astro';
 import VueEvenement from '../../../components/vues/VueEvenement.astro';
 import VueEntreprise from '../../../components/vues/VueEntreprise.astro';
 import { lireOffres } from '../../../lib/contenus';
-import { lireBrouillon } from '../../../lib/strapi';
+import { PUBLIC_STRAPI_URL, lireBrouillon } from '../../../lib/strapi';
 
 const TYPES: Record<string, { api: string; unique: boolean }> = {
   accueil: { api: 'accueil', unique: true },
@@ -29,13 +29,16 @@ const definition = TYPES[type];
 if (!definition) return new Response('Type de contenu inconnu.', { status: 404 });
 
 const statut = Astro.url.searchParams.get('statut') === 'published' ? 'published' : 'draft';
-const doc: any = await lireBrouillon(definition.api, id, statut, definition.unique);
+// Dans l'aperçu intégré au BO, un clic sur un texte ouvre son champ (désactivable avec ?visuel=0).
+const edition = Astro.url.searchParams.get('visuel') !== '0';
+const doc: any = await lireBrouillon(definition.api, id, statut, definition.unique, edition);
 if (!doc) return new Response('Contenu introuvable.', { status: 404 });
 
 const offresEntreprise = type === 'entreprise' ? (await lireOffres()).filter((o) => o.entreprise?.slug === doc.slug) : [];
 const titre = doc.titre ?? doc.nom ?? doc.heroTitre ?? 'Aperçu';
 Astro.response.headers.set('Cache-Control', 'no-store');
 Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+const originesBO = [PUBLIC_STRAPI_URL];
 ---
 
 <Base titre={`Aperçu : ${titre}`} noIndex>
@@ -48,3 +51,19 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   {type === 'evenement' && <VueEvenement evenement={doc} apercu />}
   {type === 'entreprise' && <VueEntreprise entreprise={doc} offres={offresEntreprise} />}
 </Base>
+
+<script is:inline define:vars={{ originesBO }}>
+  // Dialogue avec l'aperçu du back-office : le BO envoie son script d'édition visuelle (surbrillance au survol,
+  // double-clic pour modifier) et signale chaque enregistrement pour que la page se recharge.
+  window.addEventListener('message', (evenement) => {
+    if (!originesBO.includes(evenement.origin)) return;
+    const message = evenement.data;
+    if (message?.type === 'strapiScript') {
+      const script = document.createElement('script');
+      script.textContent = message.payload.script;
+      document.head.appendChild(script);
+    }
+    if (message?.type === 'strapiUpdate') location.reload();
+  });
+  if (window.parent !== window) window.parent.postMessage({ type: 'previewReady' }, '*');
+</script>

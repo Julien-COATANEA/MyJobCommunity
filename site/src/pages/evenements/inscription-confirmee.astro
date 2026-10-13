@@ -1,10 +1,24 @@
 ---
-// Page de retour du formulaire d'inscription envoyé sans JavaScript.
+// Page de retour du formulaire d'inscription envoyé sans JavaScript (?raison=ok ou ?raison=attente).
 import Base from '../../layouts/Base.astro';
 import EnTetePage from '../../components/EnTetePage.astro';
 ---
 
-<Base titre="Inscription confirmée" noIndex ariane={[{ libelle: 'Événements', url: '/evenements' }, { libelle: 'Inscription confirmée' }]}>
-  <EnTetePage titre="Votre inscription est confirmée" chapo="Un e-mail de confirmation vient de vous être envoyé." />
+<Base titre="Inscription enregistrée" noIndex ariane={[{ libelle: 'Événements', url: '/evenements' }, { libelle: 'Inscription enregistrée' }]}>
+  <EnTetePage
+    titre="Votre inscription est confirmée"
+    chapo="Un e-mail de confirmation vient de vous être envoyé. Il contient un lien pour annuler en cas d'empêchement."
+  />
   <p class="conteneur conteneur--etroit section"><a href="/evenements" class="bouton bouton--plein">Voir les autres événements</a></p>
 </Base>
+
+<script>
+  // Inscription sur liste d'attente : le message change, la page reste la même.
+  if (new URLSearchParams(location.search).get('raison') === 'attente') {
+    const titre = document.querySelector('h1');
+    const chapo = document.querySelector('.en-tete-page__chapo');
+    if (titre) titre.textContent = "Vous êtes sur la liste d'attente";
+    if (chapo) chapo.textContent = "L'événement est complet : vous serez prévenu(e) par e-mail si une place se libère.";
+    document.title = document.title.replace('Inscription enregistrée', "Liste d'attente");
+  }
+</script>

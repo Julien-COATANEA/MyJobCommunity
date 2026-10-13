@@ -5,13 +5,19 @@
 // Les variables STRAPI_ADMIN_* sont lues au build de l'admin : chaque client a son nom, sa couleur, son logo.
 import type { StrapiApp } from '@strapi/strapi/admin';
 import {
-  Book, Briefcase, Calendar, ChartPie, CheckCircle, Earth, File, Information, Layout, List, PaintBrush, Pencil, Store,
+  Book, Briefcase, Calendar, ChartPie, CheckCircle, Earth, File, Information, Layout, List, PaintBrush, Pencil, Plus, Store, Upload, User, WarningCircle,
 } from '@strapi/icons';
 import logo from './extensions/logo.svg';
 import './espace/menu.css';
 import { PanneauSite } from './espace/panneaux/PanneauSite';
 import { PanneauInscriptions } from './espace/panneaux/PanneauInscriptions';
+import { PanneauQualite } from './espace/panneaux/PanneauQualite';
+import { PanneauDemandePublication } from './espace/panneaux/PanneauDemandePublication';
+import { LienInput } from './espace/LienInput';
 import { monterIndicateur } from './espace/IndicateurSite';
+import { monterRecherche } from './espace/Recherche';
+import { monterBienvenue } from './espace/Bienvenue';
+import { monterNavigation } from './espace/navigation';
 
 const marque = process.env.STRAPI_ADMIN_BRAND_NAME || 'My Job Community';
 const primaire = process.env.STRAPI_ADMIN_PRIMARY_COLOR || '#1a5f7a';
@@ -71,6 +77,14 @@ const textes: Record<string, string> = {
   'content-manager.components.LeftMenu.collection-types': 'Listes de contenus',
   'content-manager.components.LeftMenu.single-types': 'Pages et réglages uniques',
   'search.placeholder': 'Rechercher',
+  'global.back': 'Retour',
+  // Un seul geste pour mettre en ligne : « Enregistrer et publier » (le mode brouillon reste réservé aux pages et articles).
+  'app.utils.publish': 'Enregistrer et publier',
+  'app.utils.published': 'Publié',
+  'app.utils.unpublish': 'Retirer du site',
+  'app.utils.draft': 'Brouillon',
+  'content-manager.containers.edit.information.last-published.label': 'Publié',
+  'content-manager.containers.edit.information.last-draft.label': 'Brouillon enregistré',
 };
 
 /** Lien de menu vers une liste du gestionnaire de contenu, visible si l'utilisateur peut la lire. */
@@ -101,6 +115,8 @@ export default {
   },
 
   register(app: StrapiApp) {
+    // Couleur de la marque disponible pour les feuilles de style (menu, tuiles, boutons de la fenêtre d'accueil).
+    document.documentElement.style.setProperty('--mjc-primaire', primaire);
     // La visite guidée de Strapi s'adresse aux développeurs (schémas, jetons d'API, Strapi Cloud) : désactivée.
     try {
       const cle = 'STRAPI_GUIDED_TOUR';
@@ -114,6 +130,15 @@ export default {
     } catch {
       // idem
     }
+
+    // Champ « Lien » : liste des pages du site au lieu d'une adresse à taper (voir LienInput).
+    (app as any).customFields.register({
+      name: 'lien',
+      type: 'string',
+      intlLabel: { id: 'mjc.champ.lien', defaultMessage: 'Lien' },
+      intlDescription: { id: 'mjc.champ.lien.description', defaultMessage: 'Choisir une page du site ou saisir une adresse' },
+      components: { Input: async () => ({ default: LienInput }) },
+    });
 
     const c = 'content-manager/collection-types';
     const s = 'content-manager/single-types';
@@ -151,6 +176,39 @@ export default {
       position: 0.7,
       Component: () => import('./espace/pages/Apparence'),
     } as any);
+    const responsable = [{ action: 'plugin::content-manager.explorer.publish', subject: 'api::page.page' }];
+    app.addMenuLink({
+      to: 'nouvelle-page',
+      icon: Plus,
+      intlLabel: { id: 'mjc.menu.nouvelle-page', defaultMessage: 'Page à partir d’un modèle' },
+      permissions: [{ action: 'plugin::content-manager.explorer.create', subject: 'api::page.page' }],
+      position: 0.21,
+      Component: () => import('./espace/pages/NouvellePage'),
+    } as any);
+    app.addMenuLink({
+      to: 'sante',
+      icon: WarningCircle,
+      intlLabel: { id: 'mjc.menu.sante', defaultMessage: 'Santé du site' },
+      permissions: [],
+      position: 0.72,
+      Component: () => import('./espace/pages/Sante'),
+    } as any);
+    app.addMenuLink({
+      to: 'importer-entreprises',
+      icon: Upload,
+      intlLabel: { id: 'mjc.menu.import', defaultMessage: 'Importer des entreprises' },
+      permissions: [{ action: 'plugin::content-manager.explorer.create', subject: 'api::entreprise.entreprise' }],
+      position: 0.55,
+      Component: () => import('./espace/pages/ImportEntreprises'),
+    } as any);
+    app.addMenuLink({
+      to: 'equipe',
+      icon: User,
+      intlLabel: { id: 'mjc.menu.equipe', defaultMessage: 'Mon équipe' },
+      permissions: responsable,
+      position: 0.8,
+      Component: () => import('./espace/pages/Equipe'),
+    } as any);
     app.addMenuLink({
       to: 'aide',
       icon: Book,
@@ -170,9 +228,11 @@ export default {
     });
 
     const nosWidgets = [
+      widget('a-traiter', 'À traiter', WarningCircle, () => import('./espace/widgets/ATraiter'), { libelle: 'Santé du site', href: '/sante' }),
       widget('demarrage', 'Mise en route', CheckCircle, () => import('./espace/widgets/Demarrage')),
       widget('raccourcis', 'Actions rapides', Pencil, () => import('./espace/widgets/Raccourcis')),
       widget('chiffres', 'Mon site en chiffres', ChartPie, () => import('./espace/widgets/Chiffres')),
+      widget('statistiques', 'Fréquentation du site', ChartPie, () => import('./espace/widgets/Statistiques')),
       widget('evenements', 'Prochains événements', Calendar, () => import('./espace/widgets/ProchainsEvenements'), {
         libelle: 'Tous les événements',
         href: '/content-manager/collection-types/api::evenement.evenement',
@@ -193,8 +253,11 @@ export default {
       models,
     }));
     // Encarts des fiches : « Sur le site » (état + Voir sur le site) et « Inscriptions » (événements).
-    (app.getPlugin('content-manager').apis as any).addEditViewSidePanel([PanneauSite, PanneauInscriptions]);
-    // Indicateur permanent « Site à jour / brouillons non publiés ».
+    (app.getPlugin('content-manager').apis as any).addEditViewSidePanel([PanneauSite, PanneauQualite, PanneauDemandePublication, PanneauInscriptions]);
+    // Indicateur permanent « Site à jour / brouillons non publiés », recherche Ctrl + K, fenêtre d'accueil.
     monterIndicateur();
+    monterRecherche();
+    monterBienvenue();
+    monterNavigation();
   },
 };

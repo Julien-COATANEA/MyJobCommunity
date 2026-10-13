@@ -4,6 +4,7 @@
 //  - offres en lecture seule pour les rôles Éditeur et Auteur (elles viennent de Gestmax).
 // Les libellés ne remplacent que les valeurs par défaut : une personnalisation faite dans le BO est conservée.
 import type { Core } from '@strapi/strapi';
+import { ROLE_REDACTEUR, ROLE_RESPONSABLE, assurerRoles } from '../utils/roles';
 
 type Libelle = string | [libelle: string, description: string];
 
@@ -27,7 +28,7 @@ const COMMUNS: Record<string, Libelle> = {
   publishedAt: 'Publié le',
   // Composants
   libelle: 'Libellé',
-  url: ['Lien', 'Page du site (/actualites), autre site (https://…) ou site carrière Gestmax (gestmax:/chemin).'],
+  url: ['Lien', 'Choisissez une page du site dans la liste. Pour un autre site, sélectionnez « Autre adresse » et saisissez son adresse complète.'],
   nouvelOnglet: 'Ouvrir dans un nouvel onglet',
   sousLiens: 'Sous-menu',
   reseau: 'Réseau social',
@@ -57,6 +58,8 @@ const COMMUNS: Record<string, Libelle> = {
   cheminIframe: ['Page Gestmax intégrée', 'Uniquement en mode iframe. Par défaut : /search/last'],
   titreAccessible: ['Titre accessible', "Décrit le contenu intégré pour les personnes aveugles (obligatoire, RGAA)."],
   hauteur: 'Hauteur (pixels)',
+  publierLe: ['Publier automatiquement le', 'Facultatif : quand le brouillon est prêt, il se met en ligne tout seul à cette date.'],
+  present: ['Présent le jour J', 'À cocher à l’accueil de l’événement.'],
   citation: ['Citation', 'Quelques phrases, entre guillemets sur le site.'],
   role: ['Fonction ou situation', 'Ex. : Technicienne de maintenance, arrivée en 2025'],
   photo: ['Photo', 'Portrait carré de préférence.'],
@@ -87,6 +90,7 @@ const PAR_TYPE: Record<string, Record<string, Libelle>> = {
     placesMax: ['Nombre de places', 'Laisser vide pour ne pas limiter les inscriptions.'],
     dateLimiteInscription: ["Date limite d'inscription", "Par défaut : le début de l'événement."],
     inscriptionExterneUrl: ["Lien d'inscription externe", 'Si renseigné, remplace le formulaire du site.'],
+    listeAttente: ["Ouvrir une liste d'attente", "Quand l'événement est complet, les nouveaux inscrits sont mis en attente et prévenus automatiquement si une place se libère."],
     inscriptions: 'Inscriptions',
   },
   'api::inscription.inscription': {
@@ -95,6 +99,7 @@ const PAR_TYPE: Record<string, Record<string, Libelle>> = {
     structure: 'Entreprise ou organisme',
     statut: 'Statut',
     consentement: 'Consentement (RGPD)',
+    present: 'Présent',
   },
   'api::entreprise.entreprise': {
     secteur: "Secteur d'activité",
@@ -121,6 +126,8 @@ const PAR_TYPE: Record<string, Record<string, Libelle>> = {
     dateFinPublication: 'Fin de publication',
     urlDetailGestmax: 'Offre sur Gestmax',
     urlCandidature: 'Lien de candidature',
+    aLaUne: ['À la une', 'Affichée en premier dans les listes et sur l’accueil.'],
+    masquee: ['Masquer du site', 'L’offre disparaît du site sans être supprimée dans Gestmax.'],
     logoUrl: "Logo de l'entreprise",
     latitude: 'Latitude',
     longitude: 'Longitude',
@@ -185,6 +192,7 @@ const FORMULAIRES: Record<string, Ligne[]> = {
     [['image', 6], ['slug', 6]],
     [['contenu', 12]],
     [['inscriptionActive', 4], ['placesMax', 4], ['dateLimiteInscription', 4]],
+    [['listeAttente', 12]],
     [['inscriptionExterneUrl', 12]],
     [['seo', 12]],
   ],
@@ -194,6 +202,7 @@ const FORMULAIRES: Record<string, Ligne[]> = {
     [['extrait', 12]],
     [['image', 6], ['slug', 6]],
     [['contenu', 12]],
+    [['publierLe', 6]],
     [['seo', 12]],
   ],
   'api::entreprise.entreprise': [
@@ -211,8 +220,34 @@ const FORMULAIRES: Record<string, Ligne[]> = {
     [['chapo', 12]],
     [['imageBandeau', 6]],
     [['sections', 12]],
+    [['publierLe', 6]],
     [['seo', 12]],
   ],
+  'api::inscription.inscription': [
+    [['evenement', 6], ['statut', 3], ['present', 3]],
+    [['prenom', 6], ['nom', 6]],
+    [['email', 6], ['telephone', 6]],
+    [['structure', 12]],
+    [['consentement', 12]],
+  ],
+  // Offres : fiche en lecture seule (voir « lectureSeule » plus bas), seuls « à la une » et « masquée » se règlent ici.
+  'api::offre.offre': [
+    [['aLaUne', 6], ['masquee', 6]],
+    [['titre', 12]],
+    [['nomEntreprise', 4], ['typeContrat', 4], ['lieu', 4]],
+    [['salaire', 4], ['dateActivation', 4], ['dateFinPublication', 4]],
+    [['descriptionHtml', 12]],
+    [['profilHtml', 12]],
+    [['sourceId', 4], ['urlDetailGestmax', 4], ['urlCandidature', 4]],
+  ],
+};
+
+// Champs d'une offre qui ne se modifient pas dans le BO : tout vient de Gestmax.
+const OFFRE_MODIFIABLE = ['aLaUne', 'masquee'];
+// Champs techniques jamais affichés dans les formulaires.
+const MASQUES: Record<string, string[]> = {
+  'api::offre.offre': ['slug', 'entreprise', 'logoUrl', 'latitude', 'longitude', 'departement', 'secteur'],
+  'api::inscription.inscription': ['jeton', 'rappelEnvoye'],
 };
 
 // Exemples affichés dans les champs vides.
@@ -231,7 +266,7 @@ const EXEMPLES: Record<string, string> = {
   url: '/page, https://… ou gestmax:/chemin',
 };
 
-const VERSION_LISTES = 2;
+const VERSION_LISTES = 3;
 
 export async function configurerBackOffice(strapi: Core.Strapi) {
   const cm = strapi.plugin('content-manager');
@@ -269,6 +304,14 @@ export async function configurerBackOffice(strapi: Core.Strapi) {
       }
       modifie = true;
     }
+    // Lecture seule des offres (Gestmax est la source) et champs techniques masqués.
+    for (const [champ, meta] of Object.entries<any>(conf.metadatas ?? {})) {
+      if (!meta.edit) continue;
+      const lectureSeule = uid === 'api::offre.offre' && !OFFRE_MODIFIABLE.includes(champ);
+      if (lectureSeule && meta.edit.editable !== false) { meta.edit.editable = false; modifie = true; }
+      const cache = (MASQUES[uid] ?? []).includes(champ);
+      if (cache && meta.edit.visible !== false) { meta.edit.visible = false; modifie = true; }
+    }
     const formulaire = FORMULAIRES[uid];
     if (appliquerListes && formulaire) {
       conf.layouts.edit = formulaire
@@ -302,12 +345,13 @@ export async function configurerBackOffice(strapi: Core.Strapi) {
   }
 
   await configuration.set({ value: { ...etat, versionListes: VERSION_LISTES } });
+  await assurerRoles(strapi);
   await restreindreOffres(strapi);
 }
 
 /** Les offres viennent de Gestmax : Éditeur et Auteur peuvent les consulter, pas les modifier. */
 async function restreindreOffres(strapi: Core.Strapi) {
-  const roles = await strapi.db.query('admin::role').findMany({ where: { code: { $in: ['strapi-editor', 'strapi-author'] } } });
+  const roles = await strapi.db.query('admin::role').findMany({ where: { code: { $in: ['strapi-editor', 'strapi-author', ROLE_RESPONSABLE, ROLE_REDACTEUR] } } });
   if (!roles.length) return;
   await strapi.db.query('admin::permission').deleteMany({
     where: {

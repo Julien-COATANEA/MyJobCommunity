@@ -18,6 +18,7 @@ const couleur = (defaut) => ({
   required: true,
   default: defaut,
 });
+const lien = (extra = {}) => ({ type: 'customField', customField: 'global::lien', ...extra });
 const seo = comp('shared.seo', false);
 
 const BLOCS = [
@@ -56,9 +57,9 @@ const types = {
       emailNotificationInscriptions: { type: 'email', private: true },
       // Gestmax
       gestmaxUrlFront: str(),
-      lienEspaceCandidat: str(),
-      lienEspaceRecruteur: str(),
-      lienCandidatureSpontanee: str(),
+      lienEspaceCandidat: lien(),
+      lienEspaceRecruteur: lien(),
+      lienCandidatureSpontanee: lien(),
       seoParDefaut: seo,
     },
   },
@@ -99,6 +100,7 @@ const types = {
       chapo: { type: 'text' },
       imageBandeau: image(),
       sections: { type: 'dynamiczone', components: BLOCS },
+      publierLe: { type: 'datetime' },
       seo,
     },
   },
@@ -125,11 +127,12 @@ const types = {
       image: image(),
       contenu: { type: 'blocks', required: true },
       miseEnAvant: { type: 'boolean', default: false },
+      publierLe: { type: 'datetime' },
       seo,
     },
   },
   evenement: {
-    kind: 'collectionType', draftAndPublish: true,
+    kind: 'collectionType', draftAndPublish: false,
     singular: 'evenement', plural: 'evenements',
     displayName: 'Événements',
     attributes: {
@@ -149,6 +152,7 @@ const types = {
       inscriptionActive: { type: 'boolean', default: false },
       placesMax: { type: 'integer', min: 1, conditions: { visible: { '==': [{ var: 'inscriptionActive' }, true] } } },
       dateLimiteInscription: { type: 'datetime', conditions: { visible: { '==': [{ var: 'inscriptionActive' }, true] } } },
+      listeAttente: { type: 'boolean', default: false, conditions: { visible: { '==': [{ var: 'inscriptionActive' }, true] } } },
       inscriptionExterneUrl: str(),
       inscriptions: { type: 'relation', relation: 'oneToMany', target: 'api::inscription.inscription', mappedBy: 'evenement' },
       seo,
@@ -165,8 +169,12 @@ const types = {
       email: { type: 'email', required: true },
       telephone: str(),
       structure: str(),
-      statut: { type: 'enumeration', enum: ['confirmee', 'annulee'], default: 'confirmee', required: true },
+      statut: { type: 'enumeration', enum: ['confirmee', 'attente', 'annulee'], default: 'confirmee', required: true },
       consentement: { type: 'boolean', required: true },
+      present: { type: 'boolean', default: false },
+      // Jeton secret du lien d'annulation envoyé par e-mail ; rappel de la veille déjà envoyé ?
+      jeton: str({ private: true }),
+      rappelEnvoye: { type: 'boolean', default: false, private: true },
     },
   },
 
@@ -182,7 +190,7 @@ const types = {
     },
   },
   entreprise: {
-    kind: 'collectionType', draftAndPublish: true,
+    kind: 'collectionType', draftAndPublish: false,
     singular: 'entreprise', plural: 'entreprises',
     displayName: 'Entreprises',
     description: "Fiche de l'annuaire des entreprises",
@@ -209,7 +217,7 @@ const types = {
     kind: 'collectionType', draftAndPublish: false,
     singular: 'offre', plural: 'offres',
     displayName: "Offres d'emploi",
-    description: 'Synchronisée automatiquement depuis Gestmax : ne pas modifier à la main',
+    description: 'Importée de Gestmax : jamais créée ni modifiée ici (seuls « à la une » et « masquée » se règlent dans le BO)',
     attributes: {
       sourceId: str({ required: true, unique: true }),
       titre: str({ required: true }),
@@ -228,6 +236,9 @@ const types = {
       urlDetailGestmax: str(),
       urlCandidature: str(),
       logoUrl: str(),
+      // Seuls réglages modifiables dans le BO : tout le reste vient de Gestmax
+      aLaUne: { type: 'boolean', default: false },
+      masquee: { type: 'boolean', default: false },
       // Position de la ville (géocodée à la synchronisation) : recherche par rayon
       latitude: { type: 'decimal' },
       longitude: { type: 'decimal' },

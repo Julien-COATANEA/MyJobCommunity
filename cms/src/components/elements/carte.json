@@ -32,7 +32,8 @@
       "type": "text"
     },
     "lien": {
-      "type": "string"
+      "type": "customField",
+      "customField": "global::lien"
     },
     "libelleLien": {
       "type": "string"

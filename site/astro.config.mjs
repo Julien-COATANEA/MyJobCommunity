@@ -6,7 +6,7 @@ const STRAPI_URL = process.env.STRAPI_URL ?? 'http://localhost:1337';
 const strapi = new URL(STRAPI_URL);
 
 // Pages exclues du plan de site XML (techniques ou marquées « noIndex » dans le BO).
-const EXCLUSIONS = ['/header-footer', '/evenements/inscription-', '/404', '/apercu'];
+const EXCLUSIONS = ['/header-footer', '/evenements/inscription-', '/evenements/annuler', '/404', '/apercu'];
 let pagesNoIndex = [];
 try {
   const reponse = await fetch(`${STRAPI_URL}/api/pages?fields[0]=slug&filters[seo][noIndex][$eq]=true&pagination[pageSize]=100`);

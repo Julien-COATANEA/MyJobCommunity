@@ -56,12 +56,21 @@ export async function lireTous<T>(type: string, params: Params = {}): Promise<T[
  * Version brouillon (ou publiée) d'un document, pour la page d'aperçu du BO. Jamais mise en cache.
  * Strapi n'accepte « status=draft » qu'avec le secret d'aperçu (middleware « brouillons »).
  */
-export async function lireBrouillon<T>(type: string, documentId: string, statut: 'draft' | 'published', unique: boolean): Promise<T | null> {
+export async function lireBrouillon<T>(
+  type: string,
+  documentId: string,
+  statut: 'draft' | 'published',
+  unique: boolean,
+  /** Édition visuelle : Strapi marque chaque texte de façon invisible pour qu'un clic dans l'aperçu ouvre le bon champ. */
+  sourcesVisuelles = false,
+): Promise<T | null> {
   const url = new URL(`/api/${type}`, STRAPI_URL);
   url.searchParams.set('populate', 'deep');
   url.searchParams.set('status', statut);
   if (!unique) url.searchParams.set('filters[documentId][$eq]', documentId);
-  const reponse = await fetch(url, { headers: { 'X-Apercu': process.env.APERCU_SECRET ?? '' } });
+  const entetes: Record<string, string> = { 'X-Apercu': process.env.APERCU_SECRET ?? '' };
+  if (sourcesVisuelles) entetes['strapi-encode-source-maps'] = 'true';
+  const reponse = await fetch(url, { headers: entetes });
   if (!reponse.ok) return null;
   const { data } = await reponse.json();
   return (Array.isArray(data) ? data[0] : data) ?? null;

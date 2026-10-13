@@ -39,6 +39,7 @@
       "type": "enumeration",
       "enum": [
         "confirmee",
+        "attente",
         "annulee"
       ],
       "default": "confirmee",
@@ -47,6 +48,19 @@
     "consentement": {
       "type": "boolean",
       "required": true
+    },
+    "present": {
+      "type": "boolean",
+      "default": false
+    },
+    "jeton": {
+      "type": "string",
+      "private": true
+    },
+    "rappelEnvoye": {
+      "type": "boolean",
+      "default": false,
+      "private": true
     }
   }
 }

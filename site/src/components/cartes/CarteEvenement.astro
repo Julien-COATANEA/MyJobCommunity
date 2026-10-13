@@ -48,6 +48,9 @@ const inscriptionSite = e.inscriptionActive && !e.inscriptionExterneUrl;
         if (!p.ouvert) {
           mention.textContent = p.placesRestantes === 0 ? 'Complet' : 'Inscriptions closes';
           mention.classList.add('carte__mention--complet');
+        } else if (p.listeAttente) {
+          mention.textContent = "Complet · liste d'attente ouverte";
+          mention.classList.add('carte__mention--urgent');
         } else if (p.placesRestantes !== null && p.placesRestantes <= 10) {
           mention.textContent = `Plus que ${p.placesRestantes} place${p.placesRestantes > 1 ? 's' : ''}`;
           mention.classList.add('carte__mention--urgent');

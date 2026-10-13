@@ -8,7 +8,7 @@
     "description": "Fiche de l'annuaire des entreprises"
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
   "pluginOptions": {},
   "attributes": {

@@ -13,12 +13,19 @@
   }
 
   /* Logo + nom de l'espace */
+  /* Logo au-dessus du nom, l'ensemble centré dans la barre. */
+  nav:has(a[href*='/admin/content-manager']) > div:first-child,
+  nav:has(a[href*='/admin/content-manager']) > div:first-child > * {
+    justify-content: center !important;
+  }
   nav:has(a[href*='/admin/content-manager']) > div:first-child div:has(> img) {
     display: flex !important;
+    flex-direction: column;
     align-items: center;
-    gap: 10px;
-    width: auto !important;
+    gap: 8px;
+    width: 100% !important;
     height: auto !important;
+    text-align: center;
   }
   nav:has(a[href*='/admin/content-manager']) > div:first-child img {
     width: 36px !important;
@@ -34,6 +41,7 @@
     margin: 0 !important;
     display: flex;
     flex-direction: column;
+    align-items: center;
     line-height: 1.25;
   }
   nav:has(a[href*='/admin/content-manager']) > div:first-child img + span > span:first-child {
@@ -121,7 +129,7 @@ nav li:has(a[aria-label='Marketplace']) {
 }
 /* Le menu latéral réserve la place de l'indicateur au-dessus du profil. */
 @media (min-width: 1100px) {
-  nav:has(a[href*='/admin/content-manager']) > div > ul { padding-bottom: 64px; }
+  nav:not([aria-label]):has(a[href*='/admin/content-manager']) > div > ul { padding-bottom: 8px; margin-bottom: 52px; }
 }
 
 /* ============================================================
@@ -131,4 +139,109 @@ body.mjc-editeur nav li:has(a[aria-label='Tous les contenus']),
 body.mjc-editeur nav li:has(a[href$='/admin/settings']),
 body.mjc-editeur nav li:has(a[href*='content-type-builder']) {
   display: none !important;
+}
+
+/* ============================================================
+   Barre latérale sombre, teintée de la couleur de la marque (style « tableau de bord » professionnel).
+   Le menu se détache du contenu clair ; la marque reste reconnaissable sans couleurs vives.
+   ============================================================ */
+:root {
+  --mjc-menu-fond: color-mix(in srgb, var(--mjc-primaire, #1a5f7a) 30%, #0d1320);
+  --mjc-menu-texte: rgba(255, 255, 255, 0.78);
+  --mjc-menu-icone: rgba(255, 255, 255, 0.55);
+  --mjc-menu-discret: rgba(255, 255, 255, 0.42);
+  --mjc-menu-ligne: rgba(255, 255, 255, 0.08);
+  --mjc-menu-accent: color-mix(in srgb, var(--mjc-primaire, #1a5f7a) 55%, #ffffff);
+}
+
+/* Fond : le menu et tous ses blocs internes (logo, liste, profil). */
+nav:not([aria-label]):has(a[href*='/admin/content-manager']),
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) > div,
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) ul,
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) li,
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) li > span {
+  background: var(--mjc-menu-fond) !important;
+  border-color: var(--mjc-menu-ligne) !important;
+}
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) hr,
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) > div[role='separator'],
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) > div:empty {
+  background: var(--mjc-menu-ligne) !important;
+}
+
+/* Nom de l'espace */
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) > div:first-child img + span { color: #fff !important; }
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) > div:first-child img + span > span:last-child { color: var(--mjc-menu-discret) !important; opacity: 1 !important; }
+
+/* Entrées */
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label] {
+  background: transparent !important;
+  border-radius: 8px;
+  box-shadow: none !important;
+  transition: background-color .15s, color .15s;
+}
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label] svg,
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label] svg path {
+  fill: var(--mjc-menu-icone) !important;
+  transition: fill .15s;
+}
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label]:hover,
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label]:focus-visible {
+  background: rgba(255, 255, 255, 0.07) !important;
+}
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label]:hover svg,
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label]:hover svg path { fill: #fff !important; }
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label]:focus-visible { outline: 2px solid var(--mjc-menu-accent); outline-offset: -2px; }
+
+/* Entrée active : pastille claire et texte blanc, sans liseré. */
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label][aria-current='page'] {
+  background: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: none !important;
+}
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label][aria-current='page'] svg,
+nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label][aria-current='page'] svg path { fill: var(--mjc-menu-accent) !important; }
+
+@media (min-width: 1100px) {
+  nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label] {
+    height: 38px !important;
+    min-height: 0 !important;
+  }
+  nav:not([aria-label]):has(a[href*='/admin/content-manager']) li > span { padding-block: 1px !important; }
+  nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label] svg { width: 1.7rem; height: 1.7rem; flex: none; }
+  nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label] > span {
+    color: var(--mjc-menu-texte) !important;
+    font-size: 1.35rem;
+    font-weight: 500;
+    transition: color .15s;
+  }
+  nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label]:hover > span { color: #fff !important; }
+  nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label][aria-current='page'] > span { color: #fff !important; font-weight: 600; }
+
+  /* Entrées en retrait des bords : la pastille active « flotte » dans la barre. */
+  nav:not([aria-label]):has(a[href*='/admin/content-manager']) li > span { padding-inline: 10px !important; box-sizing: border-box; }
+  nav:not([aria-label]):has(a[href*='/admin/content-manager']) li a[aria-label] { padding-inline: 10px !important; }
+
+  /* Rubriques : un filet fin au-dessus de chaque groupe, titre discret dessous. */
+  nav li:has(> span > a[aria-label])::before {
+    margin: 12px 20px 0;
+    padding: 14px 2px 6px !important;
+    border-top: 1px solid var(--mjc-menu-ligne);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--mjc-menu-discret);
+    opacity: 1 !important;
+  }
+}
+
+/* Indicateur « Site à jour » : intégré à la barre sombre (grand écran). */
+@media (min-width: 1100px) {
+  .mjc-indicateur__bouton {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    box-shadow: none !important;
+    font-weight: 500 !important;
+  }
+  .mjc-indicateur__bouton:hover { background: rgba(255, 255, 255, 0.11) !important; }
 }

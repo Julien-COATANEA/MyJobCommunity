@@ -11,6 +11,8 @@ const ICONES = ['emploi', 'entreprise', 'formation', 'territoire', 'logement', '
 const str = (extra = {}) => ({ type: 'string', ...extra });
 const image = (extra = {}) => ({ type: 'media', multiple: false, allowedTypes: ['images'], ...extra });
 const comp = (component, repeatable, extra = {}) => ({ type: 'component', component, repeatable, ...extra });
+// Lien choisi dans une liste (pages du site, Gestmax) ou saisi (autre site) : champ personnalisé « global::lien ».
+const lien = (extra = {}) => ({ type: 'customField', customField: 'global::lien', ...extra });
 
 const composants = {
   'shared/seo': ['SEO', 'search', {
@@ -21,7 +23,7 @@ const composants = {
   }],
   'shared/lien': ['Lien', 'link', {
     libelle: str({ required: true }),
-    url: str({ required: true }),
+    url: lien({ required: true }),
     nouvelOnglet: { type: 'boolean', default: false },
   }, 'URL interne (/page), externe (https://…) ou Gestmax (gestmax:/chemin)'],
   'shared/reseau-social': ['Réseau social', 'earth', {
@@ -30,12 +32,12 @@ const composants = {
   }],
   'navigation/entree': ['Entrée de menu', 'bulletList', {
     libelle: str({ required: true }),
-    url: str(),
+    url: lien(),
     sousLiens: comp('navigation.sous-lien', true),
   }, 'Lien de premier niveau, avec sous-menu facultatif'],
   'navigation/sous-lien': ['Lien de sous-menu', 'link', {
     libelle: str({ required: true }),
-    url: str({ required: true }),
+    url: lien({ required: true }),
     description: str(),
     nouvelOnglet: { type: 'boolean', default: false },
   }],
@@ -49,12 +51,12 @@ const composants = {
     icone: { type: 'enumeration', enum: ICONES },
     titre: str({ required: true }),
     texte: { type: 'text' },
-    lien: str(),
+    lien: lien(),
     libelleLien: str(),
   }],
   'elements/bouton': ['Bouton', 'cursor', {
     libelle: str({ required: true }),
-    url: str({ required: true }),
+    url: lien({ required: true }),
     style: { type: 'enumeration', enum: ['principal', 'secondaire'], default: 'principal' },
     nouvelOnglet: { type: 'boolean', default: false },
   }],

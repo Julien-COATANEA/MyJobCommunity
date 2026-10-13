@@ -53,7 +53,7 @@ export function distanceKm(a: Position, b: Position): number {
   return 2 * 6371 * Math.asin(Math.sqrt(h));
 }
 
-export const CHAMPS_CARTE = ['titre', 'slug', 'typeContrat', 'lieu', 'nomEntreprise', 'salaire', 'dateActivation', 'logoUrl', 'latitude', 'longitude'];
+export const CHAMPS_CARTE = ['titre', 'slug', 'typeContrat', 'lieu', 'nomEntreprise', 'salaire', 'dateActivation', 'logoUrl', 'latitude', 'longitude', 'aLaUne'];
 
 interface OptionsRequete {
   page: number;
@@ -67,7 +67,8 @@ interface OptionsRequete {
 /** Requête REST Strapi (/api/offres) correspondant aux filtres. */
 export function requeteStrapi(f: Filtres, { page, parPage, boite, sansContrat = false }: OptionsRequete): URLSearchParams {
   const p = new URLSearchParams({
-    sort: f.tri === 'ancien' ? 'dateActivation:asc' : 'dateActivation:desc',
+    // « À la une » d'abord, sauf tri chronologique inverse.
+    sort: f.tri === 'ancien' ? 'dateActivation:asc' : 'aLaUne:desc,dateActivation:desc',
     'pagination[page]': String(page),
     'pagination[pageSize]': String(parPage),
   });

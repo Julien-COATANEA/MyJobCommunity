@@ -1,7 +1,7 @@
 // Page « Mes offres d'emploi » : suivi des offres importées de Gestmax.
 import * as React from 'react';
 import {
-  Alert, Badge, Box, Button, Flex, Grid, LinkButton, Table, Tbody, Td, Th, Thead, Tr, Typography,
+  Alert, Badge, Box, Button, Checkbox, Flex, Grid, LinkButton, Table, Tbody, Td, Th, Thead, Tr, Typography,
 } from '@strapi/design-system';
 import { ArrowClockwise, Eye, Pencil } from '@strapi/icons';
 import { Layouts, Page, useFetchClient, useNotification } from '@strapi/strapi/admin';
@@ -17,11 +17,15 @@ interface Offre {
   nomEntreprise: string | null;
   dateActivation: string | null;
   urlDetailGestmax: string | null;
+  aLaUne: boolean;
+  masquee: boolean;
   entreprise: { documentId: string; nom: string } | null;
 }
 
 interface Donnees {
   total: number;
+  masquees: number;
+  alaUne: number;
   parContrat: { libelle: string; nombre: number }[];
   parEntreprise: { libelle: string; nombre: number }[];
   nonRattachees: number;
@@ -71,7 +75,7 @@ const frequenceLisible = (cron: string) => {
 
 export default function MesOffres() {
   const { donnees, chargement, erreur, recharger } = useDonnees<Donnees>('/espace/offres');
-  const { post } = useFetchClient();
+  const { post, put } = useFetchClient();
   const { toggleNotification } = useNotification();
   const [synchro, setSynchro] = React.useState(false);
 
@@ -91,6 +95,16 @@ export default function MesOffres() {
     }
   };
 
+  const regler = async (o: Offre, reglage: { aLaUne?: boolean; masquee?: boolean }) => {
+    try {
+      await put(`/espace/offres/${o.documentId}`, reglage);
+      toggleNotification({ type: 'success', message: 'Enregistré : le site sera à jour dans quelques secondes.' });
+      recharger();
+    } catch {
+      toggleNotification({ type: 'danger', message: "Le réglage n'a pas pu être enregistré." });
+    }
+  };
+
   if (chargement && !donnees) return <Page.Loading />;
   if (erreur || !donnees) return <Page.Error />;
 
@@ -100,7 +114,7 @@ export default function MesOffres() {
       <StylesEspace />
       <Layouts.Header
         title="Mes offres d'emploi"
-        subtitle={`${pluriel(donnees.total, 'offre')} en ligne sur votre site, importées automatiquement depuis Gestmax.`}
+        subtitle={`${pluriel(donnees.total, 'offre')} en ligne sur votre site${donnees.masquees ? ` (${donnees.masquees} masquée${donnees.masquees > 1 ? 's' : ''})` : ''}, importées automatiquement depuis Gestmax.`}
         primaryAction={
           <Button startIcon={<ArrowClockwise />} loading={synchro} onClick={synchroniser}>
             Synchroniser maintenant
@@ -118,7 +132,7 @@ export default function MesOffres() {
         <Flex direction="column" alignItems="stretch" gap={6}>
           <Alert variant="default" title="Où modifier une offre ?" closeLabel="Fermer">
             Les offres se créent et se modifient dans Gestmax. Elles apparaissent sur votre site {frequenceLisible(donnees.frequence)},
-            sans action de votre part. Le bouton « Postuler » renvoie vers Gestmax.
+            sans action de votre part. Ici, vous choisissez seulement lesquelles mettre « à la une » ou masquer du site.
           </Alert>
 
           {donnees.synchro.statut === 'erreur' && (
@@ -169,15 +183,16 @@ export default function MesOffres() {
 
           <Box hasRadius background="neutral0" shadow="tableShadow">
             <Box padding={5} paddingBottom={3}>
-              <Typography variant="delta" tag="h2">Dernières offres publiées</Typography>
+              <Typography variant="delta" tag="h2">Offres importées</Typography>
             </Box>
-            <Table colCount={5} rowCount={donnees.dernieres.length + 1}>
+            <Table colCount={6} rowCount={donnees.dernieres.length + 1}>
               <Thead>
                 <Tr>
                   <Th><Typography variant="sigma">Offre</Typography></Th>
                   <Th><Typography variant="sigma">Entreprise</Typography></Th>
                   <Th><Typography variant="sigma">Contrat</Typography></Th>
-                  <Th><Typography variant="sigma">Publiée le</Typography></Th>
+                  <Th><Typography variant="sigma">À la une</Typography></Th>
+                  <Th><Typography variant="sigma">Masquée</Typography></Th>
                   <Th><Typography variant="sigma">Voir</Typography></Th>
                 </Tr>
               </Thead>
@@ -187,7 +202,7 @@ export default function MesOffres() {
                     <Td>
                       <Flex direction="column" alignItems="flex-start">
                         <Typography fontWeight="bold" textColor="neutral800">{o.titre}</Typography>
-                        <Typography variant="pi" textColor="neutral600">{o.lieu}</Typography>
+                        <Typography variant="pi" textColor="neutral600">{[o.lieu, o.dateActivation ? `publiée le ${formatDate(o.dateActivation)}` : null].filter(Boolean).join(" · ")}</Typography>
                       </Flex>
                     </Td>
                     <Td>
@@ -200,7 +215,12 @@ export default function MesOffres() {
                       )}
                     </Td>
                     <Td>{o.typeContrat && <Badge>{o.typeContrat}</Badge>}</Td>
-                    <Td><Typography>{o.dateActivation ? formatDate(o.dateActivation) : '-'}</Typography></Td>
+                    <Td>
+                      <Checkbox aria-label={`Mettre « ${o.titre} » à la une`} checked={o.aLaUne} disabled={o.masquee} onCheckedChange={(v: boolean) => regler(o, { aLaUne: !!v })} />
+                    </Td>
+                    <Td>
+                      <Checkbox aria-label={`Masquer « ${o.titre} » du site`} checked={o.masquee} onCheckedChange={(v: boolean) => regler(o, { masquee: !!v })} />
+                    </Td>
                     <Td>
                       <Flex gap={2}>
                         {donnees.urlSite && (

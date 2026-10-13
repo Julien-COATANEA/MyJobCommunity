@@ -1,0 +1,93 @@
+---
+// Page d'annulation d'une inscription (lien de l'e-mail) : le participant voit l'événement concerné
+// et confirme explicitement (un simple clic sur le lien ne doit pas annuler : les anti-virus ouvrent les liens des e-mails).
+import Base from '../../layouts/Base.astro';
+import EnTetePage from '../../components/EnTetePage.astro';
+import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
+---
+
+<Base titre="Annuler mon inscription" noIndex ariane={[{ libelle: 'Événements', url: '/evenements' }, { libelle: 'Annuler mon inscription' }]}>
+  <EnTetePage titre="Annuler mon inscription" />
+
+  <div class="conteneur conteneur--etroit section" data-annulation data-api={PUBLIC_STRAPI_URL}>
+    <p data-chargement aria-live="polite">Vérification de votre inscription…</p>
+
+    <div data-formulaire hidden>
+      <p>
+        Vous êtes inscrit(e) à <strong data-titre></strong>, <span data-date></span>.
+      </p>
+      <p data-info-attente hidden>Vous êtes actuellement sur la liste d'attente.</p>
+      <p>En annulant, votre place sera libérée pour un autre participant.</p>
+      <p class="annulation__actions">
+        <button type="button" class="bouton bouton--plein" data-confirmer>Oui, annuler mon inscription</button>
+        <a href="/evenements" class="bouton bouton--contour">Non, je garde ma place</a>
+      </p>
+    </div>
+
+    <div class="alerte alerte--succes" data-fait tabindex="-1" hidden>
+      <h2 class="alerte__titre">Votre inscription est annulée</h2>
+      <p>Merci de nous avoir prévenus. <a href="/evenements">Voir les autres événements</a></p>
+    </div>
+
+    <div class="alerte alerte--erreur" data-erreur tabindex="-1" hidden>
+      <h2 class="alerte__titre">Lien invalide</h2>
+      <p data-erreur-texte>Ce lien d'annulation n'est plus valable.</p>
+    </div>
+  </div>
+</Base>
+
+<script>
+  const racine = document.querySelector<HTMLElement>('[data-annulation]')!;
+  const api = racine.dataset.api!;
+  const jeton = new URLSearchParams(location.search).get('jeton') ?? '';
+  const element = (nom: string) => racine.querySelector<HTMLElement>(`[data-${nom}]`)!;
+
+  const erreur = (message?: string) => {
+    element('chargement').hidden = true;
+    element('formulaire').hidden = true;
+    if (message) element('erreur-texte').textContent = message;
+    element('erreur').hidden = false;
+    element('erreur').focus();
+  };
+
+  if (!jeton) {
+    erreur();
+  } else {
+    fetch(`${api}/api/inscriptions-evenements/annulation?jeton=${encodeURIComponent(jeton)}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((info) => {
+        element('chargement').hidden = true;
+        if (info.statut === 'annulee') {
+          element('fait').hidden = false;
+          element('fait').querySelector('h2')!.textContent = 'Cette inscription est déjà annulée';
+          return;
+        }
+        element('titre').textContent = info.titre;
+        element('date').textContent = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Europe/Paris' }).format(new Date(info.date));
+        element('info-attente').hidden = !info.attente;
+        element('formulaire').hidden = false;
+      })
+      .catch(() => erreur());
+
+    element('confirmer').addEventListener('click', async (e) => {
+      const bouton = e.currentTarget as HTMLButtonElement;
+      bouton.disabled = true;
+      bouton.textContent = 'Annulation en cours…';
+      try {
+        const reponse = await fetch(`${api}/api/inscriptions-evenements/annuler`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jeton }),
+        });
+        if (!reponse.ok) throw new Error(String(reponse.status));
+        element('formulaire').hidden = true;
+        element('fait').hidden = false;
+        element('fait').focus();
+      } catch {
+        bouton.disabled = false;
+        bouton.textContent = 'Oui, annuler mon inscription';
+        erreur("L'annulation n'a pas pu être enregistrée. Réessayez dans quelques instants.");
+      }
+    });
+  }
+</script>
