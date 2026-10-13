@@ -1,0 +1,74 @@
+---
+import Base from '../../layouts/Base.astro';
+import EnTetePage from '../../components/EnTetePage.astro';
+import CarteEntreprise from '../../components/cartes/CarteEntreprise.astro';
+import { lireEntreprises } from '../../lib/contenus';
+
+const entreprises = await lireEntreprises();
+const secteurs = [...new Map(entreprises.filter((e) => e.secteur).map((e) => [e.secteur!.slug, e.secteur!.nom])).entries()].sort((a, b) =>
+  a[1].localeCompare(b[1], 'fr'),
+);
+const recrutent = entreprises.filter((e) => (e.offres?.length ?? 0) > 0).length;
+---
+
+<Base titre="Annuaire des entreprises" description="Les entreprises qui recrutent sur le territoire." ariane={[{ libelle: 'Entreprises' }]}>
+  <EnTetePage titre="Annuaire des entreprises" chapo={`${entreprises.length} employeurs du territoire, dont ${recrutent} recrutent en ce moment.`} />
+
+  <section class="section section--serree">
+    <div class="conteneur">
+      <form class="filtres-liste" role="search" aria-label="Filtrer l'annuaire" data-filtre-annuaire hidden>
+        <div class="recherche__champ recherche__champ--large">
+          <label for="filtre-nom">Nom de l'entreprise</label>
+          <input id="filtre-nom" name="nom" type="search" autocomplete="off" placeholder="Ex. : Numérival" />
+        </div>
+        {
+          secteurs.length > 1 && (
+            <div class="recherche__champ">
+              <label for="filtre-secteur">Secteur d'activité</label>
+              <select id="filtre-secteur" name="secteur">
+                <option value="">Tous les secteurs</option>
+                {secteurs.map(([slug, nom]) => <option value={slug}>{nom}</option>)}
+              </select>
+            </div>
+          )
+        }
+        <div class="recherche__champ">
+          <label for="filtre-offres">Offres</label>
+          <select id="filtre-offres" name="offres">
+            <option value="">Toutes les entreprises</option>
+            <option value="oui">Qui recrutent en ce moment</option>
+          </select>
+        </div>
+      </form>
+
+      <p class="resultats" aria-live="polite" data-resultats>{entreprises.length} entreprise{entreprises.length > 1 ? 's' : ''}</p>
+      <ul class="grille grille--3" data-liste-entreprises>
+        {
+          entreprises.map((e) => (
+            <li data-secteur={e.secteur?.slug ?? ''} data-nom={e.nom} data-offres={e.offres?.length ?? 0}>
+              <CarteEntreprise entreprise={e} niveauTitre={2} />
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+</Base>
+
+<script>
+  import { activerFiltreListe, contient } from '../../lib/filtre-liste';
+
+  const formulaire = document.querySelector<HTMLFormElement>('[data-filtre-annuaire]');
+  if (formulaire) {
+    activerFiltreListe({
+      formulaire,
+      elements: [...document.querySelectorAll<HTMLElement>('[data-liste-entreprises] > li')],
+      resultats: document.querySelector<HTMLElement>('[data-resultats]')!,
+      unite: ['entreprise', 'entreprises'],
+      correspond: (li, v) =>
+        contient(li.dataset.nom, v.nom ?? '') &&
+        (!v.secteur || li.dataset.secteur === v.secteur) &&
+        (!v.offres || Number(li.dataset.offres) > 0),
+    });
+  }
+</script>

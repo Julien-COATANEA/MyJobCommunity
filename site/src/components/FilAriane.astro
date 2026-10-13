@@ -1,0 +1,40 @@
+---
+export interface Miette {
+  libelle: string;
+  url?: string;
+}
+
+interface Props {
+  miettes: Miette[];
+}
+
+const { miettes } = Astro.props;
+const toutes: Miette[] = [{ libelle: 'Accueil', url: '/' }, ...miettes];
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: toutes.map((m, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: m.libelle,
+    ...(m.url ? { item: new URL(m.url, Astro.site).toString() } : {}),
+  })),
+};
+---
+
+<nav class="ariane conteneur" aria-label="Fil d'Ariane">
+  <ol>
+    {
+      toutes.map((m, i) =>
+        i === toutes.length - 1 ? (
+          <li aria-current="page">{m.libelle}</li>
+        ) : (
+          <li>
+            <a href={m.url}>{m.libelle}</a>
+          </li>
+        ),
+      )
+    }
+  </ol>
+</nav>
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />

@@ -1,0 +1,40 @@
+---
+// Iframe vers le front Gestmax. Gestmax (smartIframe) envoie sa hauteur par postMessage
+// ({ gmxHeight }) : on redimensionne l'iframe pour éviter la double barre de défilement.
+interface Props {
+  src: string;
+  /** Titre accessible obligatoire (RGAA 2.1). */
+  titre: string;
+  hauteur?: number;
+}
+
+const { src, titre, hauteur = 600 } = Astro.props;
+---
+
+<div class="iframe">
+  <iframe src={src} title={titre} height={hauteur} loading="lazy" referrerpolicy="strict-origin-when-cross-origin" data-gestmax-iframe></iframe>
+  <p class="iframe__repli">
+    <a href={src}>{titre} : ouvrir dans une page dédiée</a>
+  </p>
+</div>
+
+<script>
+  const iframes = [...document.querySelectorAll<HTMLIFrameElement>('[data-gestmax-iframe]')];
+
+  window.addEventListener('message', (evenement) => {
+    const iframe = iframes.find((f) => f.contentWindow === evenement.source);
+    if (!iframe || evenement.origin !== new URL(iframe.src).origin) return;
+    const donnees = typeof evenement.data === 'string' ? safeParse(evenement.data) : evenement.data;
+    const hauteur = Number(donnees?.gmxHeight);
+    if (hauteur > 0) iframe.style.height = `${Math.ceil(hauteur)}px`;
+    if (donnees?.gmxScroll !== undefined) iframe.scrollIntoView({ block: 'start' });
+  });
+
+  function safeParse(texte: string) {
+    try {
+      return JSON.parse(texte);
+    } catch {
+      return null;
+    }
+  }
+</script>

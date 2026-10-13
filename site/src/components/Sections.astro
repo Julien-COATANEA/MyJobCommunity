@@ -1,0 +1,48 @@
+---
+// Rendu d'une zone dynamique Strapi : un composant Astro par bloc du catalogue.
+import type { Section } from '../lib/contenus';
+import BlocTexte from './blocs/BlocTexte.astro';
+import BlocTexteImage from './blocs/BlocTexteImage.astro';
+import BlocChiffres from './blocs/BlocChiffres.astro';
+import BlocCartes from './blocs/BlocCartes.astro';
+import BlocAppelAction from './blocs/BlocAppelAction.astro';
+import BlocFaq from './blocs/BlocFaq.astro';
+import BlocLogos from './blocs/BlocLogos.astro';
+import BlocRechercheOffres from './blocs/BlocRechercheOffres.astro';
+import BlocDernieresOffres from './blocs/BlocDernieresOffres.astro';
+import BlocDernieresActualites from './blocs/BlocDernieresActualites.astro';
+import BlocProchainsEvenements from './blocs/BlocProchainsEvenements.astro';
+import BlocEntreprises from './blocs/BlocEntreprises.astro';
+import BlocIframe from './blocs/BlocIframe.astro';
+import BlocTemoignages from './blocs/BlocTemoignages.astro';
+
+interface Props {
+  sections: Section[] | null | undefined;
+}
+
+const COMPOSANTS: Record<string, any> = {
+  'blocs.texte': BlocTexte,
+  'blocs.texte-image': BlocTexteImage,
+  'blocs.chiffres-cles': BlocChiffres,
+  'blocs.cartes': BlocCartes,
+  'blocs.appel-action': BlocAppelAction,
+  'blocs.faq': BlocFaq,
+  'blocs.logos': BlocLogos,
+  'blocs.recherche-offres': BlocRechercheOffres,
+  'blocs.dernieres-offres': BlocDernieresOffres,
+  'blocs.dernieres-actualites': BlocDernieresActualites,
+  'blocs.prochains-evenements': BlocProchainsEvenements,
+  'blocs.entreprises': BlocEntreprises,
+  'blocs.temoignages': BlocTemoignages,
+  'blocs.iframe': BlocIframe,
+};
+
+const { sections = [] } = Astro.props;
+---
+
+{
+  (sections ?? []).map((section, index) => {
+    const Composant = COMPOSANTS[section.__component];
+    return Composant ? <Composant bloc={section} index={index} /> : null;
+  })
+}

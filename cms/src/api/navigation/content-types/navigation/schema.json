@@ -1,0 +1,31 @@
+{
+  "kind": "singleType",
+  "collectionName": "navigation",
+  "info": {
+    "singularName": "navigation",
+    "pluralName": "navigations",
+    "displayName": "Menus du site",
+    "description": "Menu principal et liens du pied de page. Les URL « gestmax:/chemin » pointent vers le front Gestmax."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "menuPrincipal": {
+      "type": "component",
+      "component": "navigation.entree",
+      "repeatable": true
+    },
+    "liensPiedDePage": {
+      "type": "component",
+      "component": "shared.lien",
+      "repeatable": true
+    },
+    "liensLegaux": {
+      "type": "component",
+      "component": "shared.lien",
+      "repeatable": true
+    }
+  }
+}

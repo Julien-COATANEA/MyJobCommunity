@@ -1,0 +1,38 @@
+{
+  "collectionName": "components_blocs_texte_image",
+  "info": {
+    "displayName": "Texte et image côte à côte",
+    "icon": "layout"
+  },
+  "options": {},
+  "attributes": {
+    "titre": {
+      "type": "string"
+    },
+    "contenu": {
+      "type": "blocks",
+      "required": true
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ],
+      "required": true
+    },
+    "positionImage": {
+      "type": "enumeration",
+      "enum": [
+        "droite",
+        "gauche"
+      ],
+      "default": "droite"
+    },
+    "bouton": {
+      "type": "component",
+      "component": "elements.bouton",
+      "repeatable": false
+    }
+  }
+}

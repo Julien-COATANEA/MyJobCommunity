@@ -1,0 +1,35 @@
+---
+import Icone from '../Icone.astro';
+import { lireParametres } from '../../lib/contenus';
+import { resoudreLien } from '../../lib/liens';
+
+const { bloc } = Astro.props;
+const { gestmaxUrlFront } = await lireParametres();
+const Titre = bloc.titre ? 'h3' : 'h2';
+---
+
+<section class="section">
+  <div class="conteneur">
+    {bloc.titre && <h2 class="section__titre">{bloc.titre}</h2>}
+    {bloc.introduction && <p class="section__intro">{bloc.introduction}</p>}
+    <ul class="grille grille--4">
+      {
+        bloc.cartes.map((c: any) => (
+          <li class="tuile">
+            {c.icone && <span class="tuile__icone"><Icone nom={c.icone} taille={28} /></span>}
+            <Titre class="tuile__titre">{c.titre}</Titre>
+            {c.texte && <p>{c.texte}</p>}
+            {c.lien && (
+              <p class="tuile__lien">
+                <a href={resoudreLien(c.lien, gestmaxUrlFront)}>
+                  {c.libelleLien ?? 'En savoir plus'}
+                  <span class="sr-only"> : {c.titre}</span>
+                </a>
+              </p>
+            )}
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

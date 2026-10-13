@@ -1,0 +1,23 @@
+---
+import CarteEvenement from '../cartes/CarteEvenement.astro';
+import EnteteSection from '../EnteteSection.astro';
+import { lireEvenementsAVenir } from '../../lib/contenus';
+
+const { bloc } = Astro.props;
+const evenements = (await lireEvenementsAVenir()).slice(0, bloc.nombre ?? 3);
+---
+
+{
+  evenements.length > 0 && (
+    <section class="section">
+      <div class="conteneur">
+        <EnteteSection titre={bloc.titre} lien="/evenements" libelleLien="Tous les événements" />
+        <ul class="grille grille--3">
+          {evenements.map((evenement) => (
+            <li><CarteEvenement evenement={evenement} /></li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}

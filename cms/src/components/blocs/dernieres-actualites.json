@@ -1,0 +1,20 @@
+{
+  "collectionName": "components_blocs_dernieres_actualites",
+  "info": {
+    "displayName": "Dernières actualités",
+    "icon": "feather"
+  },
+  "options": {},
+  "attributes": {
+    "titre": {
+      "type": "string",
+      "default": "Actualités"
+    },
+    "nombre": {
+      "type": "integer",
+      "default": 3,
+      "min": 1,
+      "max": 12
+    }
+  }
+}

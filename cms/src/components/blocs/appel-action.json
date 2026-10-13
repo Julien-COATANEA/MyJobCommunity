@@ -1,0 +1,23 @@
+{
+  "collectionName": "components_blocs_appel_action",
+  "info": {
+    "displayName": "Appel à l'action",
+    "icon": "cursor"
+  },
+  "options": {},
+  "attributes": {
+    "titre": {
+      "type": "string",
+      "required": true
+    },
+    "texte": {
+      "type": "text"
+    },
+    "boutons": {
+      "type": "component",
+      "component": "elements.bouton",
+      "repeatable": true,
+      "max": 2
+    }
+  }
+}

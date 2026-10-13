@@ -1,0 +1,29 @@
+---
+// Page lue par le plugin Gestmax « HeaderFooterWp » pour habiller le front Gestmax aux couleurs du site :
+//   <head> classique, puis <body> contenant l'en-tête, le marqueur <!--COUPURE--> et le pied de page.
+// Gestmax retire les scripts : le menu fonctionne alors au survol/focus (CSS seul).
+// Configuration Gestmax : headerFooterWp.url = <SITE_URL>/header-footer/  et  headerFooterWp.base_url = <SITE_URL>
+import '../styles/shell.css';
+import Entete from '../components/Entete.astro';
+import PiedDePage from '../components/PiedDePage.astro';
+import { lireNavigation, lireParametres } from '../lib/contenus';
+import { cssTheme } from '../lib/theme';
+
+const [parametres, navigation] = await Promise.all([lireParametres(), lireNavigation()]);
+const base = Astro.site?.toString().replace(/\/+$/, '');
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{parametres.nomSite}</title>
+    <style is:inline set:html={cssTheme(parametres)}></style>
+  </head>
+  <body>
+    <Entete parametres={parametres} navigation={navigation} base={base} />
+    <Fragment set:html="<!--COUPURE-->" />
+    <PiedDePage parametres={parametres} navigation={navigation} base={base} />
+  </body>
+</html>

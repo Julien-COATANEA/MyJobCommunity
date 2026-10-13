@@ -1,0 +1,29 @@
+{
+  "collectionName": "components_elements_temoignage",
+  "info": {
+    "displayName": "Témoignage",
+    "icon": "quote"
+  },
+  "options": {},
+  "attributes": {
+    "citation": {
+      "type": "text",
+      "required": true,
+      "maxLength": 400
+    },
+    "nom": {
+      "type": "string",
+      "required": true
+    },
+    "role": {
+      "type": "string"
+    },
+    "photo": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    }
+  }
+}

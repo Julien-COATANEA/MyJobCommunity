@@ -1,0 +1,23 @@
+{
+  "collectionName": "components_blocs_cartes",
+  "info": {
+    "displayName": "Cartes avec icônes",
+    "icon": "apps"
+  },
+  "options": {},
+  "attributes": {
+    "titre": {
+      "type": "string"
+    },
+    "introduction": {
+      "type": "text"
+    },
+    "cartes": {
+      "type": "component",
+      "component": "elements.carte",
+      "repeatable": true,
+      "min": 1,
+      "max": 12
+    }
+  }
+}

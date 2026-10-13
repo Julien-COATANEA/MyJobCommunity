@@ -1,0 +1,25 @@
+{
+  "collectionName": "components_navigation_sous_lien",
+  "info": {
+    "displayName": "Lien de sous-menu",
+    "icon": "link"
+  },
+  "options": {},
+  "attributes": {
+    "libelle": {
+      "type": "string",
+      "required": true
+    },
+    "url": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "string"
+    },
+    "nouvelOnglet": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

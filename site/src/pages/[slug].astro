@@ -1,0 +1,18 @@
+---
+// Pages libres créées dans le BO (collection « Page ») : /mon-slug
+import Base from '../layouts/Base.astro';
+import VuePage from '../components/vues/VuePage.astro';
+import { lirePages, type Page } from '../lib/contenus';
+import { urlMedia } from '../lib/strapi';
+
+export async function getStaticPaths() {
+  const pages = await lirePages();
+  return pages.map((page) => ({ params: { slug: page.slug }, props: { page } }));
+}
+
+const { page } = Astro.props as { page: Page };
+---
+
+<Base titre={page.titre} description={page.chapo ?? undefined} seo={page.seo} image={urlMedia(page.imageBandeau, true)} ariane={[{ libelle: page.titre }]}>
+  <VuePage page={page} />
+</Base>

@@ -1,0 +1,23 @@
+---
+// {offres}, {entreprises} et {evenements} sont remplacés par les chiffres réels à chaque mise à jour du site.
+import { lireCompteurs, remplacerCompteurs } from '../../lib/contenus';
+
+const { bloc } = Astro.props;
+const compteurs = await lireCompteurs();
+---
+
+<section class="section section--teinte">
+  <div class="conteneur">
+    {bloc.titre && <h2 class="section__titre">{bloc.titre}</h2>}
+    <ul class="chiffres">
+      {
+        bloc.chiffres.map((c: { valeur: string; libelle: string }) => (
+          <li class="chiffre">
+            <span class="chiffre__valeur">{remplacerCompteurs(c.valeur, compteurs)}</span>
+            <span class="chiffre__libelle">{c.libelle}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

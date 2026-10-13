@@ -1,0 +1,15 @@
+---
+// Contenu d'une page libre (page publique et aperçu des brouillons).
+import EnTetePage from '../EnTetePage.astro';
+import Sections from '../Sections.astro';
+import type { Page } from '../../lib/contenus';
+
+interface Props {
+  page: Page;
+}
+
+const { page } = Astro.props;
+---
+
+<EnTetePage titre={page.titre} chapo={page.chapo} image={page.imageBandeau} />
+<Sections sections={page.sections} />

@@ -1,0 +1,28 @@
+---
+import Base from '../layouts/Base.astro';
+import VueAccueil from '../components/vues/VueAccueil.astro';
+import { lireAccueil, lireParametres } from '../lib/contenus';
+
+const [accueil, parametres] = await Promise.all([lireAccueil(), lireParametres()]);
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: parametres.nomSite,
+    url: Astro.site?.toString(),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: parametres.nomSite,
+    url: Astro.site?.toString(),
+    ...(parametres.email ? { email: parametres.email } : {}),
+    ...(parametres.telephone ? { telephone: parametres.telephone } : {}),
+    sameAs: parametres.reseauxSociaux.map((r) => r.url),
+  },
+];
+---
+
+<Base seo={accueil?.seo} description={accueil?.heroTexte ?? undefined} jsonLd={jsonLd}>
+  <VueAccueil accueil={accueil} />
+</Base>

@@ -1,0 +1,12 @@
+---
+import GestmaxIframe from '../GestmaxIframe.astro';
+
+const { bloc } = Astro.props;
+---
+
+<section class="section">
+  <div class="conteneur">
+    {bloc.titre && <h2 class="section__titre">{bloc.titre}</h2>}
+    <GestmaxIframe src={bloc.url} titre={bloc.titreAccessible} hauteur={bloc.hauteur} />
+  </div>
+</section>

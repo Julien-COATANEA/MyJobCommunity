@@ -1,0 +1,23 @@
+{
+  "collectionName": "components_shared_lien",
+  "info": {
+    "displayName": "Lien",
+    "icon": "link",
+    "description": "URL interne (/page), externe (https://…) ou Gestmax (gestmax:/chemin)"
+  },
+  "options": {},
+  "attributes": {
+    "libelle": {
+      "type": "string",
+      "required": true
+    },
+    "url": {
+      "type": "string",
+      "required": true
+    },
+    "nouvelOnglet": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

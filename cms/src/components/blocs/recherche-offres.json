@@ -1,0 +1,17 @@
+{
+  "collectionName": "components_blocs_recherche_offres",
+  "info": {
+    "displayName": "Recherche d'offres",
+    "icon": "search",
+    "description": "Formulaire de recherche qui mène à la liste des offres"
+  },
+  "options": {},
+  "attributes": {
+    "titre": {
+      "type": "string"
+    },
+    "texte": {
+      "type": "text"
+    }
+  }
+}

@@ -1,0 +1,63 @@
+---
+// Contenu d'une fiche entreprise (page publique et aperçu des brouillons).
+import EnTetePage from '../EnTetePage.astro';
+import CarteOffre from '../cartes/CarteOffre.astro';
+import Icone from '../Icone.astro';
+import ImageStrapi from '../ImageStrapi.astro';
+import type { Entreprise, Offre } from '../../lib/contenus';
+import { rendreBlocks } from '../../lib/blocks';
+import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
+
+interface Props {
+  entreprise: Entreprise;
+  offres: Offre[];
+}
+
+const { entreprise: e, offres } = Astro.props;
+const AFFICHEES = 6;
+const lienOffres = e.nomEntiteGestmax ? `/offres?entreprise=${encodeURIComponent(e.nomEntiteGestmax)}` : null;
+---
+
+<EnTetePage titre={e.nom} chapo={e.extrait} surtitre={e.secteur?.nom} />
+
+<div class="conteneur evenement">
+  <div class="evenement__contenu">
+    {e.image && <ImageStrapi media={e.image} class="evenement__image" largeurs={[640, 1000]} sizes="(min-width: 960px) 720px, 100vw" />}
+    {e.description && <div class="prose" set:html={rendreBlocks(e.description, { baseMedias: PUBLIC_STRAPI_URL })} />}
+  </div>
+  <aside class="evenement__infos" aria-labelledby="fiche">
+    {e.logo && <ImageStrapi media={{ ...e.logo, alternativeText: `Logo ${e.nom}` }} class="entreprise__logo" largeurs={[240]} sizes="200px" />}
+    <h2 id="fiche">En bref</h2>
+    <dl class="infos">
+      <div><dt><Icone nom="lieu" taille={20} />Localisation</dt><dd>{[e.adresse, e.ville].filter(Boolean).join(', ')}</dd></div>
+      {e.effectif && <div><dt><Icone nom="famille" taille={20} />Effectif</dt><dd>{e.effectif}</dd></div>}
+      {e.secteur && <div><dt><Icone nom="entreprise" taille={20} />Secteur</dt><dd>{e.secteur.nom}</dd></div>}
+      <div><dt><Icone nom="emploi" taille={20} />Offres en ligne</dt><dd>{offres.length || 'Aucune pour le moment'}</dd></div>
+    </dl>
+    {e.siteWeb && <p><a href={e.siteWeb} class="bouton bouton--contour bouton--large">Site de l'entreprise <Icone nom="externe" taille={18} /></a></p>}
+  </aside>
+</div>
+
+<section class="section section--teinte" aria-labelledby="offres-entreprise">
+  <div class="conteneur">
+    <div class="section__entete">
+      <h2 id="offres-entreprise" class="section__titre section__titre--gauche">Les offres de {e.nom}</h2>
+      {
+        lienOffres && offres.length > AFFICHEES && (
+          <a href={lienOffres} class="section__tout-voir">Voir ses {offres.length} offres <Icone nom="fleche" taille={18} /></a>
+        )
+      }
+    </div>
+    {
+      offres.length ? (
+        <ul class="grille grille--3">
+          {offres.slice(0, AFFICHEES).map((o) => (
+            <li><CarteOffre offre={o} /></li>
+          ))}
+        </ul>
+      ) : (
+        <p>Aucune offre en ligne pour le moment.</p>
+      )
+    }
+  </div>
+</section>

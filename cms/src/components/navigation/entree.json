@@ -1,0 +1,23 @@
+{
+  "collectionName": "components_navigation_entree",
+  "info": {
+    "displayName": "Entrée de menu",
+    "icon": "bulletList",
+    "description": "Lien de premier niveau, avec sous-menu facultatif"
+  },
+  "options": {},
+  "attributes": {
+    "libelle": {
+      "type": "string",
+      "required": true
+    },
+    "url": {
+      "type": "string"
+    },
+    "sousLiens": {
+      "type": "component",
+      "component": "navigation.sous-lien",
+      "repeatable": true
+    }
+  }
+}

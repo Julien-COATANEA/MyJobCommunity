@@ -1,0 +1,13 @@
+---
+import { rendreBlocks } from '../../lib/blocks';
+import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
+
+const { bloc } = Astro.props;
+---
+
+<section class="section">
+  <div class="conteneur conteneur--etroit">
+    {bloc.titre && <h2 class="section__titre section__titre--gauche">{bloc.titre}</h2>}
+    <div class="prose" set:html={rendreBlocks(bloc.contenu, { baseMedias: PUBLIC_STRAPI_URL })} />
+  </div>
+</section>

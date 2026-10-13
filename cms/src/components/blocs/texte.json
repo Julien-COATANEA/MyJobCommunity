@@ -1,0 +1,17 @@
+{
+  "collectionName": "components_blocs_texte",
+  "info": {
+    "displayName": "Texte",
+    "icon": "paragraph"
+  },
+  "options": {},
+  "attributes": {
+    "titre": {
+      "type": "string"
+    },
+    "contenu": {
+      "type": "blocks",
+      "required": true
+    }
+  }
+}

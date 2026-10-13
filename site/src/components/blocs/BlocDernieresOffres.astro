@@ -1,0 +1,39 @@
+---
+// Deux modes, pour comparer :
+//  - « liste » : offres synchronisées dans Strapi, rendues en HTML statique (indexable) ;
+//  - « iframe-gestmax » : page /search/last du front Gestmax intégrée en iframe.
+import CarteOffre from '../cartes/CarteOffre.astro';
+import GestmaxIframe from '../GestmaxIframe.astro';
+import EnteteSection from '../EnteteSection.astro';
+import { lireOffres, lireParametres } from '../../lib/contenus';
+
+const { bloc } = Astro.props;
+const parametres = await lireParametres();
+const iframe = bloc.mode === 'iframe-gestmax' && parametres.gestmaxUrlFront;
+
+let offres = iframe ? [] : await lireOffres();
+if (bloc.typeContrat) offres = offres.filter((o) => o.typeContrat === bloc.typeContrat);
+offres = offres.slice(0, bloc.nombre ?? 6);
+
+const urlIframe = iframe ? `${parametres.gestmaxUrlFront!.replace(/\/+$/, '')}${bloc.cheminIframe ?? '/search/last'}` : '';
+const voirTout = bloc.typeContrat ? `/offres?contrat=${encodeURIComponent(bloc.typeContrat)}` : '/offres';
+---
+
+<section class="section">
+  <div class="conteneur">
+    <EnteteSection titre={bloc.titre} lien={voirTout} libelleLien="Toutes les offres" />
+    {
+      iframe ? (
+        <GestmaxIframe src={urlIframe} titre={`${bloc.titre ?? 'Dernières offres'} (front Gestmax)`} />
+      ) : offres.length ? (
+        <ul class="grille grille--3">
+          {offres.map((offre) => (
+            <li><CarteOffre offre={offre} /></li>
+          ))}
+        </ul>
+      ) : (
+        <p class="section__intro">Aucune offre en ligne pour le moment.</p>
+      )
+    }
+  </div>
+</section>

@@ -1,0 +1,35 @@
+---
+import type { Page } from 'astro';
+
+interface Props {
+  page: Page<unknown>;
+}
+
+const { page } = Astro.props;
+const pages = Array.from({ length: page.lastPage }, (_, i) => i + 1);
+const urlPage = (n: number) => (n === 1 ? page.url.first : `${page.url.first}/${n}`);
+---
+
+{
+  page.lastPage > 1 && (
+    <nav class="pagination" aria-label="Pagination">
+      <ul>
+        {page.url.prev && (
+          <li><a href={page.url.prev} rel="prev">Page précédente</a></li>
+        )}
+        {pages.map((n) => (
+          <li>
+            {n === page.currentPage ? (
+              <span aria-current="page"><span class="sr-only">Page </span>{n}</span>
+            ) : (
+              <a href={urlPage(n)}><span class="sr-only">Page </span>{n}</a>
+            )}
+          </li>
+        ))}
+        {page.url.next && (
+          <li><a href={page.url.next} rel="next">Page suivante</a></li>
+        )}
+      </ul>
+    </nav>
+  )
+}

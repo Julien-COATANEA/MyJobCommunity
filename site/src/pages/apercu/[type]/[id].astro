@@ -1,0 +1,50 @@
+---
+// Aperçu d'un brouillon depuis le BO (bouton « Aperçu » de Strapi) : seule page rendue à la demande.
+// Protégée par le secret partagé APERCU_SECRET, jamais indexée, exclue du plan de site.
+export const prerender = false;
+
+import Base from '../../../layouts/Base.astro';
+import VueAccueil from '../../../components/vues/VueAccueil.astro';
+import VuePage from '../../../components/vues/VuePage.astro';
+import VueArticle from '../../../components/vues/VueArticle.astro';
+import VueEvenement from '../../../components/vues/VueEvenement.astro';
+import VueEntreprise from '../../../components/vues/VueEntreprise.astro';
+import { lireOffres } from '../../../lib/contenus';
+import { lireBrouillon } from '../../../lib/strapi';
+
+const TYPES: Record<string, { api: string; unique: boolean }> = {
+  accueil: { api: 'accueil', unique: true },
+  page: { api: 'pages', unique: false },
+  article: { api: 'articles', unique: false },
+  evenement: { api: 'evenements', unique: false },
+  entreprise: { api: 'entreprises', unique: false },
+};
+
+const { type = '', id = '' } = Astro.params;
+const secret = process.env.APERCU_SECRET;
+if (!secret || Astro.url.searchParams.get('secret') !== secret) {
+  return new Response('Aperçu non autorisé.', { status: 403 });
+}
+const definition = TYPES[type];
+if (!definition) return new Response('Type de contenu inconnu.', { status: 404 });
+
+const statut = Astro.url.searchParams.get('statut') === 'published' ? 'published' : 'draft';
+const doc: any = await lireBrouillon(definition.api, id, statut, definition.unique);
+if (!doc) return new Response('Contenu introuvable.', { status: 404 });
+
+const offresEntreprise = type === 'entreprise' ? (await lireOffres()).filter((o) => o.entreprise?.slug === doc.slug) : [];
+const titre = doc.titre ?? doc.nom ?? doc.heroTitre ?? 'Aperçu';
+Astro.response.headers.set('Cache-Control', 'no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+---
+
+<Base titre={`Aperçu : ${titre}`} noIndex>
+  <div class="bandeau-apercu" role="status">
+    {statut === 'draft' ? 'Aperçu du brouillon : cette version n’est pas encore publiée.' : 'Aperçu de la version publiée.'}
+  </div>
+  {type === 'accueil' && <VueAccueil accueil={doc} />}
+  {type === 'page' && <VuePage page={doc} />}
+  {type === 'article' && <VueArticle article={doc} />}
+  {type === 'evenement' && <VueEvenement evenement={doc} apercu />}
+  {type === 'entreprise' && <VueEntreprise entreprise={doc} offres={offresEntreprise} />}
+</Base>

@@ -1,0 +1,45 @@
+---
+import { urlMedia, type Seo } from '../lib/strapi';
+import type { Parametres } from '../lib/contenus';
+
+interface Props {
+  parametres: Parametres;
+  /** Titre de la page (sans le nom du site). Absent sur l'accueil. */
+  titre?: string;
+  description?: string;
+  seo?: Seo | null;
+  image?: string | null;
+  type?: 'website' | 'article';
+  noIndex?: boolean;
+  jsonLd?: Record<string, unknown>[];
+}
+
+const { parametres, titre, description, seo, image, type = 'website', noIndex = false, jsonLd = [] } = Astro.props;
+
+// RGAA 8.6 : titre pertinent, de la forme « Page | Site ».
+// L'accueil (sans titre de page) utilise son titre SEO tel quel, sans suffixe.
+const titrePage = seo?.metaTitle ?? titre;
+const titreComplet = titre
+  ? `${titrePage} | ${parametres.nomSite}`
+  : (seo?.metaTitle ?? parametres.seoParDefaut?.metaTitle ?? parametres.nomSite);
+const desc = seo?.metaDescription ?? description ?? parametres.seoParDefaut?.metaDescription ?? parametres.baseline ?? '';
+const imageOg = urlMedia(seo?.metaImage, true) ?? image ?? urlMedia(parametres.seoParDefaut?.metaImage, true);
+const canonique = new URL(Astro.url.pathname, Astro.site).toString();
+const indexable = process.env.SITE_ENV === 'production' && !noIndex && !seo?.noIndex;
+---
+
+<title>{titreComplet}</title>
+{desc && <meta name="description" content={desc} />}
+<link rel="canonical" href={canonique} />
+{!indexable && <meta name="robots" content="noindex, nofollow" />}
+
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content={parametres.nomSite} />
+<meta property="og:locale" content="fr_FR" />
+<meta property="og:title" content={titrePage ?? titreComplet} />
+{desc && <meta property="og:description" content={desc} />}
+<meta property="og:url" content={canonique} />
+{imageOg && <meta property="og:image" content={imageOg} />}
+<meta name="twitter:card" content={imageOg ? 'summary_large_image' : 'summary'} />
+
+{jsonLd.map((donnees) => <script type="application/ld+json" set:html={JSON.stringify(donnees)} />)}

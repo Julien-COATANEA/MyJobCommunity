@@ -1,0 +1,23 @@
+---
+import CarteArticle from '../cartes/CarteArticle.astro';
+import EnteteSection from '../EnteteSection.astro';
+import { lireArticles } from '../../lib/contenus';
+
+const { bloc } = Astro.props;
+const articles = (await lireArticles()).slice(0, bloc.nombre ?? 3);
+---
+
+{
+  articles.length > 0 && (
+    <section class="section section--teinte">
+      <div class="conteneur">
+        <EnteteSection titre={bloc.titre} lien="/actualites" libelleLien="Toutes les actualités" />
+        <ul class="grille grille--3">
+          {articles.map((article) => (
+            <li><CarteArticle article={article} /></li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}

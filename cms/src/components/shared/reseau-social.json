@@ -1,0 +1,26 @@
+{
+  "collectionName": "components_shared_reseau_social",
+  "info": {
+    "displayName": "Réseau social",
+    "icon": "earth"
+  },
+  "options": {},
+  "attributes": {
+    "reseau": {
+      "type": "enumeration",
+      "enum": [
+        "facebook",
+        "linkedin",
+        "instagram",
+        "youtube",
+        "x",
+        "tiktok"
+      ],
+      "required": true
+    },
+    "url": {
+      "type": "string",
+      "required": true
+    }
+  }
+}

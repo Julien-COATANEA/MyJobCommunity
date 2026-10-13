@@ -1,0 +1,21 @@
+{
+  "collectionName": "components_blocs_chiffres_cles",
+  "info": {
+    "displayName": "Chiffres clés",
+    "icon": "chartBubble",
+    "description": "Dans une valeur, {offres}, {entreprises} et {evenements} sont remplacés par les chiffres réels"
+  },
+  "options": {},
+  "attributes": {
+    "titre": {
+      "type": "string"
+    },
+    "chiffres": {
+      "type": "component",
+      "component": "elements.chiffre",
+      "repeatable": true,
+      "min": 1,
+      "max": 6
+    }
+  }
+}

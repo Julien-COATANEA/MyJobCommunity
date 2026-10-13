@@ -1,0 +1,21 @@
+---
+import Bouton from '../Bouton.astro';
+
+const { bloc } = Astro.props;
+---
+
+<section class="section">
+  <div class="conteneur">
+    <div class="appel-action">
+      <h2 class="appel-action__titre">{bloc.titre}</h2>
+      {bloc.texte && <p>{bloc.texte}</p>}
+      {
+        bloc.boutons?.length > 0 && (
+          <p class="appel-action__boutons">
+            {bloc.boutons.map((b: any) => <Bouton bouton={b} surFond />)}
+          </p>
+        )
+      }
+    </div>
+  </div>
+</section>

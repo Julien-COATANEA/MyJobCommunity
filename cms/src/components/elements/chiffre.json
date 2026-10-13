@@ -1,0 +1,18 @@
+{
+  "collectionName": "components_elements_chiffre",
+  "info": {
+    "displayName": "Chiffre clé",
+    "icon": "chartCircle"
+  },
+  "options": {},
+  "attributes": {
+    "valeur": {
+      "type": "string",
+      "required": true
+    },
+    "libelle": {
+      "type": "string",
+      "required": true
+    }
+  }
+}

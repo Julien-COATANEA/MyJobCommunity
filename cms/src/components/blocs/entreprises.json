@@ -1,0 +1,20 @@
+{
+  "collectionName": "components_blocs_entreprises",
+  "info": {
+    "displayName": "Entreprises à la une",
+    "icon": "store"
+  },
+  "options": {},
+  "attributes": {
+    "titre": {
+      "type": "string",
+      "default": "Ils recrutent sur le territoire"
+    },
+    "nombre": {
+      "type": "integer",
+      "default": 6,
+      "min": 1,
+      "max": 24
+    }
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "kind": "collectionType",
+  "collectionName": "evenement",
+  "info": {
+    "singularName": "evenement",
+    "pluralName": "evenements",
+    "displayName": "Événements"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "titre": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "titre",
+      "required": true
+    },
+    "typeEvenement": {
+      "type": "enumeration",
+      "enum": [
+        "Forum emploi",
+        "Job dating",
+        "Atelier",
+        "Webinaire",
+        "Visite entreprise",
+        "Réunion d'information",
+        "Autre"
+      ],
+      "required": true
+    },
+    "dateDebut": {
+      "type": "datetime",
+      "required": true
+    },
+    "dateFin": {
+      "type": "datetime"
+    },
+    "enLigne": {
+      "type": "boolean",
+      "default": false
+    },
+    "lieu": {
+      "type": "string",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "enLigne"
+            },
+            false
+          ]
+        }
+      }
+    },
+    "adresse": {
+      "type": "string",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "enLigne"
+            },
+            false
+          ]
+        }
+      }
+    },
+    "extrait": {
+      "type": "text",
+      "required": true,
+      "maxLength": 300
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "contenu": {
+      "type": "blocks"
+    },
+    "inscriptionActive": {
+      "type": "boolean",
+      "default": false
+    },
+    "placesMax": {
+      "type": "integer",
+      "min": 1,
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "inscriptionActive"
+            },
+            true
+          ]
+        }
+      }
+    },
+    "dateLimiteInscription": {
+      "type": "datetime",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "inscriptionActive"
+            },
+            true
+          ]
+        }
+      }
+    },
+    "inscriptionExterneUrl": {
+      "type": "string"
+    },
+    "inscriptions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::inscription.inscription",
+      "mappedBy": "evenement"
+    },
+    "seo": {
+      "type": "component",
+      "component": "shared.seo",
+      "repeatable": false
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "collectionName": "components_blocs_dernieres_offres",
+  "info": {
+    "displayName": "Dernières offres",
+    "icon": "briefcase",
+    "description": "Offres synchronisées depuis Gestmax, ou iframe Gestmax"
+  },
+  "options": {},
+  "attributes": {
+    "titre": {
+      "type": "string",
+      "default": "Les dernières offres"
+    },
+    "mode": {
+      "type": "enumeration",
+      "enum": [
+        "liste",
+        "iframe-gestmax"
+      ],
+      "default": "liste"
+    },
+    "nombre": {
+      "type": "integer",
+      "default": 6,
+      "min": 1,
+      "max": 24
+    },
+    "typeContrat": {
+      "type": "string"
+    },
+    "cheminIframe": {
+      "type": "string",
+      "default": "/search/last"
+    }
+  }
+}

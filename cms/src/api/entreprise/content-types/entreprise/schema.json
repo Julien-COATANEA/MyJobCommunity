@@ -1,0 +1,91 @@
+{
+  "kind": "collectionType",
+  "collectionName": "entreprise",
+  "info": {
+    "singularName": "entreprise",
+    "pluralName": "entreprises",
+    "displayName": "Entreprises",
+    "description": "Fiche de l'annuaire des entreprises"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "nom": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "nom",
+      "required": true
+    },
+    "secteur": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::secteur.secteur",
+      "inversedBy": "entreprises"
+    },
+    "ville": {
+      "type": "string",
+      "required": true
+    },
+    "adresse": {
+      "type": "string"
+    },
+    "effectif": {
+      "type": "enumeration",
+      "enum": [
+        "moins de 10 salariés",
+        "de 10 à 49 salariés",
+        "de 50 à 249 salariés",
+        "de 250 à 999 salariés",
+        "plus de 1000 salariés"
+      ]
+    },
+    "extrait": {
+      "type": "text",
+      "required": true,
+      "maxLength": 300
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "logo": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "siteWeb": {
+      "type": "string"
+    },
+    "miseEnAvant": {
+      "type": "boolean",
+      "default": false
+    },
+    "nomEntiteGestmax": {
+      "type": "string"
+    },
+    "offres": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::offre.offre",
+      "mappedBy": "entreprise"
+    },
+    "seo": {
+      "type": "component",
+      "component": "shared.seo",
+      "repeatable": false
+    }
+  }
+}

@@ -1,0 +1,134 @@
+/* ============================================================
+   Menu latéral « à la WordPress » : libellés visibles et rubriques.
+   Strapi n'affiche que des icônes ; les libellés existent déjà dans le DOM (masqués) : on les révèle.
+   Ciblage par la structure et les libellés (les classes Strapi sont générées et instables).
+   En dessous de 1100 px, le menu compact d'origine est conservé.
+   ============================================================ */
+
+@media (min-width: 1100px) {
+  nav:has(a[href*='/admin/content-manager']) {
+    width: 248px !important;
+    min-width: 248px !important;
+    align-items: stretch !important;
+  }
+
+  /* Logo + nom de l'espace */
+  nav:has(a[href*='/admin/content-manager']) > div:first-child div:has(> img) {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    width: auto !important;
+    height: auto !important;
+  }
+  nav:has(a[href*='/admin/content-manager']) > div:first-child img {
+    width: 36px !important;
+    height: 36px !important;
+    flex: none;
+  }
+  nav:has(a[href*='/admin/content-manager']) > div:first-child img + span {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    clip: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+  }
+  nav:has(a[href*='/admin/content-manager']) > div:first-child img + span > span:first-child {
+    font-weight: 700;
+    font-size: 1.4rem;
+  }
+  nav:has(a[href*='/admin/content-manager']) > div:first-child img + span > span:last-child {
+    font-size: 1.1rem;
+    opacity: 0.7;
+  }
+
+  /* Entrées du menu : icône + libellé */
+  nav:has(a[href*='/admin/content-manager']) ul,
+  nav:has(a[href*='/admin/content-manager']) li > span {
+    width: 100%;
+    align-items: stretch !important;
+  }
+  /* La rubrique (::before) passe au-dessus de l'entrée, pas à côté. */
+  nav:has(a[href*='/admin/content-manager']) li {
+    display: block !important;
+    width: 100%;
+  }
+  nav:has(a[href*='/admin/content-manager']) li > span {
+    display: block;
+  }
+  nav:has(a[href*='/admin/content-manager']) li a[aria-label] {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    gap: 12px;
+    padding-inline: 12px !important;
+    box-sizing: border-box;
+  }
+  nav:has(a[href*='/admin/content-manager']) li a[aria-label] > span {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    clip: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    white-space: nowrap;
+    font-size: 1.4rem;
+    font-weight: 500;
+  }
+
+  /* Rubriques */
+  nav li:has(> span > a[aria-label='Mes pages'])::before,
+  nav li:has(> span > a[aria-label="Mes offres d'emploi"])::before,
+  nav li:has(> span > a[aria-label='Apparence'])::before,
+  nav li:has(> span > a[aria-label='Tous les contenus'])::before {
+    display: block;
+    padding: 14px 12px 4px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+  nav li:has(> span > a[aria-label='Mes pages'])::before { content: 'Contenus'; }
+  nav li:has(> span > a[aria-label="Mes offres d'emploi"])::before { content: 'Emploi'; }
+  nav li:has(> span > a[aria-label='Apparence'])::before { content: 'Mon site'; }
+  nav li:has(> span > a[aria-label='Tous les contenus'])::before { content: 'Avancé'; }
+}
+
+/* Marketplace de plugins : outil de développeur, inutile pour les collectivités. */
+nav li:has(a[href*='market.strapi.io']),
+nav li:has(a[aria-label='Marketplace']) {
+  display: none !important;
+}
+
+/* ============================================================
+   Indicateur « Site à jour » (espace/IndicateurSite.tsx)
+   Grand écran : en bas du menu latéral. Petit écran : pastille compacte dans la barre du haut.
+   ============================================================ */
+.mjc-indicateur { position: fixed; z-index: 50; }
+.mjc-indicateur__panneau { left: 0; bottom: calc(100% + 10px); }
+@media (min-width: 1100px) {
+  .mjc-indicateur { left: 12px; bottom: 76px; width: 224px; }
+  .mjc-indicateur__bouton { width: 100%; border-radius: 12px !important; text-align: left; }
+}
+@media (max-width: 1099px) {
+  .mjc-indicateur { top: 12px; right: 64px; }
+  .mjc-indicateur__panneau { left: auto; right: 0; bottom: auto; top: calc(100% + 10px); }
+  .mjc-indicateur__texte, .mjc-indicateur__brouillons { display: none; }
+  .mjc-indicateur__bouton { padding: 10px !important; }
+}
+/* Le menu latéral réserve la place de l'indicateur au-dessus du profil. */
+@media (min-width: 1100px) {
+  nav:has(a[href*='/admin/content-manager']) > div > ul { padding-bottom: 64px; }
+}
+
+/* ============================================================
+   Interface simplifiée pour les rôles Éditeur et Auteur (classe posée par IndicateurSite.tsx)
+   ============================================================ */
+body.mjc-editeur nav li:has(a[aria-label='Tous les contenus']),
+body.mjc-editeur nav li:has(a[href$='/admin/settings']),
+body.mjc-editeur nav li:has(a[href*='content-type-builder']) {
+  display: none !important;
+}

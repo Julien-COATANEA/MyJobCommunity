@@ -1,0 +1,85 @@
+{
+  "kind": "collectionType",
+  "collectionName": "offre",
+  "info": {
+    "singularName": "offre",
+    "pluralName": "offres",
+    "displayName": "Offres d'emploi",
+    "description": "Synchronisée automatiquement depuis Gestmax : ne pas modifier à la main"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "sourceId": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "titre": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "typeContrat": {
+      "type": "string"
+    },
+    "lieu": {
+      "type": "string"
+    },
+    "departement": {
+      "type": "string"
+    },
+    "secteur": {
+      "type": "string"
+    },
+    "nomEntreprise": {
+      "type": "string"
+    },
+    "entreprise": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::entreprise.entreprise",
+      "inversedBy": "offres"
+    },
+    "salaire": {
+      "type": "string"
+    },
+    "descriptionHtml": {
+      "type": "text"
+    },
+    "profilHtml": {
+      "type": "text"
+    },
+    "dateActivation": {
+      "type": "datetime"
+    },
+    "dateFinPublication": {
+      "type": "datetime"
+    },
+    "urlDetailGestmax": {
+      "type": "string"
+    },
+    "urlCandidature": {
+      "type": "string"
+    },
+    "logoUrl": {
+      "type": "string"
+    },
+    "latitude": {
+      "type": "decimal"
+    },
+    "longitude": {
+      "type": "decimal"
+    },
+    "empreinte": {
+      "type": "string",
+      "private": true
+    }
+  }
+}

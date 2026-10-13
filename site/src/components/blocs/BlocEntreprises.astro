@@ -1,0 +1,25 @@
+---
+import CarteEntreprise from '../cartes/CarteEntreprise.astro';
+import EnteteSection from '../EnteteSection.astro';
+import { lireEntreprises } from '../../lib/contenus';
+
+const { bloc } = Astro.props;
+const toutes = await lireEntreprises();
+// Les entreprises mises en avant d'abord.
+const entreprises = [...toutes.filter((e) => e.miseEnAvant), ...toutes.filter((e) => !e.miseEnAvant)].slice(0, bloc.nombre ?? 6);
+---
+
+{
+  entreprises.length > 0 && (
+    <section class="section">
+      <div class="conteneur">
+        <EnteteSection titre={bloc.titre} lien="/entreprises" libelleLien="Tout l'annuaire" />
+        <ul class="grille grille--3">
+          {entreprises.map((entreprise) => (
+            <li><CarteEntreprise entreprise={entreprise} /></li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}

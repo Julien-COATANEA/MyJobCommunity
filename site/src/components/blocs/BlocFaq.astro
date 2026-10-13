@@ -1,0 +1,23 @@
+---
+// <details>/<summary> : accordéon natif, accessible au clavier et sans JavaScript.
+import { rendreBlocks } from '../../lib/blocks';
+import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
+
+const { bloc } = Astro.props;
+---
+
+<section class="section">
+  <div class="conteneur conteneur--etroit">
+    {bloc.titre && <h2 class="section__titre section__titre--gauche">{bloc.titre}</h2>}
+    <div class="faq">
+      {
+        bloc.questions.map((q: any) => (
+          <details class="faq__item">
+            <summary class="faq__question">{q.question}</summary>
+            <div class="prose faq__reponse" set:html={rendreBlocks(q.reponse, { niveauMin: 3, baseMedias: PUBLIC_STRAPI_URL })} />
+          </details>
+        ))
+      }
+    </div>
+  </div>
+</section>

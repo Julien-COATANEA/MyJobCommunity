@@ -1,0 +1,315 @@
+---
+// Liste des offres. Le HTML statique contient les offres les plus récentes (indexables, lisibles sans JS).
+// Le script prend ensuite le relais : filtres appliqués en direct via l'API Strapi, pastilles des filtres actifs,
+// nombre d'offres par contrat, tri et recherche autour d'une ville (géocodage IGN + distance).
+import Base from '../../layouts/Base.astro';
+import EnTetePage from '../../components/EnTetePage.astro';
+import CarteOffre from '../../components/cartes/CarteOffre.astro';
+import Icone from '../../components/Icone.astro';
+import { lireOffres, lireParametres } from '../../lib/contenus';
+import { resoudreLien } from '../../lib/liens';
+import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
+
+const PAR_PAGE = 24;
+const [offres, parametres] = await Promise.all([lireOffres(), lireParametres()]);
+const distincts = (cle: 'typeContrat' | 'secteur') =>
+  [...new Set(offres.map((o) => o[cle]).filter(Boolean))].sort((a, b) => a!.localeCompare(b!, 'fr')) as string[];
+const contrats = distincts('typeContrat');
+const secteurs = distincts('secteur');
+const compterContrat = (c: string) => offres.filter((o) => o.typeContrat === c).length;
+const premieres = offres.slice(0, PAR_PAGE);
+const lienAlerte = parametres.gestmaxUrlFront ? resoudreLien('gestmax:/alert', parametres.gestmaxUrlFront) : null;
+const lienSpontanee = parametres.lienCandidatureSpontanee ? resoudreLien(parametres.lienCandidatureSpontanee, parametres.gestmaxUrlFront) : null;
+---
+
+<Base titre="Offres d'emploi" description={`${offres.length} offres d'emploi sur le territoire.`} ariane={[{ libelle: "Offres d'emploi" }]}>
+  <EnTetePage titre="Offres d'emploi" chapo={`${offres.length} offres à pourvoir chez les employeurs du territoire.`} />
+
+  <section class="section section--serree">
+    <div class="conteneur">
+      <form action="/offres" method="get" role="search" aria-label="Filtrer les offres" class="filtres-offres" data-filtres>
+        <div class="filtres-offres__principal">
+          <div class="recherche__champ recherche__champ--large">
+            <label for="filtre-q">Métier, mot-clé, entreprise</label>
+            <input id="filtre-q" name="q" type="search" autocomplete="off" placeholder="Ex. : comptable, Numérival…" />
+          </div>
+          <div class="recherche__champ">
+            <label for="filtre-lieu">Ville</label>
+            <input id="filtre-lieu" name="lieu" type="text" autocomplete="address-level2" placeholder="Ex. : Lyon" />
+          </div>
+          <div class="recherche__champ recherche__champ--etroit">
+            <label for="filtre-rayon">Autour</label>
+            <select id="filtre-rayon" name="rayon">
+              <option value="">Cette ville</option>
+              <option value="10">10 km</option>
+              <option value="20">20 km</option>
+              <option value="30">30 km</option>
+              <option value="50">50 km</option>
+            </select>
+          </div>
+        </div>
+        <div class="filtres-offres__secondaire">
+          <div class="recherche__champ">
+            <label for="filtre-contrat">Type de contrat</label>
+            <select id="filtre-contrat" name="contrat" data-contrats>
+              <option value="">Tous les contrats</option>
+              {contrats.map((c) => <option value={c} data-libelle={c}>{c} ({compterContrat(c)})</option>)}
+            </select>
+          </div>
+          <div class="recherche__champ">
+            <label for="filtre-secteur">Secteur</label>
+            <select id="filtre-secteur" name="secteur">
+              <option value="">Tous les secteurs</option>
+              {secteurs.map((s) => <option value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div class="recherche__champ">
+            <label for="filtre-tri">Trier par</label>
+            <select id="filtre-tri" name="tri">
+              <option value="recent">Plus récentes</option>
+              <option value="ancien">Plus anciennes</option>
+              <option value="proche">Plus proches</option>
+            </select>
+          </div>
+          <input type="hidden" name="entreprise" value="" />
+          <button type="submit" class="bouton bouton--plein filtres-offres__valider"><Icone nom="recherche" taille={20} />Filtrer</button>
+        </div>
+      </form>
+
+      <div class="filtres-actifs" data-actifs hidden>
+        <span class="filtres-actifs__titre">Filtres :</span>
+        <ul data-actifs-liste></ul>
+        <button type="button" class="lien-bouton" data-effacer>Tout effacer</button>
+      </div>
+
+      <p class="resultats" aria-live="polite" data-resultats>{offres.length} offre{offres.length > 1 ? 's' : ''}</p>
+
+      <ul class="grille grille--3" data-liste-offres data-api={PUBLIC_STRAPI_URL} data-par-page={PAR_PAGE}>
+        {premieres.map((o) => <li><CarteOffre offre={o} niveauTitre={2} /></li>)}
+      </ul>
+
+      <div class="aucun-resultat" data-aucun hidden>
+        <Icone nom="cloche" taille={36} />
+        <h2>Aucune offre ne correspond pour le moment</h2>
+        <p>Élargissez votre recherche, ou soyez prévenu dès qu'une offre correspondante est publiée.</p>
+        <p class="aucun-resultat__actions">
+          {lienAlerte && <a class="bouton bouton--plein" href={lienAlerte}><Icone nom="cloche" taille={18} />Créer une alerte e-mail</a>}
+          <button type="button" class="bouton bouton--contour" data-effacer>Effacer les filtres</button>
+        </p>
+      </div>
+
+      <p class="section__suite">
+        <button type="button" class="bouton bouton--contour" data-plus hidden={offres.length <= PAR_PAGE}>Afficher plus d'offres</button>
+      </p>
+
+      {
+        lienSpontanee && (
+          <aside class="appel-action appel-action--discret">
+            <h2 class="appel-action__titre">Aucune offre ne vous correspond ?</h2>
+            <p>Déposez votre candidature spontanée : elle sera visible des recruteurs du territoire.</p>
+            <p><a class="bouton bouton--clair" href={lienSpontanee}>Déposer mon CV</a></p>
+          </aside>
+        )
+      }
+    </div>
+  </section>
+</Base>
+
+<script>
+  import { htmlCarteOffre } from '../../lib/carte-offre';
+  import {
+    boiteEnglobante, distanceKm, ecrireFiltres, filtresActifs, lireFiltres, rechercheAutour, requeteStrapi,
+    type Filtres, type Position,
+  } from '../../lib/recherche-offres';
+
+  const formulaire = document.querySelector<HTMLFormElement>('[data-filtres]')!;
+  const liste = document.querySelector<HTMLElement>('[data-liste-offres]')!;
+  const resultats = document.querySelector<HTMLElement>('[data-resultats]')!;
+  const plus = document.querySelector<HTMLButtonElement>('[data-plus]')!;
+  const aucun = document.querySelector<HTMLElement>('[data-aucun]')!;
+  const actifs = document.querySelector<HTMLElement>('[data-actifs]')!;
+  const actifsListe = document.querySelector<HTMLElement>('[data-actifs-liste]')!;
+  const selectContrat = document.querySelector<HTMLSelectElement>('[data-contrats]')!;
+  const selectTri = formulaire.elements.namedItem('tri') as HTMLSelectElement;
+  const api = liste.dataset.api!;
+  const parPage = Number(liste.dataset.parPage);
+  const contrats = [...selectContrat.options].map((o) => o.value).filter(Boolean);
+
+  // Formulaire filtré en direct : le bouton ne sert plus qu'en l'absence de JavaScript.
+  formulaire.querySelector('.filtres-offres__valider')?.setAttribute('hidden', '');
+
+  let page = 1;
+  let resultatsAutour: any[] = []; // recherche autour d'une ville : résultats complets, paginés ici
+  let jeton = 0; // ignore les réponses d'une recherche dépassée
+
+  const lire = (): Filtres => lireFiltres(new URLSearchParams(new FormData(formulaire) as any).toString());
+  const appeler = (p: URLSearchParams) =>
+    fetch(`${api}/api/offres?${p}`).then((r) => {
+      if (!r.ok) throw new Error(String(r.status));
+      return r.json();
+    });
+
+  const positions = new Map<string, Promise<Position | null>>();
+  function geocoder(ville: string): Promise<Position | null> {
+    const cle = ville.toLowerCase();
+    if (!positions.has(cle)) {
+      const p = new URLSearchParams({ q: ville, type: 'municipality', limit: '1' });
+      positions.set(
+        cle,
+        fetch(`https://data.geopf.fr/geocodage/search?${p}`)
+          .then((r) => r.json())
+          .then((j) => {
+            const f = j.features?.[0];
+            return f && f.properties.score > 0.4 ? { latitude: f.geometry.coordinates[1], longitude: f.geometry.coordinates[0] } : null;
+          })
+          .catch(() => null),
+      );
+    }
+    return positions.get(cle)!;
+  }
+
+  function afficherActifs(f: Filtres) {
+    const liste = filtresActifs(f);
+    actifs.hidden = liste.length === 0;
+    actifsListe.replaceChildren(
+      ...liste.map(({ cle, libelle }) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<button type="button" class="pastille-filtre" data-retirer="${cle}"><span></span><span aria-hidden="true">×</span></button>`;
+        li.querySelector('span')!.textContent = libelle;
+        li.querySelector('button')!.setAttribute('aria-label', `Retirer le filtre ${libelle}`);
+        return li;
+      }),
+    );
+  }
+
+  function afficherComptes(comptes: Record<string, number>) {
+    for (const option of selectContrat.options) {
+      if (option.value) option.textContent = `${option.dataset.libelle} (${comptes[option.value] ?? 0})`;
+    }
+  }
+
+  function afficher(offres: any[], total: number, ajouter: boolean, f: Filtres) {
+    const html = offres.map((o) => `<li>${htmlCarteOffre(o, { niveauTitre: 2 })}</li>`).join('');
+    if (ajouter) liste.insertAdjacentHTML('beforeend', html);
+    else liste.innerHTML = html;
+    const filtre = filtresActifs(f).length > 0;
+    resultats.textContent = total
+      ? `${total} offre${total > 1 ? 's' : ''}${filtre ? ` correspond${total > 1 ? 'ent' : ''} à votre recherche` : ''}`
+      : 'Aucune offre ne correspond à votre recherche.';
+    aucun.hidden = total > 0;
+    plus.hidden = page * parPage >= total;
+    if (ajouter) liste.querySelectorAll<HTMLAnchorElement>('.carte__lien')[(page - 1) * parPage]?.focus();
+  }
+
+  async function chercher(ajouter = false) {
+    const f = lire();
+    const moi = ++jeton;
+    const qs = ecrireFiltres(f);
+    history.replaceState(null, '', `${location.pathname}${qs ? `?${qs}` : ''}`);
+    try {
+      sessionStorage.setItem('mjc-derniere-recherche', qs);
+    } catch {}
+    afficherActifs(f);
+    selectTri.querySelector<HTMLOptionElement>('option[value="proche"]')!.disabled = !rechercheAutour(f);
+    liste.setAttribute('aria-busy', 'true');
+
+    try {
+      if (rechercheAutour(f)) {
+        // Autour d'une ville : on récupère toutes les offres de la zone, puis distance exacte, tri et pagination ici.
+        if (!ajouter) {
+          const centre = await geocoder(f.lieu);
+          if (moi !== jeton) return;
+          if (!centre) {
+            resultatsAutour = [];
+          } else {
+            const boite = boiteEnglobante(centre, Number(f.rayon));
+            const json = await appeler(requeteStrapi(f, { page: 1, parPage: 100, boite, sansContrat: true }));
+            if (moi !== jeton) return;
+            const tous = json.data
+              .map((o: any) => ({ ...o, distance: o.latitude == null ? null : distanceKm(centre, o) }))
+              .filter((o: any) => o.distance != null && o.distance <= Number(f.rayon));
+            const comptes: Record<string, number> = {};
+            for (const o of tous) comptes[o.typeContrat] = (comptes[o.typeContrat] ?? 0) + 1;
+            afficherComptes(comptes);
+            resultatsAutour = tous.filter((o: any) => !f.contrat || o.typeContrat === f.contrat);
+            if (f.tri === 'proche') resultatsAutour.sort((a: any, b: any) => a.distance - b.distance);
+          }
+        }
+        afficher(resultatsAutour.slice((page - 1) * parPage, page * parPage), resultatsAutour.length, ajouter, f);
+      } else {
+        const [json, comptes] = await Promise.all([
+          appeler(requeteStrapi(f, { page, parPage })),
+          ajouter
+            ? Promise.resolve(null)
+            : Promise.all(
+                contrats.map((c) =>
+                  appeler(requeteStrapi({ ...f, contrat: c }, { page: 1, parPage: 1 })).then((j) => [c, j.meta.pagination.total] as const),
+                ),
+              ),
+        ]);
+        if (moi !== jeton) return;
+        if (comptes) afficherComptes(Object.fromEntries(comptes));
+        afficher(json.data, json.meta.pagination.total, ajouter, f);
+      }
+    } catch {
+      resultats.textContent = 'La recherche est momentanément indisponible. Réessayez dans quelques instants.';
+    } finally {
+      if (moi === jeton) liste.removeAttribute('aria-busy');
+    }
+  }
+
+  // Filtres appliqués en direct : immédiatement pour les listes, après une courte pause pour la saisie.
+  let attente: ReturnType<typeof setTimeout>;
+  formulaire.addEventListener('input', (e) => {
+    if ((e.target as HTMLElement).tagName === 'SELECT') return;
+    clearTimeout(attente);
+    attente = setTimeout(() => {
+      page = 1;
+      chercher();
+    }, 450);
+  });
+  formulaire.addEventListener('change', (e) => {
+    if ((e.target as HTMLElement).tagName !== 'SELECT') return;
+    page = 1;
+    chercher();
+  });
+  formulaire.addEventListener('submit', (e) => {
+    e.preventDefault();
+    page = 1;
+    chercher();
+  });
+
+  document.addEventListener('click', (e) => {
+    const cible = e.target as HTMLElement;
+    const retirer = cible.closest<HTMLElement>('[data-retirer]');
+    if (retirer) {
+      const cle = retirer.dataset.retirer!;
+      (formulaire.elements.namedItem(cle) as HTMLInputElement).value = '';
+      if (cle === 'lieu') (formulaire.elements.namedItem('rayon') as HTMLSelectElement).value = '';
+      page = 1;
+      chercher();
+      (formulaire.elements.namedItem('q') as HTMLInputElement).focus();
+    }
+    if (cible.closest('[data-effacer]')) {
+      formulaire.reset();
+      (formulaire.elements.namedItem('entreprise') as HTMLInputElement).value = '';
+      page = 1;
+      chercher();
+      (formulaire.elements.namedItem('q') as HTMLInputElement).focus();
+    }
+  });
+
+  plus.addEventListener('click', () => {
+    page++;
+    chercher(true);
+  });
+
+  // Filtres venant de l'URL (menu, accueil, fiche entreprise, retour depuis une offre).
+  const initiaux = lireFiltres(location.search);
+  for (const [cle, valeur] of Object.entries(initiaux)) {
+    const champ = formulaire.elements.namedItem(cle) as HTMLInputElement | HTMLSelectElement | null;
+    if (champ && valeur) champ.value = valeur;
+  }
+  if (location.search) chercher();
+  else afficherActifs(initiaux);
+</script>

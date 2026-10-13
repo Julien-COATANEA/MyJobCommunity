@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "sections": {
+    "collectionTypes": {
+      "groups": [
+        {
+          "id": "contenus",
+          "name": "Contenus du site",
+          "parent": null,
+          "children": [
+            { "type": "contentType", "uid": "api::page.page" },
+            { "type": "contentType", "uid": "api::article.article" },
+            { "type": "contentType", "uid": "api::evenement.evenement" },
+            { "type": "contentType", "uid": "api::inscription.inscription" }
+          ]
+        },
+        {
+          "id": "emploi",
+          "name": "Emploi",
+          "parent": null,
+          "children": [
+            { "type": "contentType", "uid": "api::entreprise.entreprise" },
+            { "type": "contentType", "uid": "api::offre.offre" }
+          ]
+        },
+        {
+          "id": "classements",
+          "name": "Classements",
+          "parent": null,
+          "children": [
+            { "type": "contentType", "uid": "api::categorie-article.categorie-article" },
+            { "type": "contentType", "uid": "api::secteur.secteur" }
+          ]
+        }
+      ]
+    },
+    "singleTypes": {
+      "groups": [
+        {
+          "id": "mon-site",
+          "name": "Mon site",
+          "parent": null,
+          "children": [
+            { "type": "contentType", "uid": "api::accueil.accueil" },
+            { "type": "contentType", "uid": "api::navigation.navigation" },
+            { "type": "contentType", "uid": "api::parametres.parametres" }
+          ]
+        }
+      ]
+    }
+  }
+}

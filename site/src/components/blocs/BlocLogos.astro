@@ -1,0 +1,30 @@
+---
+import ImageStrapi from '../ImageStrapi.astro';
+
+const { bloc } = Astro.props;
+---
+
+<section class="section">
+  <div class="conteneur">
+    {bloc.titre && <h2 class="section__titre">{bloc.titre}</h2>}
+    <ul class="logos">
+      {
+        bloc.logos.map((l: any) => {
+          // L'alternative d'un logo-lien est le nom du partenaire (RGAA 1.3).
+          const media = { ...l.image, alternativeText: l.nom };
+          return (
+            <li class="logos__item">
+              {l.url ? (
+                <a href={l.url}>
+                  <ImageStrapi media={media} largeurs={[200, 320]} sizes="160px" />
+                </a>
+              ) : (
+                <ImageStrapi media={media} largeurs={[200, 320]} sizes="160px" />
+              )}
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+</section>

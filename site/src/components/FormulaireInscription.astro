@@ -1,0 +1,210 @@
+---
+// Inscription à un événement, envoyée directement à Strapi (le site est statique).
+//  - sans JavaScript : envoi classique, Strapi redirige vers /evenements/inscription-confirmee ou -impossible ;
+//  - avec JavaScript : envoi en JSON, erreurs affichées sur place (RGAA 11.10 et 11.11).
+import type { Evenement } from '../lib/contenus';
+import { lireParametres } from '../lib/contenus';
+import { PUBLIC_STRAPI_URL } from '../lib/strapi';
+
+interface Props {
+  evenement: Evenement;
+}
+
+const { evenement } = Astro.props;
+const { nomSite } = await lireParametres();
+const action = `${PUBLIC_STRAPI_URL}/api/inscriptions-evenements`;
+const champs = [
+  { nom: 'prenom', libelle: 'Prénom', type: 'text', autocomplete: 'given-name', requis: true },
+  { nom: 'nom', libelle: 'Nom', type: 'text', autocomplete: 'family-name', requis: true },
+  { nom: 'email', libelle: 'Adresse e-mail', aide: 'Format attendu : nom@domaine.fr', type: 'email', autocomplete: 'email', requis: true },
+  { nom: 'telephone', libelle: 'Téléphone', aide: 'Format attendu : 06 12 34 56 78', type: 'tel', autocomplete: 'tel', requis: false },
+  { nom: 'structure', libelle: 'Entreprise ou organisme', type: 'text', autocomplete: 'organization', requis: false },
+];
+---
+
+<div class="inscription" data-inscription data-api={PUBLIC_STRAPI_URL} data-evenement={evenement.documentId}>
+  <p class="inscription__places" data-places-statut aria-live="polite"></p>
+
+  <div class="alerte alerte--erreur" data-resume tabindex="-1" hidden>
+    <h3 class="alerte__titre">Le formulaire contient des erreurs</h3>
+    <ul data-resume-liste></ul>
+  </div>
+
+  <form action={action} method="post" class="formulaire" data-formulaire>
+    <p class="formulaire__legende">Tous les champs sont obligatoires, sauf mention contraire.</p>
+    <input type="hidden" name="evenement" value={evenement.documentId} />
+
+    <div class="formulaire__grille">
+      {
+        champs.map((c) => (
+          <div class="champ">
+            <label for={`ins-${c.nom}`}>
+              {c.libelle}
+              {!c.requis && <span class="champ__facultatif"> (facultatif)</span>}
+            </label>
+            {c.aide && <p class="champ__aide" id={`ins-${c.nom}-aide`}>{c.aide}</p>}
+            <p class="champ__erreur" id={`ins-${c.nom}-erreur`} hidden />
+            <input
+              id={`ins-${c.nom}`}
+              name={c.nom}
+              type={c.type}
+              autocomplete={c.autocomplete}
+              required={c.requis}
+              aria-describedby={c.aide ? `ins-${c.nom}-aide` : undefined}
+            />
+          </div>
+        ))
+      }
+    </div>
+
+    <!-- Champ piège anti-robots : masqué à tous les utilisateurs. -->
+    <div class="piege" aria-hidden="true">
+      <label for="ins-site-web">Ne pas remplir ce champ</label>
+      <input id="ins-site-web" name="site_web" type="text" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <div class="champ champ--case">
+      <p class="champ__erreur" id="ins-consentement-erreur" hidden></p>
+      <input id="ins-consentement" name="consentement" type="checkbox" value="true" required />
+      <label for="ins-consentement">
+        J'accepte que {nomSite} utilise mes données pour organiser cet événement et me contacter à son sujet
+        (<a href="/donnees-personnelles">en savoir plus sur vos données</a>).
+      </label>
+    </div>
+
+    <button type="submit" class="bouton bouton--plein" data-envoyer>Je m'inscris</button>
+  </form>
+
+  <div class="alerte alerte--succes" data-succes tabindex="-1" hidden>
+    <h3 class="alerte__titre">Votre inscription est confirmée</h3>
+    <p>Un e-mail de confirmation vient de vous être envoyé.</p>
+  </div>
+</div>
+
+<script>
+  const MESSAGES: Record<string, string> = {
+    ferme: 'Les inscriptions à cet événement sont closes.',
+    complet: 'Cet événement est complet.',
+    'deja-inscrit': 'Vous êtes déjà inscrit(e) à cet événement avec cette adresse e-mail.',
+    erreur: "L'inscription n'a pas pu être enregistrée. Réessayez dans quelques instants.",
+  };
+
+  for (const bloc of document.querySelectorAll<HTMLElement>('[data-inscription]')) {
+    const api = bloc.dataset.api!;
+    const evenement = bloc.dataset.evenement!;
+    const formulaire = bloc.querySelector<HTMLFormElement>('[data-formulaire]')!;
+    const resume = bloc.querySelector<HTMLElement>('[data-resume]')!;
+    const resumeListe = bloc.querySelector<HTMLElement>('[data-resume-liste]')!;
+    const succes = bloc.querySelector<HTMLElement>('[data-succes]')!;
+    const statutPlaces = bloc.querySelector<HTMLElement>('[data-places-statut]')!;
+    const bouton = bloc.querySelector<HTMLButtonElement>('[data-envoyer]')!;
+
+    // Validation gérée par le script : messages en français, cohérents avec ceux du serveur.
+    formulaire.noValidate = true;
+
+    const afficherPlaces = (p: { ouvert: boolean; placesRestantes: number | null }) => {
+      if (!p.ouvert) {
+        statutPlaces.textContent = p.placesRestantes === 0 ? MESSAGES.complet : MESSAGES.ferme;
+        formulaire.hidden = true;
+      } else if (p.placesRestantes !== null) {
+        statutPlaces.textContent = `Il reste ${p.placesRestantes} place${p.placesRestantes > 1 ? 's' : ''}.`;
+      }
+      const dd = document.querySelector(`[data-places="${evenement}"]`);
+      if (dd && p.placesRestantes !== null) dd.textContent = `${p.placesRestantes} place${p.placesRestantes > 1 ? 's' : ''} restante${p.placesRestantes > 1 ? 's' : ''}`;
+    };
+
+    fetch(`${api}/api/inscriptions-evenements/${evenement}/places`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p) => p && afficherPlaces(p))
+      .catch(() => {});
+
+    const nettoyerErreurs = () => {
+      resume.hidden = true;
+      resumeListe.replaceChildren();
+      for (const p of formulaire.querySelectorAll<HTMLElement>('.champ__erreur')) {
+        p.hidden = true;
+        p.textContent = '';
+      }
+      for (const champ of formulaire.querySelectorAll<HTMLInputElement>('input[aria-invalid]')) {
+        champ.removeAttribute('aria-invalid');
+        champ.setAttribute('aria-describedby', champ.getAttribute('aria-describedby')?.replace(/\s*\S+-erreur/, '') ?? '');
+        if (!champ.getAttribute('aria-describedby')) champ.removeAttribute('aria-describedby');
+      }
+    };
+
+    const afficherErreurs = (erreurs: Record<string, string>) => {
+      for (const [nom, message] of Object.entries(erreurs)) {
+        const champ = formulaire.querySelector<HTMLInputElement>(`#ins-${nom}`);
+        const zone = formulaire.querySelector<HTMLElement>(`#ins-${nom}-erreur`);
+        if (!champ || !zone) continue;
+        zone.textContent = message;
+        zone.hidden = false;
+        champ.setAttribute('aria-invalid', 'true');
+        champ.setAttribute('aria-describedby', [champ.getAttribute('aria-describedby'), zone.id].filter(Boolean).join(' '));
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = `#${champ.id}`;
+        a.textContent = message;
+        li.append(a);
+        resumeListe.append(li);
+      }
+      resume.hidden = false;
+      resume.focus();
+    };
+
+    const afficherMessageGlobal = (message: string) => {
+      const li = document.createElement('li');
+      li.textContent = message;
+      resumeListe.append(li);
+      resume.hidden = false;
+      resume.focus();
+    };
+
+    const validerLocalement = (): Record<string, string> => {
+      const d = new FormData(formulaire);
+      const e: Record<string, string> = {};
+      if (!String(d.get('prenom') ?? '').trim()) e.prenom = 'Indiquez votre prénom.';
+      if (!String(d.get('nom') ?? '').trim()) e.nom = 'Indiquez votre nom.';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(d.get('email') ?? '').trim())) e.email = 'Indiquez une adresse e-mail valide, par exemple nom@domaine.fr.';
+      const tel = String(d.get('telephone') ?? '').trim();
+      if (tel && !/^[0-9+().\s-]{6,20}$/.test(tel)) e.telephone = 'Indiquez un numéro de téléphone valide, par exemple 06 12 34 56 78.';
+      if (!d.get('consentement')) e.consentement = 'Vous devez accepter le traitement de vos données pour vous inscrire.';
+      return e;
+    };
+
+    formulaire.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      nettoyerErreurs();
+      const erreurs = validerLocalement();
+      if (Object.keys(erreurs).length) return afficherErreurs(erreurs);
+
+      bouton.disabled = true;
+      bouton.textContent = 'Envoi en cours…';
+      try {
+        const donnees = Object.fromEntries(new FormData(formulaire));
+        const reponse = await fetch(formulaire.action, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(donnees),
+        });
+        const json = await reponse.json().catch(() => ({ statut: 'erreur' }));
+        if (json.statut === 'ok') {
+          formulaire.hidden = true;
+          afficherPlaces({ ouvert: true, placesRestantes: json.placesRestantes ?? null });
+          statutPlaces.textContent = '';
+          succes.hidden = false;
+          succes.focus();
+        } else if (json.statut === 'invalide') {
+          afficherErreurs(json.erreurs ?? {});
+        } else {
+          afficherMessageGlobal(MESSAGES[json.statut] ?? MESSAGES.erreur);
+        }
+      } catch {
+        afficherMessageGlobal(MESSAGES.erreur);
+      } finally {
+        bouton.disabled = false;
+        bouton.textContent = "Je m'inscris";
+      }
+    });
+  }
+</script>

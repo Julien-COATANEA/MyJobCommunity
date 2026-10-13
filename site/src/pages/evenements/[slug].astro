@@ -1,0 +1,35 @@
+---
+import Base from '../../layouts/Base.astro';
+import VueEvenement from '../../components/vues/VueEvenement.astro';
+import { lireEvenements, lireParametres, type Evenement } from '../../lib/contenus';
+import { urlMedia } from '../../lib/strapi';
+
+export async function getStaticPaths() {
+  return (await lireEvenements()).map((evenement) => ({ params: { slug: evenement.slug }, props: { evenement } }));
+}
+
+const { evenement: e } = Astro.props as { evenement: Evenement };
+const parametres = await lireParametres();
+const image = urlMedia(e.image, true);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Event',
+  name: e.titre,
+  description: e.extrait,
+  startDate: e.dateDebut,
+  ...(e.dateFin ? { endDate: e.dateFin } : {}),
+  eventStatus: 'https://schema.org/EventScheduled',
+  eventAttendanceMode: e.enLigne ? 'https://schema.org/OnlineEventAttendanceMode' : 'https://schema.org/OfflineEventAttendanceMode',
+  location: e.enLigne
+    ? { '@type': 'VirtualLocation', url: new URL(Astro.url.pathname, Astro.site).toString() }
+    : { '@type': 'Place', name: e.lieu ?? '', address: e.adresse ?? e.lieu ?? '' },
+  ...(image ? { image: [image] } : {}),
+  organizer: { '@type': 'Organization', name: parametres.nomSite, url: Astro.site?.toString() },
+  isAccessibleForFree: true,
+};
+---
+
+<Base titre={e.titre} description={e.extrait} seo={e.seo} image={image} jsonLd={[jsonLd]} ariane={[{ libelle: 'Événements', url: '/evenements' }, { libelle: e.titre }]}>
+  <VueEvenement evenement={e} />
+</Base>

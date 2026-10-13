@@ -1,0 +1,14 @@
+---
+// Le balisage vient de src/lib/carte-offre.ts : identique au rendu des résultats de recherche dans le navigateur.
+import type { Offre } from '../../lib/contenus';
+import { htmlCarteOffre } from '../../lib/carte-offre';
+
+interface Props {
+  offre: Offre;
+  niveauTitre?: 2 | 3;
+}
+
+const { offre, niveauTitre = 3 } = Astro.props;
+---
+
+<Fragment set:html={htmlCarteOffre(offre, { niveauTitre })} />

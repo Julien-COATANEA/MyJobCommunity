@@ -1,0 +1,23 @@
+---
+import ImageStrapi from './ImageStrapi.astro';
+import type { Media } from '../lib/strapi';
+
+interface Props {
+  titre: string;
+  chapo?: string | null;
+  image?: Media | null;
+  surtitre?: string | null;
+}
+
+const { titre, chapo, image, surtitre } = Astro.props;
+---
+
+<header class:list={['en-tete-page', { 'en-tete-page--image': image }]}>
+  {image && <ImageStrapi media={image} class="en-tete-page__image" largeurs={[640, 1024, 1600]} sizes="100vw" prioritaire decorative />}
+  <div class="conteneur en-tete-page__contenu">
+    {surtitre && <p class="en-tete-page__surtitre">{surtitre}</p>}
+    <h1>{titre}</h1>
+    {chapo && <p class="en-tete-page__chapo">{chapo}</p>}
+    <slot />
+  </div>
+</header>

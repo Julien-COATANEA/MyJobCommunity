@@ -1,0 +1,26 @@
+---
+import { TRACES } from '../lib/icones';
+// Icônes SVG en ligne (pas de police d'icônes ni de CDN). Toujours décoratives : aria-hidden.
+interface Props {
+  nom: string;
+  taille?: number;
+  class?: string;
+}
+const { nom, taille = 24, class: classe } = Astro.props;
+
+---
+
+<svg
+  class:list={['icone', classe]}
+  width={taille}
+  height={taille}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  focusable="false"
+  set:html={TRACES[nom] ?? TRACES.info}
+/>

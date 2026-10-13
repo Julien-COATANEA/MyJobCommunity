@@ -1,0 +1,60 @@
+---
+import Icone from '../Icone.astro';
+import type { Evenement } from '../../lib/contenus';
+import { formatHeure, jourMois } from '../../lib/format';
+import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
+
+interface Props {
+  evenement: Evenement;
+  niveauTitre?: 2 | 3;
+}
+
+const { evenement: e, niveauTitre = 3 } = Astro.props;
+const Titre = `h${niveauTitre}`;
+const { jour, mois } = jourMois(e.dateDebut);
+const inscriptionSite = e.inscriptionActive && !e.inscriptionExterneUrl;
+---
+
+<article class="carte carte--evenement" data-type-evenement={e.typeEvenement}>
+  <p class="date-pastille" aria-hidden="true"><span>{jour}</span>{mois}</p>
+  <div class="carte__corps">
+    <p class="etiquette">{e.typeEvenement}</p>
+    <Titre class="carte__titre">
+      <a href={`/evenements/${e.slug}`} class="carte__lien">{e.titre}</a>
+    </Titre>
+    <ul class="meta">
+      <li><Icone nom="evenement" taille={18} /><time datetime={e.dateDebut}>{jour} {mois}, {formatHeure(e.dateDebut)}</time></li>
+      <li><Icone nom="lieu" taille={18} />{e.enLigne ? 'En ligne' : e.lieu}</li>
+    </ul>
+    {
+      inscriptionSite ? (
+        <p class="carte__mention" data-places-evenement={e.documentId} data-api={PUBLIC_STRAPI_URL}>
+          Inscription en ligne{e.placesMax ? ` · ${e.placesMax} places` : ''}
+        </p>
+      ) : e.inscriptionExterneUrl ? (
+        <p class="carte__mention">Inscription sur le site de l'organisateur</p>
+      ) : null
+    }
+  </div>
+</article>
+
+<script>
+  // Places restantes en direct (le site est statique, les inscriptions évoluent en continu).
+  for (const mention of document.querySelectorAll<HTMLElement>('[data-places-evenement]')) {
+    fetch(`${mention.dataset.api}/api/inscriptions-evenements/${mention.dataset.placesEvenement}/places`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p) => {
+        if (!p) return;
+        if (!p.ouvert) {
+          mention.textContent = p.placesRestantes === 0 ? 'Complet' : 'Inscriptions closes';
+          mention.classList.add('carte__mention--complet');
+        } else if (p.placesRestantes !== null && p.placesRestantes <= 10) {
+          mention.textContent = `Plus que ${p.placesRestantes} place${p.placesRestantes > 1 ? 's' : ''}`;
+          mention.classList.add('carte__mention--urgent');
+        } else if (p.placesRestantes !== null) {
+          mention.textContent = `Inscription en ligne · ${p.placesRestantes} places disponibles`;
+        }
+      })
+      .catch(() => {});
+  }
+</script>

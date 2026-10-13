@@ -1,0 +1,13 @@
+---
+import RechercheOffres from '../RechercheOffres.astro';
+
+const { bloc, index } = Astro.props;
+---
+
+<section class="section section--teinte">
+  <div class="conteneur">
+    {bloc.titre && <h2 class="section__titre">{bloc.titre}</h2>}
+    {bloc.texte && <p class="section__intro">{bloc.texte}</p>}
+    <RechercheOffres id={`recherche-bloc-${index}`} />
+  </div>
+</section>

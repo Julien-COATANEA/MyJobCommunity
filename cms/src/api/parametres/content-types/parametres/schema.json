@@ -1,0 +1,160 @@
+{
+  "kind": "singleType",
+  "collectionName": "parametres",
+  "info": {
+    "singularName": "parametres",
+    "pluralName": "parametres-list",
+    "displayName": "Informations du site",
+    "description": "Identité, thème (couleurs, polices, logo), coordonnées et intégration Gestmax"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "nomSite": {
+      "type": "string",
+      "required": true
+    },
+    "baseline": {
+      "type": "string"
+    },
+    "logo": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "logoTexte": {
+      "type": "string",
+      "maxLength": 4
+    },
+    "favicon": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "couleurPrimaire": {
+      "type": "customField",
+      "customField": "plugin::color-picker.color",
+      "options": {
+        "format": "hex"
+      },
+      "regex": "^#[0-9A-Fa-f]{6}$",
+      "required": true,
+      "default": "#1a5f7a"
+    },
+    "couleurSecondaire": {
+      "type": "customField",
+      "customField": "plugin::color-picker.color",
+      "options": {
+        "format": "hex"
+      },
+      "regex": "^#[0-9A-Fa-f]{6}$",
+      "required": true,
+      "default": "#0f3d4c"
+    },
+    "couleurAccent": {
+      "type": "customField",
+      "customField": "plugin::color-picker.color",
+      "options": {
+        "format": "hex"
+      },
+      "regex": "^#[0-9A-Fa-f]{6}$",
+      "required": true,
+      "default": "#e8833a"
+    },
+    "couleurTexte": {
+      "type": "customField",
+      "customField": "plugin::color-picker.color",
+      "options": {
+        "format": "hex"
+      },
+      "regex": "^#[0-9A-Fa-f]{6}$",
+      "required": true,
+      "default": "#1c2b33"
+    },
+    "couleurFond": {
+      "type": "customField",
+      "customField": "plugin::color-picker.color",
+      "options": {
+        "format": "hex"
+      },
+      "regex": "^#[0-9A-Fa-f]{6}$",
+      "required": true,
+      "default": "#ffffff"
+    },
+    "policeTitres": {
+      "type": "enumeration",
+      "enum": [
+        "sora",
+        "inter",
+        "source-sans-3",
+        "atkinson-hyperlegible",
+        "systeme"
+      ],
+      "default": "sora",
+      "required": true
+    },
+    "policeTexte": {
+      "type": "enumeration",
+      "enum": [
+        "inter",
+        "source-sans-3",
+        "atkinson-hyperlegible",
+        "sora",
+        "systeme"
+      ],
+      "default": "inter",
+      "required": true
+    },
+    "arrondis": {
+      "type": "enumeration",
+      "enum": [
+        "carres",
+        "legers",
+        "prononces"
+      ],
+      "default": "legers",
+      "required": true
+    },
+    "adresse": {
+      "type": "text"
+    },
+    "telephone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "email"
+    },
+    "reseauxSociaux": {
+      "type": "component",
+      "component": "shared.reseau-social",
+      "repeatable": true
+    },
+    "emailNotificationInscriptions": {
+      "type": "email",
+      "private": true
+    },
+    "gestmaxUrlFront": {
+      "type": "string"
+    },
+    "lienEspaceCandidat": {
+      "type": "string"
+    },
+    "lienEspaceRecruteur": {
+      "type": "string"
+    },
+    "lienCandidatureSpontanee": {
+      "type": "string"
+    },
+    "seoParDefaut": {
+      "type": "component",
+      "component": "shared.seo",
+      "repeatable": false
+    }
+  }
+}

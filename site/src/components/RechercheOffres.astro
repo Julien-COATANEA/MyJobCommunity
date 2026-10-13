@@ -1,0 +1,65 @@
+---
+// Formulaire de recherche (accueil, bloc « Recherche d'offres », 404). Mène à /offres avec les filtres en paramètres.
+// Sur mobile, seul le mot-clé est affiché ; « Plus de critères » déplie la ville et le contrat.
+import Icone from './Icone.astro';
+import { lireOffres } from '../lib/contenus';
+
+interface Props {
+  /** Variante sur fond coloré (hero). */
+  surFond?: boolean;
+  /** Préfixe des identifiants (unique si plusieurs formulaires sur la page). */
+  id?: string;
+}
+
+const { surFond = false, id = 'recherche' } = Astro.props;
+const offres = await lireOffres();
+const contrats = [...new Set(offres.map((o) => o.typeContrat).filter(Boolean))].sort() as string[];
+---
+
+<form action="/offres" method="get" role="search" aria-label="Rechercher une offre" class:list={['recherche', { 'recherche--sur-fond': surFond }]} data-recherche>
+  <div class="recherche__champ recherche__champ--principal">
+    <label for={`${id}-q`}>Métier, mot-clé</label>
+    <input id={`${id}-q`} name="q" type="search" autocomplete="off" placeholder="Ex. : infirmier, soudeur…" />
+  </div>
+  <div class="recherche__plus" id={`${id}-plus`}>
+    <div class="recherche__champ">
+      <label for={`${id}-lieu`}>Ville</label>
+      <input id={`${id}-lieu`} name="lieu" type="text" autocomplete="address-level2" />
+    </div>
+    <div class="recherche__champ">
+      <label for={`${id}-contrat`}>Type de contrat</label>
+      <select id={`${id}-contrat`} name="contrat">
+        <option value="">Tous les contrats</option>
+        {contrats.map((c) => <option value={c}>{c}</option>)}
+      </select>
+    </div>
+  </div>
+  <button type="button" class="recherche__deplier" aria-expanded="false" aria-controls={`${id}-plus`} hidden data-deplier>
+    <Icone nom="filtre" taille={18} />Plus de critères
+  </button>
+  <button type="submit" class="bouton bouton--accent">
+    <Icone nom="recherche" taille={20} />
+    Rechercher
+  </button>
+</form>
+
+<script>
+  // Mobile : critères secondaires repliés. Sans JavaScript, tous les champs restent visibles.
+  for (const formulaire of document.querySelectorAll<HTMLFormElement>('[data-recherche]')) {
+    const bouton = formulaire.querySelector<HTMLButtonElement>('[data-deplier]')!;
+    formulaire.classList.add('recherche--repliable');
+    bouton.hidden = false;
+    bouton.addEventListener('click', () => {
+      const ouvert = bouton.getAttribute('aria-expanded') === 'true';
+      bouton.setAttribute('aria-expanded', String(!ouvert));
+      formulaire.classList.toggle('recherche--depliee', !ouvert);
+    });
+    // Les champs vides ne sont pas envoyés : URL de résultats plus lisible.
+    formulaire.addEventListener('submit', () => {
+      for (const champ of formulaire.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select')) {
+        if (!champ.value) champ.disabled = true;
+      }
+      setTimeout(() => formulaire.querySelectorAll<HTMLInputElement>('[disabled]').forEach((c) => (c.disabled = false)));
+    });
+  }
+</script>

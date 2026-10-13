@@ -1,0 +1,91 @@
+---
+// Contenu d'une page événement (page publique et aperçu des brouillons).
+import EnTetePage from '../EnTetePage.astro';
+import FormulaireInscription from '../FormulaireInscription.astro';
+import Icone from '../Icone.astro';
+import ImageStrapi from '../ImageStrapi.astro';
+import type { Evenement } from '../../lib/contenus';
+import { rendreBlocks } from '../../lib/blocks';
+import { formatDateLongue, formatHeure, horaireEvenement } from '../../lib/format';
+import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
+
+interface Props {
+  evenement: Evenement;
+  /** Aperçu : pas de formulaire d'inscription actif ni de fichier agenda (le brouillon n'existe pas en ligne). */
+  apercu?: boolean;
+}
+
+const { evenement: e, apercu = false } = Astro.props;
+const termine = new Date(e.dateFin ?? e.dateDebut).getTime() < Date.now();
+---
+
+<EnTetePage titre={e.titre} chapo={e.extrait} surtitre={e.typeEvenement} />
+
+<div class="conteneur evenement">
+  <div class="evenement__contenu">
+    {e.image && <ImageStrapi media={e.image} class="evenement__image" largeurs={[640, 1000]} sizes="(min-width: 960px) 720px, 100vw" />}
+    {e.contenu && <div class="prose" set:html={rendreBlocks(e.contenu, { baseMedias: PUBLIC_STRAPI_URL })} />}
+  </div>
+
+  <aside class="evenement__infos" aria-labelledby="infos-pratiques">
+    <h2 id="infos-pratiques">Infos pratiques</h2>
+    <dl class="infos">
+      <div>
+        <dt><Icone nom="evenement" taille={20} />Date</dt>
+        <dd><time datetime={e.dateDebut}>{horaireEvenement(e.dateDebut, e.dateFin)}</time></dd>
+      </div>
+      <div>
+        <dt><Icone nom="lieu" taille={20} />Lieu</dt>
+        <dd>{e.enLigne ? 'En ligne' : [e.lieu, e.adresse].filter(Boolean).join(', ')}</dd>
+      </div>
+      {
+        e.inscriptionActive && e.placesMax && !e.inscriptionExterneUrl && (
+          <div>
+            <dt><Icone nom="utilisateur" taille={20} />Places</dt>
+            <dd data-places={e.documentId}>{e.placesMax} places</dd>
+          </div>
+        )
+      }
+      {
+        e.inscriptionActive && e.dateLimiteInscription && (
+          <div>
+            <dt><Icone nom="horloge" taille={20} />Inscription jusqu'au</dt>
+            <dd>{formatDateLongue(e.dateLimiteInscription)}, {formatHeure(e.dateLimiteInscription)}</dd>
+          </div>
+        )
+      }
+    </dl>
+    {
+      !termine && !apercu && (
+        <p>
+          <a href={`/evenements/${e.slug}.ics`} class="bouton bouton--contour bouton--large" download>
+            <Icone nom="calendrier" taille={18} />
+            Ajouter à mon agenda
+          </a>
+        </p>
+      )
+    }
+  </aside>
+</div>
+
+{
+  !termine && (e.inscriptionExterneUrl || e.inscriptionActive) && (
+    <section class="section section--teinte" aria-labelledby="inscription">
+      <div class="conteneur conteneur--etroit">
+        <h2 id="inscription" class="section__titre section__titre--gauche">S'inscrire</h2>
+        {e.inscriptionExterneUrl ? (
+          <p>
+            <a href={e.inscriptionExterneUrl} class="bouton bouton--plein">
+              S'inscrire sur le site de l'organisateur <Icone nom="externe" taille={18} />
+            </a>
+          </p>
+        ) : apercu ? (
+          <p class="encart">Le formulaire d'inscription s'affichera ici une fois l'événement publié.</p>
+        ) : (
+          <FormulaireInscription evenement={e} />
+        )}
+      </div>
+    </section>
+  )
+}
+{termine && <p class="conteneur conteneur--etroit encart">Cet événement est terminé.</p>}

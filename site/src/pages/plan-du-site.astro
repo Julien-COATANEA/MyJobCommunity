@@ -1,0 +1,32 @@
+---
+// Plan du site (RGAA 12.1 : au moins deux systèmes de navigation parmi menu, plan du site, recherche).
+import Base from '../layouts/Base.astro';
+import EnTetePage from '../components/EnTetePage.astro';
+import { lireArticles, lireEntreprises, lireEvenementsAVenir, lirePages } from '../lib/contenus';
+
+const [pages, articles, evenements, entreprises] = await Promise.all([lirePages(), lireArticles(), lireEvenementsAVenir(), lireEntreprises()]);
+const pagesVisibles = pages.filter((p) => !p.seo?.noIndex);
+---
+
+<Base titre="Plan du site" ariane={[{ libelle: 'Plan du site' }]}>
+  <EnTetePage titre="Plan du site" />
+  <div class="conteneur conteneur--etroit section prose plan">
+    <ul>
+      <li><a href="/">Accueil</a></li>
+      <li><a href="/offres">Offres d'emploi</a></li>
+      <li>
+        <a href="/entreprises">Annuaire des entreprises</a>
+        <ul>{entreprises.map((e) => <li><a href={`/entreprises/${e.slug}`}>{e.nom}</a></li>)}</ul>
+      </li>
+      <li>
+        <a href="/actualites">Actualités</a>
+        <ul>{articles.slice(0, 20).map((a) => <li><a href={`/actualites/${a.slug}`}>{a.titre}</a></li>)}</ul>
+      </li>
+      <li>
+        <a href="/evenements">Événements</a>
+        <ul>{evenements.map((e) => <li><a href={`/evenements/${e.slug}`}>{e.titre}</a></li>)}</ul>
+      </li>
+      {pagesVisibles.map((p) => <li><a href={`/${p.slug}`}>{p.titre}</a></li>)}
+    </ul>
+  </div>
+</Base>

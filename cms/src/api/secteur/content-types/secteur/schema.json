@@ -1,0 +1,31 @@
+{
+  "kind": "collectionType",
+  "collectionName": "secteur",
+  "info": {
+    "singularName": "secteur",
+    "pluralName": "secteurs",
+    "displayName": "Secteurs d'activité"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "nom": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "nom",
+      "required": true
+    },
+    "entreprises": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::entreprise.entreprise",
+      "mappedBy": "secteur"
+    }
+  }
+}

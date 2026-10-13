@@ -1,0 +1,34 @@
+---
+// Contenu de la page d'accueil (utilisé par la page publique et par l'aperçu des brouillons).
+import ImageStrapi from '../ImageStrapi.astro';
+import RechercheOffres from '../RechercheOffres.astro';
+import Sections from '../Sections.astro';
+import Icone from '../Icone.astro';
+import { lireCompteurs, lireParametres, type Accueil } from '../../lib/contenus';
+
+interface Props {
+  accueil: Accueil | null;
+}
+
+const { accueil } = Astro.props;
+const [parametres, compteurs] = await Promise.all([lireParametres(), lireCompteurs()]);
+const nombre = new Intl.NumberFormat('fr-FR').format(compteurs.offres);
+---
+
+<section class="hero">
+  {accueil?.heroImage && <ImageStrapi media={accueil.heroImage} class="hero__image" largeurs={[640, 1024, 1600]} sizes="100vw" prioritaire decorative />}
+  <div class="conteneur hero__contenu">
+    {
+      compteurs.offres > 0 && (
+        <p class="hero__compteur">
+          <a href="/offres"><Icone nom="emploi" taille={18} /><strong>{nombre}</strong> offre{compteurs.offres > 1 ? 's' : ''} à pourvoir</a>
+        </p>
+      )
+    }
+    <h1 class="hero__titre">{accueil?.heroTitre ?? parametres.nomSite}</h1>
+    {accueil?.heroTexte && <p class="hero__texte">{accueil.heroTexte}</p>}
+    {accueil?.heroRecherche && <RechercheOffres surFond id="recherche-hero" />}
+  </div>
+</section>
+
+<Sections sections={accueil?.sections} />

@@ -1,0 +1,68 @@
+---
+import type { Navigation, Parametres } from '../lib/contenus';
+import { absolu, resoudreLien } from '../lib/liens';
+
+interface Props {
+  parametres: Parametres;
+  navigation: Navigation;
+  base?: string;
+}
+
+const { parametres, navigation, base } = Astro.props;
+const lien = (url: string) => absolu(resoudreLien(url, parametres.gestmaxUrlFront), base);
+const NOMS_RESEAUX: Record<string, string> = {
+  facebook: 'Facebook', linkedin: 'LinkedIn', instagram: 'Instagram', youtube: 'YouTube', x: 'X', tiktok: 'TikTok',
+};
+---
+
+<div class="mjc-shell">
+<footer class="pied">
+  <div class="conteneur pied__grille">
+    <div class="pied__identite">
+      <p class="pied__nom">{parametres.nomSite}</p>
+      {parametres.adresse && <address class="pied__adresse">{parametres.adresse}</address>}
+      <ul class="pied__contacts">
+        {parametres.telephone && <li><a href={`tel:${parametres.telephone.replace(/\s/g, '')}`}>{parametres.telephone}</a></li>}
+        {parametres.email && <li><a href={`mailto:${parametres.email}`}>{parametres.email}</a></li>}
+      </ul>
+    </div>
+
+    {
+      navigation.liensPiedDePage.length > 0 && (
+        <nav class="pied__nav" aria-labelledby="pied-titre-liens">
+          <h2 id="pied-titre-liens" class="pied__titre">Liens utiles</h2>
+          <ul>
+            {navigation.liensPiedDePage.map((l) => (
+              <li><a href={lien(l.url)}>{l.libelle}</a></li>
+            ))}
+          </ul>
+        </nav>
+      )
+    }
+
+    {
+      parametres.reseauxSociaux.length > 0 && (
+        <div class="pied__reseaux">
+          <h2 class="pied__titre">Suivez-nous</h2>
+          <ul>
+            {parametres.reseauxSociaux.map((r) => (
+              <li>
+                <a href={r.url} rel="me noopener">{NOMS_RESEAUX[r.reseau] ?? r.reseau}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
+  </div>
+
+  <div class="pied__legal">
+    <div class="conteneur pied__legal-barre">
+      <ul>
+        {navigation.liensLegaux.map((l) => <li><a href={lien(l.url)}>{l.libelle}</a></li>)}
+      </ul>
+      <p>Propulsé par My Job Community</p>
+    </div>
+  </div>
+</footer>
+</div>

@@ -1,0 +1,30 @@
+{
+  "collectionName": "components_elements_bouton",
+  "info": {
+    "displayName": "Bouton",
+    "icon": "cursor"
+  },
+  "options": {},
+  "attributes": {
+    "libelle": {
+      "type": "string",
+      "required": true
+    },
+    "url": {
+      "type": "string",
+      "required": true
+    },
+    "style": {
+      "type": "enumeration",
+      "enum": [
+        "principal",
+        "secondaire"
+      ],
+      "default": "principal"
+    },
+    "nouvelOnglet": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

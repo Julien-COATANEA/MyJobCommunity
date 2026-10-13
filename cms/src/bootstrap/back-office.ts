@@ -1,0 +1,319 @@
+// Confort du back-office pour les collectivités :
+//  - libellés et aides en français sur chaque champ (au lieu de « heroTitre », « couleurPrimaire »…) ;
+//  - colonnes et tri des listes adaptés à chaque contenu ;
+//  - offres en lecture seule pour les rôles Éditeur et Auteur (elles viennent de Gestmax).
+// Les libellés ne remplacent que les valeurs par défaut : une personnalisation faite dans le BO est conservée.
+import type { Core } from '@strapi/strapi';
+
+type Libelle = string | [libelle: string, description: string];
+
+const COMMUNS: Record<string, Libelle> = {
+  titre: 'Titre',
+  slug: ['Adresse de la page (URL)', "Générée à partir du titre. Si vous la modifiez, l'ancienne adresse ne fonctionnera plus."],
+  seo: ['Référencement (Google)', 'Facultatif : par défaut, le titre et le résumé du contenu sont utilisés.'],
+  sections: ['Contenu de la page', 'Ajoutez, déplacez ou supprimez les blocs qui composent la page.'],
+  extrait: ['Résumé', 'Affiché dans les listes et lors des partages sur les réseaux sociaux.'],
+  contenu: 'Contenu',
+  image: 'Image',
+  miseEnAvant: ['Mettre en avant', "Affiché en priorité sur la page d'accueil."],
+  nom: 'Nom',
+  lieu: 'Lieu',
+  adresse: 'Adresse',
+  email: 'E-mail',
+  telephone: 'Téléphone',
+  description: 'Description',
+  createdAt: 'Créé le',
+  updatedAt: 'Modifié le',
+  publishedAt: 'Publié le',
+  // Composants
+  libelle: 'Libellé',
+  url: ['Lien', 'Page du site (/actualites), autre site (https://…) ou site carrière Gestmax (gestmax:/chemin).'],
+  nouvelOnglet: 'Ouvrir dans un nouvel onglet',
+  sousLiens: 'Sous-menu',
+  reseau: 'Réseau social',
+  metaTitle: ['Titre pour Google', '70 caractères maximum.'],
+  metaDescription: ['Description pour Google', '160 caractères environ.'],
+  metaImage: ['Image de partage', 'Affichée lors des partages sur les réseaux sociaux.'],
+  noIndex: ['Masquer cette page des moteurs de recherche', ''],
+  valeur: ['Valeur', 'Ex. : 1 200, 8 %, 30 min'],
+  icone: 'Icône',
+  texte: 'Texte',
+  lien: 'Lien',
+  libelleLien: 'Texte du lien',
+  style: 'Style',
+  question: 'Question',
+  reponse: 'Réponse',
+  introduction: 'Introduction',
+  cartes: 'Cartes',
+  chiffres: 'Chiffres',
+  boutons: 'Boutons',
+  bouton: 'Bouton',
+  positionImage: "Position de l'image",
+  questions: 'Questions',
+  logos: 'Logos',
+  mode: ['Affichage', 'Liste du site (recommandé : référencée par Google) ou intégration du site carrière Gestmax.'],
+  nombre: "Nombre d'éléments affichés",
+  typeContrat: 'Type de contrat',
+  cheminIframe: ['Page Gestmax intégrée', 'Uniquement en mode iframe. Par défaut : /search/last'],
+  titreAccessible: ['Titre accessible', "Décrit le contenu intégré pour les personnes aveugles (obligatoire, RGAA)."],
+  hauteur: 'Hauteur (pixels)',
+  citation: ['Citation', 'Quelques phrases, entre guillemets sur le site.'],
+  role: ['Fonction ou situation', 'Ex. : Technicienne de maintenance, arrivée en 2025'],
+  photo: ['Photo', 'Portrait carré de préférence.'],
+  temoignages: 'Témoignages',
+};
+
+const PAR_TYPE: Record<string, Record<string, Libelle>> = {
+  'api::accueil.accueil': {
+    heroTitre: 'Titre principal',
+    heroTexte: "Texte d'accroche",
+    heroImage: ['Image de fond du bandeau', 'Grande photo du territoire, au format paysage.'],
+    heroRecherche: "Afficher la recherche d'offres dans le bandeau",
+  },
+  'api::page.page': {
+    chapo: ['Introduction', 'Une ou deux phrases affichées sous le titre.'],
+    imageBandeau: 'Image du bandeau',
+  },
+  'api::article.article': {
+    datePublication: 'Date de publication',
+    categorie: 'Catégorie',
+  },
+  'api::evenement.evenement': {
+    typeEvenement: "Type d'événement",
+    dateDebut: 'Début',
+    dateFin: 'Fin',
+    enLigne: 'Événement en ligne',
+    inscriptionActive: ['Inscription en ligne sur le site', 'Affiche un formulaire d’inscription sur la page de l’événement.'],
+    placesMax: ['Nombre de places', 'Laisser vide pour ne pas limiter les inscriptions.'],
+    dateLimiteInscription: ["Date limite d'inscription", "Par défaut : le début de l'événement."],
+    inscriptionExterneUrl: ["Lien d'inscription externe", 'Si renseigné, remplace le formulaire du site.'],
+    inscriptions: 'Inscriptions',
+  },
+  'api::inscription.inscription': {
+    evenement: 'Événement',
+    prenom: 'Prénom',
+    structure: 'Entreprise ou organisme',
+    statut: 'Statut',
+    consentement: 'Consentement (RGPD)',
+  },
+  'api::entreprise.entreprise': {
+    secteur: "Secteur d'activité",
+    ville: 'Ville',
+    effectif: 'Effectif',
+    description: 'Présentation',
+    logo: 'Logo',
+    image: 'Photo',
+    siteWeb: 'Site web',
+    nomEntiteGestmax: ['Nom dans Gestmax', "Nom exact de l'entité dans Gestmax : ses offres seront rattachées automatiquement à cette fiche."],
+    offres: 'Offres en ligne',
+  },
+  'api::offre.offre': {
+    sourceId: 'Identifiant Gestmax',
+    lieu: 'Lieu',
+    departement: 'Département',
+    secteur: 'Secteur',
+    nomEntreprise: 'Entreprise',
+    entreprise: "Fiche dans l'annuaire",
+    salaire: 'Salaire',
+    descriptionHtml: 'Description du poste',
+    profilHtml: 'Profil recherché',
+    dateActivation: 'Publiée le',
+    dateFinPublication: 'Fin de publication',
+    urlDetailGestmax: 'Offre sur Gestmax',
+    urlCandidature: 'Lien de candidature',
+    logoUrl: "Logo de l'entreprise",
+    latitude: 'Latitude',
+    longitude: 'Longitude',
+  },
+  'api::parametres.parametres': {
+    nomSite: 'Nom du site',
+    baseline: 'Slogan',
+    logo: 'Logo',
+    logoTexte: ['Initiales', 'Affichées à la place du logo si aucun logo n’est déposé (4 caractères max).'],
+    favicon: ["Icône d'onglet", 'Petite image carrée affichée dans les onglets du navigateur.'],
+    couleurPrimaire: ['Couleur principale', 'Boutons, liens, éléments actifs. Doit rester lisible avec du texte blanc.'],
+    couleurSecondaire: ['Couleur secondaire', 'Bandeaux et pied de page. Doit rester lisible avec du texte blanc.'],
+    couleurAccent: ["Couleur d'accent", 'Touches de couleur : soulignés, étiquettes, bouton de recherche.'],
+    couleurTexte: 'Couleur du texte',
+    couleurFond: 'Couleur de fond',
+    policeTitres: 'Police des titres',
+    policeTexte: 'Police du texte',
+    arrondis: 'Arrondis des angles',
+    email: 'E-mail de contact',
+    reseauxSociaux: 'Réseaux sociaux',
+    emailNotificationInscriptions: ['E-mail de notification', 'Reçoit un message à chaque inscription à un événement.'],
+    gestmaxUrlFront: ['Adresse du site carrière Gestmax', 'Ex. : https://emploi.ma-collectivite.fr'],
+    lienEspaceCandidat: 'Lien « Espace candidat »',
+    lienEspaceRecruteur: 'Lien « Espace recruteur »',
+    lienCandidatureSpontanee: 'Lien « Candidature spontanée »',
+    seoParDefaut: 'Référencement par défaut',
+  },
+  'api::navigation.navigation': {
+    menuPrincipal: ['Menu principal', 'Les entrées avec un sous-menu s’ouvrent au clic.'],
+    liensPiedDePage: 'Liens du pied de page',
+    liensLegaux: 'Liens légaux (mentions, accessibilité…)',
+  },
+  'navigation.sous-lien': { description: ['Description', 'Petite phrase sous le lien.'] },
+};
+
+// Colonnes des listes et tri par défaut.
+const LISTES: Record<string, { colonnes: string[]; tri?: [string, 'ASC' | 'DESC'] }> = {
+  'api::page.page': { colonnes: ['titre', 'slug', 'updatedAt'], tri: ['titre', 'ASC'] },
+  'api::article.article': { colonnes: ['titre', 'categorie', 'datePublication', 'miseEnAvant'], tri: ['datePublication', 'DESC'] },
+  'api::evenement.evenement': { colonnes: ['titre', 'typeEvenement', 'dateDebut', 'inscriptionActive'], tri: ['dateDebut', 'DESC'] },
+  'api::inscription.inscription': { colonnes: ['prenom', 'nom', 'email', 'evenement', 'createdAt'], tri: ['createdAt', 'DESC'] },
+  'api::entreprise.entreprise': { colonnes: ['nom', 'secteur', 'ville', 'miseEnAvant'], tri: ['nom', 'ASC'] },
+  'api::offre.offre': { colonnes: ['titre', 'nomEntreprise', 'typeContrat', 'lieu', 'dateActivation'], tri: ['dateActivation', 'DESC'] },
+  'api::categorie-article.categorie-article': { colonnes: ['nom'], tri: ['nom', 'ASC'] },
+  'api::secteur.secteur': { colonnes: ['nom'], tri: ['nom', 'ASC'] },
+};
+
+// Champ affiché pour représenter un contenu dans les relations.
+const CHAMP_PRINCIPAL: Record<string, string> = {
+  'api::inscription.inscription': 'email',
+};
+
+// Disposition des formulaires : champs regroupés par thème, sur des lignes de 12 colonnes.
+// Les champs absents (ex. relation « inscriptions ») ne sont pas affichés : ils ont leur propre encart.
+type Ligne = [champ: string, taille: number][];
+const FORMULAIRES: Record<string, Ligne[]> = {
+  'api::evenement.evenement': [
+    [['titre', 8], ['typeEvenement', 4]],
+    [['dateDebut', 6], ['dateFin', 6]],
+    [['enLigne', 4], ['lieu', 4], ['adresse', 4]],
+    [['extrait', 12]],
+    [['image', 6], ['slug', 6]],
+    [['contenu', 12]],
+    [['inscriptionActive', 4], ['placesMax', 4], ['dateLimiteInscription', 4]],
+    [['inscriptionExterneUrl', 12]],
+    [['seo', 12]],
+  ],
+  'api::article.article': [
+    [['titre', 8], ['categorie', 4]],
+    [['datePublication', 6], ['miseEnAvant', 6]],
+    [['extrait', 12]],
+    [['image', 6], ['slug', 6]],
+    [['contenu', 12]],
+    [['seo', 12]],
+  ],
+  'api::entreprise.entreprise': [
+    [['nom', 8], ['secteur', 4]],
+    [['ville', 4], ['adresse', 4], ['effectif', 4]],
+    [['extrait', 12]],
+    [['logo', 6], ['image', 6]],
+    [['description', 12]],
+    [['siteWeb', 6], ['nomEntiteGestmax', 6]],
+    [['miseEnAvant', 6], ['slug', 6]],
+    [['seo', 12]],
+  ],
+  'api::page.page': [
+    [['titre', 6], ['slug', 6]],
+    [['chapo', 12]],
+    [['imageBandeau', 6]],
+    [['sections', 12]],
+    [['seo', 12]],
+  ],
+};
+
+// Exemples affichés dans les champs vides.
+const EXEMPLES: Record<string, string> = {
+  titre: 'Ex. : Le Forum de l’emploi revient en novembre',
+  extrait: 'En une ou deux phrases : l’essentiel à retenir.',
+  chapo: 'Une ou deux phrases d’introduction.',
+  lieu: 'Ex. : Parc des expositions',
+  adresse: 'Ex. : 1 avenue du Lac, 00000 Vallée-Verte',
+  inscriptionExterneUrl: 'https://…',
+  siteWeb: 'https://…',
+  nomEntiteGestmax: 'Nom exact dans Gestmax',
+  ville: 'Ex. : Vallée-Verte',
+  metaTitle: 'Laisser vide pour reprendre le titre',
+  metaDescription: 'Laisser vide pour reprendre le résumé',
+  url: '/page, https://… ou gestmax:/chemin',
+};
+
+const VERSION_LISTES = 2;
+
+export async function configurerBackOffice(strapi: Core.Strapi) {
+  const cm = strapi.plugin('content-manager');
+  const configuration = strapi.store({ type: 'core', name: 'mjc', key: 'back-office' });
+  const etat = ((await configuration.get({})) as { versionListes?: number } | null) ?? {};
+  const appliquerListes = (etat.versionListes ?? 0) < VERSION_LISTES;
+
+  const traiter = async (service: any, uid: string, modele: any) => {
+    if (!modele) return;
+    const conf = await service.findConfiguration(modele);
+    const libelles = { ...COMMUNS, ...(PAR_TYPE[uid] ?? {}) };
+    let modifie = false;
+
+    for (const [champ, meta] of Object.entries<any>(conf.metadatas ?? {})) {
+      const entree = libelles[champ];
+      if (!entree) continue;
+      const [libelle, description] = Array.isArray(entree) ? entree : [entree, undefined];
+      if (meta.edit && meta.edit.label === champ) {
+        meta.edit.label = libelle;
+        if (description && !meta.edit.description) meta.edit.description = description;
+        modifie = true;
+      }
+      if (meta.list && meta.list.label === champ) {
+        meta.list.label = libelle;
+        modifie = true;
+      }
+    }
+
+    const liste = LISTES[uid];
+    if (appliquerListes && liste) {
+      conf.layouts.list = liste.colonnes.filter((c) => c in (conf.metadatas ?? {}));
+      if (liste.tri) {
+        conf.settings.defaultSortBy = liste.tri[0];
+        conf.settings.defaultSortOrder = liste.tri[1];
+      }
+      modifie = true;
+    }
+    const formulaire = FORMULAIRES[uid];
+    if (appliquerListes && formulaire) {
+      conf.layouts.edit = formulaire
+        .map((ligne) => ligne.filter(([champ]) => champ in (conf.metadatas ?? {})).map(([name, size]) => ({ name, size })))
+        .filter((ligne) => ligne.length);
+      modifie = true;
+    }
+    for (const [champ, meta] of Object.entries<any>(conf.metadatas ?? {})) {
+      if (EXEMPLES[champ] && meta.edit && !meta.edit.placeholder) {
+        meta.edit.placeholder = EXEMPLES[champ];
+        modifie = true;
+      }
+    }
+    if (CHAMP_PRINCIPAL[uid] && conf.settings.mainField !== CHAMP_PRINCIPAL[uid]) {
+      conf.settings.mainField = CHAMP_PRINCIPAL[uid];
+      modifie = true;
+    }
+
+    if (modifie) {
+      await service.updateConfiguration(modele, { settings: conf.settings, metadatas: conf.metadatas, layouts: conf.layouts });
+    }
+  };
+
+  const typesService = cm.service('content-types');
+  for (const uid of Object.keys(strapi.contentTypes).filter((u) => u.startsWith('api::'))) {
+    await traiter(typesService, uid, typesService.findContentType(uid));
+  }
+  const composantsService = cm.service('components');
+  for (const uid of Object.keys(strapi.components)) {
+    await traiter(composantsService, uid, composantsService.findComponent(uid));
+  }
+
+  await configuration.set({ value: { ...etat, versionListes: VERSION_LISTES } });
+  await restreindreOffres(strapi);
+}
+
+/** Les offres viennent de Gestmax : Éditeur et Auteur peuvent les consulter, pas les modifier. */
+async function restreindreOffres(strapi: Core.Strapi) {
+  const roles = await strapi.db.query('admin::role').findMany({ where: { code: { $in: ['strapi-editor', 'strapi-author'] } } });
+  if (!roles.length) return;
+  await strapi.db.query('admin::permission').deleteMany({
+    where: {
+      subject: 'api::offre.offre',
+      action: { $in: ['plugin::content-manager.explorer.create', 'plugin::content-manager.explorer.update', 'plugin::content-manager.explorer.delete', 'plugin::content-manager.explorer.publish'] },
+      role: { id: { $in: roles.map((r: any) => r.id) } },
+    },
+  });
+}

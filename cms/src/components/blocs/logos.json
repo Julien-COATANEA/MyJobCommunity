@@ -1,0 +1,19 @@
+{
+  "collectionName": "components_blocs_logos",
+  "info": {
+    "displayName": "Logos des partenaires",
+    "icon": "picture"
+  },
+  "options": {},
+  "attributes": {
+    "titre": {
+      "type": "string"
+    },
+    "logos": {
+      "type": "component",
+      "component": "elements.logo",
+      "repeatable": true,
+      "min": 1
+    }
+  }
+}

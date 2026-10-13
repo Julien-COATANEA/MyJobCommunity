@@ -1,0 +1,35 @@
+---
+import type { GetStaticPaths, Page } from 'astro';
+import Base from '../../layouts/Base.astro';
+import EnTetePage from '../../components/EnTetePage.astro';
+import CarteArticle from '../../components/cartes/CarteArticle.astro';
+import Pagination from '../../components/Pagination.astro';
+import { lireArticles, type Article } from '../../lib/contenus';
+
+export const getStaticPaths = (async ({ paginate }) => {
+  return paginate(await lireArticles(), { pageSize: 12 });
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props as { page: Page<Article> };
+const titre = page.currentPage > 1 ? `Actualités, page ${page.currentPage} sur ${page.lastPage}` : 'Actualités';
+---
+
+<Base titre={titre} description="Les actualités de l'emploi sur le territoire." ariane={[{ libelle: 'Actualités' }]}>
+  <EnTetePage titre="Actualités" chapo="Recrutements, formations, vie du territoire : toute l'info emploi." />
+  <section class="section">
+    <div class="conteneur">
+      {
+        page.data.length ? (
+          <ul class="grille grille--3">
+            {page.data.map((article) => (
+              <li><CarteArticle article={article} niveauTitre={2} /></li>
+            ))}
+          </ul>
+        ) : (
+          <p>Aucune actualité pour le moment.</p>
+        )
+      }
+      <Pagination page={page} />
+    </div>
+  </section>
+</Base>

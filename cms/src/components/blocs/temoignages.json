@@ -1,0 +1,22 @@
+{
+  "collectionName": "components_blocs_temoignages",
+  "info": {
+    "displayName": "Témoignages",
+    "icon": "quote",
+    "description": "Paroles de salariés, de nouveaux arrivants ou d'employeurs"
+  },
+  "options": {},
+  "attributes": {
+    "titre": {
+      "type": "string",
+      "default": "Ils ont choisi le territoire"
+    },
+    "temoignages": {
+      "type": "component",
+      "component": "elements.temoignage",
+      "repeatable": true,
+      "min": 1,
+      "max": 6
+    }
+  }
+}

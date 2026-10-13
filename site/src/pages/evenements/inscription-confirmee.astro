@@ -1,0 +1,10 @@
+---
+// Page de retour du formulaire d'inscription envoyé sans JavaScript.
+import Base from '../../layouts/Base.astro';
+import EnTetePage from '../../components/EnTetePage.astro';
+---
+
+<Base titre="Inscription confirmée" noIndex ariane={[{ libelle: 'Événements', url: '/evenements' }, { libelle: 'Inscription confirmée' }]}>
+  <EnTetePage titre="Votre inscription est confirmée" chapo="Un e-mail de confirmation vient de vous être envoyé." />
+  <p class="conteneur conteneur--etroit section"><a href="/evenements" class="bouton bouton--plein">Voir les autres événements</a></p>
+</Base>

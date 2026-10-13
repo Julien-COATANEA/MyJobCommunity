@@ -1,0 +1,41 @@
+---
+// Témoignages : <figure> + <blockquote> + <figcaption>, la structure sémantique attendue pour une citation.
+import ImageStrapi from '../ImageStrapi.astro';
+import Icone from '../Icone.astro';
+import type { Temoignage } from '../../lib/contenus';
+
+const { bloc } = Astro.props;
+const temoignages: Temoignage[] = bloc.temoignages ?? [];
+const initiale = (nom: string) => nom.trim().charAt(0).toUpperCase();
+---
+
+<section class="section section--temoignages">
+  <div class="conteneur">
+    {bloc.titre && <h2 class="section__titre">{bloc.titre}</h2>}
+    <ul class="temoignages">
+      {
+        temoignages.map((t) => (
+          <li>
+            <figure class="temoignage">
+              <Icone nom="guillemet" taille={32} class="temoignage__guillemet" />
+              <blockquote class="temoignage__citation">
+                <p>{t.citation}</p>
+              </blockquote>
+              <figcaption class="temoignage__auteur">
+                {t.photo ? (
+                  <ImageStrapi media={{ ...t.photo, alternativeText: '' }} class="temoignage__photo" largeurs={[96, 160]} sizes="56px" />
+                ) : (
+                  <span class="temoignage__photo temoignage__photo--initiale" aria-hidden="true">{initiale(t.nom)}</span>
+                )}
+                <span>
+                  <strong>{t.nom}</strong>
+                  {t.role && <span class="temoignage__role">{t.role}</span>}
+                </span>
+              </figcaption>
+            </figure>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

@@ -1,0 +1,30 @@
+---
+import Icone from './Icone.astro';
+import { lireParametres } from '../lib/contenus';
+import { estExterne, resoudreLien } from '../lib/liens';
+
+interface Props {
+  bouton: { libelle: string; url: string; style?: 'principal' | 'secondaire' | null; nouvelOnglet?: boolean | null };
+  /** Bouton posé sur un fond coloré. */
+  surFond?: boolean;
+}
+
+const { bouton, surFond = false } = Astro.props;
+const { gestmaxUrlFront } = await lireParametres();
+const href = resoudreLien(bouton.url, gestmaxUrlFront);
+const secondaire = bouton.style === 'secondaire';
+---
+
+<a
+  href={href}
+  class:list={[
+    'bouton',
+    surFond ? (secondaire ? 'bouton--contour-clair' : 'bouton--clair') : secondaire ? 'bouton--contour' : 'bouton--plein',
+  ]}
+  target={bouton.nouvelOnglet ? '_blank' : undefined}
+  rel={bouton.nouvelOnglet ? 'noopener' : undefined}
+>
+  {bouton.libelle}
+  {bouton.nouvelOnglet ? <span class="sr-only"> (nouvelle fenêtre)</span> : null}
+  <Icone nom={estExterne(href) ? 'externe' : 'fleche'} taille={18} />
+</a>

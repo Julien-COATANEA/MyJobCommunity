@@ -1,0 +1,31 @@
+---
+// Contenu d'un article (page publique et aperçu des brouillons).
+import ImageStrapi from '../ImageStrapi.astro';
+import type { Article } from '../../lib/contenus';
+import { rendreBlocks } from '../../lib/blocks';
+import { formatDate } from '../../lib/format';
+import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
+
+interface Props {
+  article: Article;
+}
+
+const { article } = Astro.props;
+---
+
+<article class="article">
+  <header class="conteneur conteneur--etroit article__entete">
+    {article.categorie && <p class="etiquette">{article.categorie.nom}</p>}
+    <h1>{article.titre}</h1>
+    <p class="article__date">Publié le <time datetime={article.datePublication}>{formatDate(article.datePublication)}</time></p>
+    <p class="article__chapo">{article.extrait}</p>
+  </header>
+  {
+    article.image && (
+      <div class="conteneur article__image">
+        <ImageStrapi media={article.image} largeurs={[640, 1024, 1400]} sizes="(min-width: 1200px) 1140px, 100vw" prioritaire />
+      </div>
+    )
+  }
+  <div class="conteneur conteneur--etroit prose" set:html={rendreBlocks(article.contenu, { baseMedias: PUBLIC_STRAPI_URL })} />
+</article>

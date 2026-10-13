@@ -1,0 +1,176 @@
+---
+// En-tête et menu principal (motif « disclosure » accessible).
+// Sans JavaScript (ex. en-tête repris par Gestmax), les sous-menus s'ouvrent au survol et au focus.
+import Icone from './Icone.astro';
+import type { Navigation, Parametres } from '../lib/contenus';
+import { absolu, estActif, estExterne, resoudreLien } from '../lib/liens';
+import { urlMedia } from '../lib/strapi';
+
+interface Props {
+  parametres: Parametres;
+  navigation: Navigation;
+  /** Préfixe des liens internes (en-tête affiché hors du site, ex. sur le front Gestmax). */
+  base?: string;
+}
+
+const { parametres, navigation, base } = Astro.props;
+const chemin = Astro.url.pathname;
+const lien = (url: string | null | undefined) => absolu(resoudreLien(url, parametres.gestmaxUrlFront), base);
+const logo = urlMedia(parametres.logo, true);
+const acces = [
+  { libelle: 'Espace candidat', url: parametres.lienEspaceCandidat, icone: 'utilisateur' },
+  { libelle: 'Espace recruteur', url: parametres.lienEspaceRecruteur, icone: 'emploi' },
+].filter((a) => a.url);
+---
+
+<div class="mjc-shell" data-mjc-shell={parametres.nomSite}>
+<div class="evitement">
+  {/* Liens relatifs à la page affichée : aussi valables sur les pages Gestmax qui reprennent l'en-tête. */}
+  <a href="#contenu">Aller au contenu</a>
+  <a href="#navigation">Aller au menu</a>
+</div>
+
+<header class="entete">
+  <div class="conteneur entete__barre">
+    <a href={absolu('/', base)} class="marque">
+      {
+        logo ? (
+          <img class="marque__logo" src={logo} alt="" width="48" height="48" />
+        ) : (
+          <span class="marque__pastille" aria-hidden="true">{parametres.logoTexte ?? parametres.nomSite.slice(0, 2)}</span>
+        )
+      }
+      <span class="marque__texte">
+        <span class="marque__nom">{parametres.nomSite}</span>
+        {parametres.baseline && <span class="marque__baseline">{parametres.baseline}</span>}
+      </span>
+      <span class="sr-only">, retour à l'accueil</span>
+    </a>
+
+    <button type="button" class="entete__burger" aria-expanded="false" aria-controls="navigation" hidden data-burger>
+      <Icone nom="menu" />
+      <span>Menu</span>
+    </button>
+
+    <nav id="navigation" class="nav" aria-label="Menu principal" data-nav>
+      <ul class="nav__liste">
+        {
+          navigation.menuPrincipal.map((entree, i) => {
+            const actif = [entree.url, ...entree.sousLiens.map((s) => s.url)].some((u) => u && estActif(u, chemin));
+            return entree.sousLiens.length ? (
+              <li class="nav__item nav__item--sous-menu">
+                <button
+                  type="button"
+                  class:list={['nav__lien', { 'nav__lien--actif': actif }]}
+                  aria-expanded="false"
+                  aria-controls={`sous-menu-${i}`}
+                  data-sous-menu
+                >
+                  {entree.libelle}
+                  <Icone nom="chevron" taille={16} />
+                </button>
+                <ul id={`sous-menu-${i}`} class="sous-menu">
+                  {entree.sousLiens.map((s) => {
+                    const href = lien(s.url);
+                    return (
+                      <li>
+                        <a
+                          href={href}
+                          class="sous-menu__lien"
+                          aria-current={estActif(s.url, chemin) ? 'page' : undefined}
+                          target={s.nouvelOnglet ? '_blank' : undefined}
+                          rel={s.nouvelOnglet ? 'noopener' : undefined}
+                        >
+                          <span class="sous-menu__titre">
+                            {s.libelle}
+                            {s.nouvelOnglet && <span class="sr-only"> (nouvelle fenêtre)</span>}
+                          </span>
+                          {s.description && <span class="sous-menu__desc">{s.description}</span>}
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </li>
+            ) : (
+              <li class="nav__item">
+                <a
+                  href={lien(entree.url)}
+                  class:list={['nav__lien', { 'nav__lien--actif': actif }]}
+                  aria-current={entree.url && estActif(entree.url, chemin) ? 'page' : undefined}
+                >
+                  {entree.libelle}
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+      {
+        acces.length > 0 && (
+          <ul class="nav__acces">
+            {acces.map((a) => {
+              const href = lien(a.url);
+              return (
+                <li>
+                  <a href={href} class="bouton bouton--contour bouton--petit">
+                    <Icone nom={a.icone} taille={18} />
+                    {a.libelle}
+                    {estExterne(href) && !base && <span class="sr-only"> (site partenaire)</span>}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        )
+      }
+    </nav>
+  </div>
+</header>
+</div>
+
+<script>
+  document.documentElement.classList.add('js');
+
+  const burger = document.querySelector<HTMLButtonElement>('[data-burger]');
+  const nav = document.querySelector<HTMLElement>('[data-nav]');
+  const boutons = [...document.querySelectorAll<HTMLButtonElement>('[data-sous-menu]')];
+
+  const fermerSousMenus = (sauf?: HTMLButtonElement) =>
+    boutons.forEach((b) => b !== sauf && b.setAttribute('aria-expanded', 'false'));
+
+  if (burger && nav) {
+    burger.hidden = false;
+    burger.addEventListener('click', () => {
+      const ouvert = burger.getAttribute('aria-expanded') === 'true';
+      burger.setAttribute('aria-expanded', String(!ouvert));
+      nav.classList.toggle('nav--ouverte', !ouvert);
+    });
+  }
+
+  boutons.forEach((bouton) => {
+    bouton.addEventListener('click', () => {
+      const ouvert = bouton.getAttribute('aria-expanded') === 'true';
+      fermerSousMenus(bouton);
+      bouton.setAttribute('aria-expanded', String(!ouvert));
+    });
+  });
+
+  // Échap ferme le sous-menu ouvert et rend le focus à son bouton.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const ouvert = boutons.find((b) => b.getAttribute('aria-expanded') === 'true');
+    if (ouvert) {
+      ouvert.setAttribute('aria-expanded', 'false');
+      ouvert.focus();
+    }
+  });
+
+  // Clic ou focus en dehors du menu : fermeture.
+  document.addEventListener('click', (e) => {
+    if (!(e.target as Element).closest('.nav__item--sous-menu')) fermerSousMenus();
+  });
+  document.addEventListener('focusin', (e) => {
+    if (!(e.target as Element).closest('.nav__item--sous-menu')) fermerSousMenus();
+  });
+</script>

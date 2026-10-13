@@ -1,0 +1,19 @@
+---
+// Page de retour du formulaire d'inscription envoyé sans JavaScript.
+import Base from '../../layouts/Base.astro';
+import EnTetePage from '../../components/EnTetePage.astro';
+---
+
+<Base titre="Inscription impossible" noIndex ariane={[{ libelle: 'Événements', url: '/evenements' }, { libelle: 'Inscription impossible' }]}>
+  <EnTetePage titre="Votre inscription n'a pas pu être enregistrée" />
+  <div class="conteneur conteneur--etroit section prose">
+    <p>Plusieurs raisons sont possibles :</p>
+    <ul>
+      <li>un champ obligatoire est vide ou mal renseigné ;</li>
+      <li>l'événement est complet ou les inscriptions sont closes ;</li>
+      <li>vous êtes déjà inscrit(e) avec cette adresse e-mail.</li>
+    </ul>
+    <p>Revenez à la page de l'événement pour vérifier vos informations.</p>
+    <p><a href="/evenements" class="bouton bouton--plein">Retour aux événements</a></p>
+  </div>
+</Base>

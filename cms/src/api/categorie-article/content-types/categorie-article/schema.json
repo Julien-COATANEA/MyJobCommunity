@@ -1,0 +1,31 @@
+{
+  "kind": "collectionType",
+  "collectionName": "categorie_article",
+  "info": {
+    "singularName": "categorie-article",
+    "pluralName": "categories-articles",
+    "displayName": "Catégories d'articles"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "nom": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "nom",
+      "required": true
+    },
+    "articles": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::article.article",
+      "mappedBy": "categorie"
+    }
+  }
+}

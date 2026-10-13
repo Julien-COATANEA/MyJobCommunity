@@ -1,0 +1,48 @@
+---
+import '../styles/global.css';
+import '../styles/shell.css';
+import Seo from '../components/Seo.astro';
+import Entete from '../components/Entete.astro';
+import PiedDePage from '../components/PiedDePage.astro';
+import FilAriane, { type Miette } from '../components/FilAriane.astro';
+import { lireNavigation, lireParametres } from '../lib/contenus';
+import { cssTheme, policesUtilisees } from '../lib/theme';
+import { urlMedia, type Seo as SeoStrapi } from '../lib/strapi';
+
+interface Props {
+  titre?: string;
+  description?: string;
+  seo?: SeoStrapi | null;
+  image?: string | null;
+  type?: 'website' | 'article';
+  noIndex?: boolean;
+  jsonLd?: Record<string, unknown>[];
+  /** Fil d'Ariane (hors accueil). La dernière miette est la page courante. */
+  ariane?: Miette[];
+}
+
+const { ariane, ...seo } = Astro.props;
+const [parametres, navigation] = await Promise.all([lireParametres(), lireNavigation()]);
+const favicon = urlMedia(parametres.favicon, true);
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <Seo parametres={parametres} {...seo} />
+    {policesUtilisees(parametres).map((p) => <link rel="preload" href={p.url} as="font" type="font/woff2" crossorigin />)}
+    <style is:inline set:html={cssTheme(parametres)}></style>
+    {favicon ? <link rel="icon" href={favicon} /> : <link rel="icon" href="/favicon.svg" type="image/svg+xml" />}
+    <link rel="sitemap" href="/sitemap-index.xml" />
+  </head>
+  <body>
+    <Entete parametres={parametres} navigation={navigation} />
+    <main id="contenu" tabindex="-1">
+      {ariane && <FilAriane miettes={ariane} />}
+      <slot />
+    </main>
+    <PiedDePage parametres={parametres} navigation={navigation} />
+  </body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "collectionName": "components_blocs_iframe",
+  "info": {
+    "displayName": "Contenu externe intégré",
+    "icon": "code",
+    "description": "Le titre accessible décrit le contenu de l'iframe (obligatoire RGAA)"
+  },
+  "options": {},
+  "attributes": {
+    "titre": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string",
+      "required": true
+    },
+    "titreAccessible": {
+      "type": "string",
+      "required": true
+    },
+    "hauteur": {
+      "type": "integer",
+      "default": 600,
+      "min": 200,
+      "max": 3000
+    }
+  }
+}

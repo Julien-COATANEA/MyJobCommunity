@@ -1,0 +1,24 @@
+---
+// En-tête des blocs de liste : titre à gauche, lien « Tout voir » à droite (rythme différent des blocs centrés).
+import Icone from './Icone.astro';
+
+interface Props {
+  titre?: string | null;
+  lien?: string;
+  libelleLien?: string;
+}
+
+const { titre, lien, libelleLien = 'Tout voir' } = Astro.props;
+---
+
+<div class="section__entete">
+  {titre && <h2 class="section__titre section__titre--gauche">{titre}</h2>}
+  {
+    lien && (
+      <a href={lien} class="section__tout-voir">
+        {libelleLien}
+        <Icone nom="fleche" taille={18} />
+      </a>
+    )
+  }
+</div>

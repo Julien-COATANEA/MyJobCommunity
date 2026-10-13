@@ -1,0 +1,30 @@
+{
+  "name": "myjobcommunity-site",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@astrojs/node": "^11.1.7",
+    "@astrojs/sitemap": "3.7.4",
+    "@fontsource-variable/atkinson-hyperlegible-next": "^5.3.0",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/sora": "^5.3.0",
+    "@fontsource-variable/source-sans-3": "^5.3.1",
+    "astro": "7.3.8",
+    "sanitize-html": "^2.18.0"
+  },
+  "devDependencies": {
+    "@types/sanitize-html": "^2.16.0",
+    "vitest": "^5.0.1"
+  }
+}

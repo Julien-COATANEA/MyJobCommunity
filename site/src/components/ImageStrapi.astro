@@ -1,0 +1,48 @@
+---
+// Image Strapi optimisée au build (WebP redimensionné, attributs width/height contre les décalages de mise en page).
+import { Image } from 'astro:assets';
+import { urlMedia, type Media } from '../lib/strapi';
+
+interface Props {
+  media: Media | null | undefined;
+  /** Largeurs générées pour le srcset. */
+  largeurs?: number[];
+  sizes?: string;
+  class?: string;
+  /** Image principale de la page : chargée en priorité. */
+  prioritaire?: boolean;
+  /** Force une image décorative (alt vide), ex. visuel d'une carte dont le titre suffit. */
+  decorative?: boolean;
+}
+
+const { media, largeurs = [480, 800, 1200], sizes = '100vw', class: classe, prioritaire = false, decorative = false } = Astro.props;
+const src = urlMedia(media);
+const alt = decorative ? '' : (media?.alternativeText ?? '');
+const largeurOriginale = media?.width ?? 1200;
+const hauteurOriginale = media?.height ?? 800;
+// L'image de repli (src) ne dépasse pas la plus grande largeur demandée : jamais l'original de plusieurs Mo.
+const largeur = Math.min(largeurOriginale, Math.max(...largeurs));
+const hauteur = Math.round((hauteurOriginale * largeur) / largeurOriginale);
+const svg = media?.mime === 'image/svg+xml';
+---
+
+{
+  src &&
+    (svg ? (
+      <img src={urlMedia(media, true)} alt={alt} width={largeur} height={hauteur} class={classe} loading={prioritaire ? 'eager' : 'lazy'} decoding="async" />
+    ) : (
+      <Image
+        src={src}
+        alt={alt}
+        width={largeur}
+        height={hauteur}
+        widths={largeurs.filter((l) => l <= largeur).concat(largeurs.some((l) => l <= largeur) ? [] : [largeur])}
+        sizes={sizes}
+        format="webp"
+        quality={75}
+        class={classe}
+        loading={prioritaire ? 'eager' : 'lazy'}
+        fetchpriority={prioritaire ? 'high' : 'auto'}
+      />
+    ))
+}

@@ -1,0 +1,57 @@
+{
+  "kind": "singleType",
+  "collectionName": "accueil",
+  "info": {
+    "singularName": "accueil",
+    "pluralName": "accueils",
+    "displayName": "Page d'accueil"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "heroTitre": {
+      "type": "string",
+      "required": true
+    },
+    "heroTexte": {
+      "type": "text"
+    },
+    "heroImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "heroRecherche": {
+      "type": "boolean",
+      "default": true
+    },
+    "sections": {
+      "type": "dynamiczone",
+      "components": [
+        "blocs.texte",
+        "blocs.texte-image",
+        "blocs.chiffres-cles",
+        "blocs.cartes",
+        "blocs.appel-action",
+        "blocs.faq",
+        "blocs.logos",
+        "blocs.recherche-offres",
+        "blocs.dernieres-offres",
+        "blocs.dernieres-actualites",
+        "blocs.prochains-evenements",
+        "blocs.entreprises",
+        "blocs.temoignages",
+        "blocs.iframe"
+      ]
+    },
+    "seo": {
+      "type": "component",
+      "component": "shared.seo",
+      "repeatable": false
+    }
+  }
+}

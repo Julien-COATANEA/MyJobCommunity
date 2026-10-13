@@ -1,0 +1,52 @@
+{
+  "kind": "collectionType",
+  "collectionName": "inscription",
+  "info": {
+    "singularName": "inscription",
+    "pluralName": "inscriptions",
+    "displayName": "Inscriptions"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "evenement": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::evenement.evenement",
+      "inversedBy": "inscriptions"
+    },
+    "prenom": {
+      "type": "string",
+      "required": true
+    },
+    "nom": {
+      "type": "string",
+      "required": true
+    },
+    "email": {
+      "type": "email",
+      "required": true
+    },
+    "telephone": {
+      "type": "string"
+    },
+    "structure": {
+      "type": "string"
+    },
+    "statut": {
+      "type": "enumeration",
+      "enum": [
+        "confirmee",
+        "annulee"
+      ],
+      "default": "confirmee",
+      "required": true
+    },
+    "consentement": {
+      "type": "boolean",
+      "required": true
+    }
+  }
+}

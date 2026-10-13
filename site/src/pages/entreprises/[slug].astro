@@ -1,0 +1,29 @@
+---
+import Base from '../../layouts/Base.astro';
+import VueEntreprise from '../../components/vues/VueEntreprise.astro';
+import { lireEntreprises, lireOffres, type Entreprise, type Offre } from '../../lib/contenus';
+import { urlMedia } from '../../lib/strapi';
+
+export async function getStaticPaths() {
+  const [entreprises, offres] = await Promise.all([lireEntreprises(), lireOffres()]);
+  return entreprises.map((entreprise) => ({
+    params: { slug: entreprise.slug },
+    props: { entreprise, offres: offres.filter((o) => o.entreprise?.slug === entreprise.slug) },
+  }));
+}
+
+const { entreprise: e, offres } = Astro.props as { entreprise: Entreprise; offres: Offre[] };
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: e.nom,
+  description: e.extrait,
+  ...(e.siteWeb ? { url: e.siteWeb } : {}),
+  ...(e.logo ? { logo: urlMedia(e.logo, true) } : {}),
+  address: { '@type': 'PostalAddress', addressLocality: e.ville, ...(e.adresse ? { streetAddress: e.adresse } : {}), addressCountry: 'FR' },
+};
+---
+
+<Base titre={e.nom} description={e.extrait} seo={e.seo} image={urlMedia(e.image ?? e.logo, true)} jsonLd={[jsonLd]} ariane={[{ libelle: 'Entreprises', url: '/entreprises' }, { libelle: e.nom }]}>
+  <VueEntreprise entreprise={e} offres={offres} />
+</Base>

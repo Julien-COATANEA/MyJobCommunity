@@ -1,0 +1,41 @@
+{
+  "collectionName": "components_elements_carte",
+  "info": {
+    "displayName": "Carte",
+    "icon": "dashboard"
+  },
+  "options": {},
+  "attributes": {
+    "icone": {
+      "type": "enumeration",
+      "enum": [
+        "emploi",
+        "entreprise",
+        "formation",
+        "territoire",
+        "logement",
+        "transport",
+        "sante",
+        "famille",
+        "loisirs",
+        "accompagnement",
+        "evenement",
+        "actualite",
+        "info"
+      ]
+    },
+    "titre": {
+      "type": "string",
+      "required": true
+    },
+    "texte": {
+      "type": "text"
+    },
+    "lien": {
+      "type": "string"
+    },
+    "libelleLien": {
+      "type": "string"
+    }
+  }
+}

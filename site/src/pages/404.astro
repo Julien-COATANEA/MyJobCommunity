@@ -1,0 +1,16 @@
+---
+import Base from '../layouts/Base.astro';
+import EnTetePage from '../components/EnTetePage.astro';
+import RechercheOffres from '../components/RechercheOffres.astro';
+---
+
+<Base titre="Page introuvable" noIndex>
+  <EnTetePage titre="Page introuvable" chapo="La page demandée n'existe pas ou a été déplacée. Si vous cherchiez une offre, elle a peut-être été pourvue." />
+  <section class="section">
+    <div class="conteneur">
+      <h2 class="section__titre">Rechercher une offre</h2>
+      <RechercheOffres />
+      <p class="section__suite"><a href="/">Retour à l'accueil</a> · <a href="/plan-du-site">Plan du site</a></p>
+    </div>
+  </section>
+</Base>

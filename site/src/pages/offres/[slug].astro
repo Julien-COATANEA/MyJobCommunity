@@ -1,0 +1,167 @@
+---
+// Détail d'une offre : page statique indexable + données structurées JobPosting (Google for Jobs).
+// La candidature se fait sur le site carrière Gestmax (lien /apply/...).
+import sanitizeHtml from 'sanitize-html';
+import Base from '../../layouts/Base.astro';
+import EnTetePage from '../../components/EnTetePage.astro';
+import Icone from '../../components/Icone.astro';
+import CarteOffre from '../../components/cartes/CarteOffre.astro';
+import { lireOffres, lireParametres, type Offre } from '../../lib/contenus';
+import { classeContrat, formatDate, ilYA } from '../../lib/format';
+
+export async function getStaticPaths() {
+  const offres = await lireOffres();
+  return offres.map((offre) => {
+    // Offres similaires : même secteur d'abord, puis même contrat.
+    const autres = offres.filter((o) => o.slug !== offre.slug);
+    const similaires = [
+      ...autres.filter((o) => offre.secteur && o.secteur === offre.secteur),
+      ...autres.filter((o) => offre.typeContrat && o.typeContrat === offre.typeContrat),
+    ].filter((o, i, t) => t.findIndex((x) => x.slug === o.slug) === i).slice(0, 3);
+    return { params: { slug: offre.slug }, props: { offre, similaires, nbOffresEntreprise: offres.filter((x) => x.nomEntreprise && x.nomEntreprise === offre.nomEntreprise).length } };
+  });
+}
+
+const { offre: o, similaires, nbOffresEntreprise } = Astro.props as { offre: Offre; similaires: Offre[]; nbOffresEntreprise: number };
+const parametres = await lireParametres();
+
+// Le HTML vient de Gestmax : on ne garde que les balises de mise en forme.
+const nettoyer = (html: string | null) =>
+  html
+    ? sanitizeHtml(html, {
+        allowedTags: ['p', 'br', 'ul', 'ol', 'li', 'strong', 'b', 'em', 'i', 'a', 'h3', 'h4'],
+        allowedAttributes: { a: ['href'] },
+        transformTags: { h1: 'h3', h2: 'h3' },
+      })
+    : '';
+const description = nettoyer(o.descriptionHtml);
+const profil = nettoyer(o.profilHtml);
+const texteBrut = sanitizeHtml(o.descriptionHtml ?? '', { allowedTags: [], allowedAttributes: {} }).replace(/\s+/g, ' ').trim();
+const avertissement = `Vous allez postuler sur l'espace candidat de ${parametres.nomSite} : votre candidature sera transmise directement au recruteur.`;
+
+const TYPES_EMPLOI: Record<string, string> = {
+  CDI: 'FULL_TIME', CDD: 'TEMPORARY', Intérim: 'TEMPORARY', Saisonnier: 'TEMPORARY',
+  Stage: 'INTERN', Alternance: 'OTHER', Apprentissage: 'OTHER', 'Temps partiel': 'PART_TIME',
+};
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'JobPosting',
+  title: o.titre,
+  description: `${description}${profil}` || o.titre,
+  identifier: { '@type': 'PropertyValue', name: o.nomEntreprise ?? parametres.nomSite, value: o.sourceId },
+  ...(o.dateActivation ? { datePosted: o.dateActivation } : {}),
+  ...(o.dateFinPublication ? { validThrough: o.dateFinPublication } : {}),
+  ...(o.typeContrat && TYPES_EMPLOI[o.typeContrat] ? { employmentType: TYPES_EMPLOI[o.typeContrat] } : {}),
+  hiringOrganization: {
+    '@type': 'Organization',
+    name: o.nomEntreprise ?? parametres.nomSite,
+    ...(o.logoUrl ? { logo: o.logoUrl } : {}),
+    ...(o.entreprise ? { sameAs: new URL(`/entreprises/${o.entreprise.slug}`, Astro.site).toString() } : {}),
+  },
+  jobLocation: {
+    '@type': 'Place',
+    address: {
+      '@type': 'PostalAddress',
+      ...(o.lieu ? { addressLocality: o.lieu } : {}),
+      ...(o.departement ? { addressRegion: o.departement } : {}),
+      addressCountry: 'FR',
+    },
+    ...(o.latitude != null ? { geo: { '@type': 'GeoCoordinates', latitude: o.latitude, longitude: o.longitude } } : {}),
+  },
+  directApply: false,
+};
+---
+
+<Base titre={`${o.titre}${o.lieu ? ` à ${o.lieu}` : ''}`} description={texteBrut.slice(0, 155)} jsonLd={[jsonLd]} ariane={[{ libelle: "Offres d'emploi", url: '/offres' }, { libelle: o.titre }]}>
+  <div class="conteneur retour-resultats">
+    <a href="/offres" data-retour-resultats><Icone nom="retour" taille={18} />Retour aux offres</a>
+  </div>
+
+  <EnTetePage titre={o.titre} surtitre={o.nomEntreprise}>
+    <p class="offre__badges offre__badges--entete">
+      {o.typeContrat && <span class={`badge-contrat badge-contrat--${classeContrat(o.typeContrat)}`}>{o.typeContrat}</span>}
+    </p>
+    <ul class="meta meta--entete">
+      {o.lieu && <li><Icone nom="lieu" taille={20} />{o.lieu}{o.departement && o.departement !== o.lieu ? `, ${o.departement}` : ''}</li>}
+      {o.salaire && <li><Icone nom="euro" taille={20} />{o.salaire}</li>}
+      {o.dateActivation && <li><Icone nom="horloge" taille={20} /><time datetime={o.dateActivation}>Publiée {ilYA(o.dateActivation)}</time></li>}
+    </ul>
+  </EnTetePage>
+
+  <div class="conteneur evenement">
+    <div class="evenement__contenu prose">
+      {description && <><h2>Le poste</h2><Fragment set:html={description} /></>}
+      {profil && <><h2>Le profil recherché</h2><Fragment set:html={profil} /></>}
+    </div>
+    <aside class="evenement__infos" aria-labelledby="postuler">
+      <h2 id="postuler">Postuler</h2>
+      {
+        o.urlCandidature ? (
+          <>
+            <p>
+              <a href={o.urlCandidature} class="bouton bouton--accent bouton--large" aria-describedby="avertissement-candidature">
+                Postuler à cette offre
+                <Icone nom="externe" taille={18} />
+              </a>
+            </p>
+            <p class="petit" id="avertissement-candidature">{avertissement}</p>
+          </>
+        ) : (
+          <p>Les modalités de candidature figurent dans l'offre.</p>
+        )
+      }
+      {o.dateFinPublication && <p class="petit">Offre en ligne jusqu'au {formatDate(o.dateFinPublication)}.</p>}
+
+      {
+        o.nomEntreprise && (
+          <div class="encart-entreprise">
+            {o.logoUrl ? <img src={o.logoUrl} alt="" width="56" height="56" class="encart-entreprise__logo" loading="lazy" /> : null}
+            <div>
+              <p class="encart-entreprise__nom">{o.nomEntreprise}</p>
+              <ul class="encart-entreprise__liens">
+                {o.entreprise && <li><a href={`/entreprises/${o.entreprise.slug}/`}>Découvrir l'entreprise</a></li>}
+                {nbOffresEntreprise > 1 && (
+                  <li><a href={`/offres?entreprise=${encodeURIComponent(o.nomEntreprise)}`}>Voir ses {nbOffresEntreprise} offres</a></li>
+                )}
+              </ul>
+            </div>
+          </div>
+        )
+      }
+    </aside>
+  </div>
+
+  {
+    similaires.length > 0 && (
+      <section class="section section--teinte" aria-labelledby="offres-similaires">
+        <div class="conteneur">
+          <h2 id="offres-similaires" class="section__titre section__titre--gauche">Offres similaires</h2>
+          <ul class="grille grille--3">
+            {similaires.map((s) => <li><CarteOffre offre={s} /></li>)}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    o.urlCandidature && (
+      <div class="barre-postuler">
+        <span class="barre-postuler__titre">{o.titre}</span>
+        <a href={o.urlCandidature} class="bouton bouton--accent" aria-describedby="avertissement-candidature">Postuler</a>
+      </div>
+    )
+  }
+</Base>
+
+<script>
+  // « Retour aux offres » ramène à la dernière recherche (filtres compris).
+  try {
+    const recherche = sessionStorage.getItem('mjc-derniere-recherche');
+    const lien = document.querySelector<HTMLAnchorElement>('[data-retour-resultats]');
+    if (lien && recherche !== null) {
+      lien.href = `/offres${recherche ? `?${recherche}` : ''}`;
+      lien.lastChild!.textContent = 'Retour aux résultats';
+    }
+  } catch {}
+</script>
