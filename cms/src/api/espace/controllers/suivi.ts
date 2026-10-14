@@ -10,6 +10,7 @@ const urlBuilder = () => (process.env.BUILDER_WEBHOOK_URL ?? '').replace(/\/buil
 /** Contenus publiés sur le site, avec leur adresse publique. */
 export const TYPES_PUBLIES: Record<string, { libelle: string; url: (slug: string) => string; unique?: boolean }> = {
   'api::accueil.accueil': { libelle: "Page d'accueil", url: () => '/', unique: true },
+  'api::page-offres.page-offres': { libelle: 'Page des offres', url: () => '/offres/', unique: true },
   'api::page.page': { libelle: 'Pages', url: (s) => `/${s}/` },
   'api::article.article': { libelle: 'Articles', url: (s) => `/actualites/${s}/` },
   'api::evenement.evenement': { libelle: 'Événements', url: (s) => `/evenements/${s}/` },

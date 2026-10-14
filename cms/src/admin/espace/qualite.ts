@@ -1,5 +1,6 @@
 // Contrôle qualité d'un contenu avant publication : texte alternatif, titres, liens, longueurs, dates.
 // Fonctions pures (aucune dépendance à React) : elles lisent les valeurs du formulaire en cours de saisie.
+import { definition } from './types';
 
 export type Niveau = 'erreur' | 'attention' | 'info';
 export interface Point { niveau: Niveau; texte: string }
@@ -78,7 +79,7 @@ export function controler(valeurs: any, { model, liensCasses = [] }: OptionsCont
   const seo = valeurs.seo ?? {};
 
   if (titre.length > 70) points.push({ niveau: 'attention', texte: `Le titre fait ${titre.length} caractères : Google le coupe au-delà d’environ 60. Un titre plus court sera lu en entier.` });
-  if (!seo.metaDescription && !resume && model !== 'api::accueil.accueil') points.push({ niveau: 'attention', texte: 'Aucune description : Google choisira lui-même un extrait de la page. Ajoutez un résumé.' });
+  if (!seo.metaDescription && !resume && !definition(model)?.descriptionAutomatique) points.push({ niveau: 'attention', texte: 'Aucune description : Google choisira lui-même un extrait de la page. Ajoutez un résumé.' });
   if (!seo.metaDescription && resume.length > 160) points.push({ niveau: 'info', texte: `Le résumé fait ${resume.length} caractères : Google n’affichera que les 160 premiers. Vous pouvez saisir une description plus courte dans « Référencement ».` });
 
   const sansAlt = imagesSansAlt(valeurs);

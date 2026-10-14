@@ -99,6 +99,7 @@ export async function trouverLiensCasses(strapi: Core.Strapi): Promise<LienCasse
   };
   await unique('api::navigation.navigation', 'Menus du site', 'Menus du site', '/content-manager/single-types/api::navigation.navigation');
   await unique('api::accueil.accueil', 'Page', "Page d'accueil", '/content-manager/single-types/api::accueil.accueil');
+  await unique('api::page-offres.page-offres', 'Page', 'Page des offres', '/content-manager/single-types/api::page-offres.page-offres');
 
   const pages: any[] = await strapi.documents('api::page.page' as any).findMany({ populate: construirePopulate(strapi, 'api::page.page'), limit: 200 } as any);
   for (const p of pages) verifier('Page', p.titre, `/content-manager/collection-types/api::page.page/${p.documentId}`, p);

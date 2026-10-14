@@ -4,7 +4,7 @@
 //  - offres en lecture seule pour les rôles Éditeur et Auteur (elles viennent de Gestmax).
 // Les libellés ne remplacent que les valeurs par défaut : une personnalisation faite dans le BO est conservée.
 import type { Core } from '@strapi/strapi';
-import { ROLE_REDACTEUR, ROLE_RESPONSABLE, assurerRoles } from '../utils/roles';
+import { ROLE_REDACTEUR, ROLE_RESPONSABLE, assurerDroitsType, assurerRoles } from '../utils/roles';
 
 type Libelle = string | [libelle: string, description: string];
 
@@ -72,6 +72,18 @@ const PAR_TYPE: Record<string, Record<string, Libelle>> = {
     heroTexte: "Texte d'accroche",
     heroImage: ['Image de fond du bandeau', 'Grande photo du territoire, au format paysage.'],
     heroRecherche: "Afficher la recherche d'offres dans le bandeau",
+  },
+  'api::page-offres.page-offres': {
+    titre: 'Titre de la page',
+    chapo: ['Introduction', 'Laisser vide pour afficher le nombre d’offres à pourvoir.'],
+    carte: ['Afficher la carte des offres', 'Carte OpenStreetMap à droite de la liste : déplacer la carte filtre les offres affichées.'],
+    affichage: ['Présentation des offres', 'colonnes : cartes côte à côte ; lignes : une offre par ligne, logo à gauche.'],
+    colonnes: ['Nombre de colonnes', 'De 1 à 4 sur grand écran (moins sur mobile ou quand la carte est affichée).'],
+    offresParPage: ['Offres par page', 'Avant le bouton « Afficher plus d’offres » (6 à 60).'],
+    afficherLogo: 'Afficher le logo de l’entreprise',
+    afficherSalaire: 'Afficher le salaire',
+    afficherDate: 'Afficher la date de publication',
+    sections: ['Blocs sous la liste des offres', 'Facultatif : candidature spontanée, questions fréquentes, entreprises…'],
   },
   'api::page.page': {
     chapo: ['Introduction', 'Une ou deux phrases affichées sous le titre.'],
@@ -197,6 +209,15 @@ const CHAMP_PRINCIPAL: Record<string, string> = {
 // Les champs absents (ex. relation « inscriptions ») ne sont pas affichés : ils ont leur propre encart.
 type Ligne = [champ: string, taille: number][];
 const FORMULAIRES: Record<string, Ligne[]> = {
+  'api::page-offres.page-offres': [
+    [['titre', 12]],
+    [['chapo', 12]],
+    [['carte', 4], ['affichage', 4], ['colonnes', 4]],
+    [['offresParPage', 4], ['afficherLogo', 4], ['afficherSalaire', 4]],
+    [['afficherDate', 4]],
+    [['sections', 12]],
+    [['seo', 12]],
+  ],
   'api::evenement.evenement': [
     [['titre', 8], ['typeEvenement', 4]],
     [['dateDebut', 6], ['dateFin', 6]],
@@ -279,7 +300,7 @@ const EXEMPLES: Record<string, string> = {
   url: '/page, https://… ou gestmax:/chemin',
 };
 
-const VERSION_LISTES = 3;
+const VERSION_LISTES = 4;
 
 export async function configurerBackOffice(strapi: Core.Strapi) {
   const cm = strapi.plugin('content-manager');
@@ -359,6 +380,8 @@ export async function configurerBackOffice(strapi: Core.Strapi) {
 
   await configuration.set({ value: { ...etat, versionListes: VERSION_LISTES } });
   await assurerRoles(strapi);
+  // Types créés après les rôles : droits des éditeurs, responsables et rédacteurs (champs compris).
+  await assurerDroitsType(strapi, 'api::page-offres.page-offres');
   await restreindreOffres(strapi);
 }
 

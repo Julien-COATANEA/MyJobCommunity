@@ -2,16 +2,26 @@
 // Liste des offres. Le HTML statique contient les offres les plus récentes (indexables, lisibles sans JS).
 // Le script prend ensuite le relais : filtres appliqués en direct via l'API Strapi, pastilles des filtres actifs,
 // nombre d'offres par contrat, tri et recherche autour d'une ville (géocodage IGN + distance).
+// Titre, introduction, carte OpenStreetMap et blocs sous la liste se règlent dans « Ma page d'offres » du BO.
 import Base from '../../layouts/Base.astro';
 import EnTetePage from '../../components/EnTetePage.astro';
 import CarteOffre from '../../components/cartes/CarteOffre.astro';
 import Icone from '../../components/Icone.astro';
-import { lireOffres, lireParametres } from '../../lib/contenus';
+import Sections from '../../components/Sections.astro';
+import { lireOffres, lirePageOffres, lireParametres } from '../../lib/contenus';
 import { resoudreLien } from '../../lib/liens';
 import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
 
-const PAR_PAGE = 24;
-const [offres, parametres] = await Promise.all([lireOffres(), lireParametres()]);
+const [offres, parametres, page] = await Promise.all([lireOffres(), lireParametres(), lirePageOffres()]);
+const titre = page?.titre?.trim() || "Offres d'emploi";
+const chapo = page?.chapo?.trim() || `${offres.length} offres à pourvoir chez les employeurs du territoire.`;
+// Présentation de la liste (« Ma page d'offres » du BO) : colonnes ou lignes, nombre de colonnes, offres par page.
+const borner = (v: number | null | undefined, min: number, max: number, defaut: number) => Math.min(max, Math.max(min, Math.round(v ?? defaut)));
+const PAR_PAGE = borner(page?.offresParPage, 6, 60, 24);
+const colonnes = borner(page?.colonnes, 1, 4, 3);
+const enLignes = page?.affichage === 'lignes';
+const masquer = { logo: page?.afficherLogo === false, salaire: page?.afficherSalaire === false, date: page?.afficherDate === false };
+const masquerAttr = Object.entries(masquer).filter(([, v]) => v).map(([c]) => c).join(',');
 const distincts = (cle: 'typeContrat' | 'secteur') =>
   [...new Set(offres.map((o) => o[cle]).filter(Boolean))].sort((a, b) => a!.localeCompare(b!, 'fr')) as string[];
 const contrats = distincts('typeContrat');
@@ -22,11 +32,11 @@ const lienAlerte = parametres.gestmaxUrlFront ? resoudreLien('gestmax:/alert', p
 const lienSpontanee = parametres.lienCandidatureSpontanee ? resoudreLien(parametres.lienCandidatureSpontanee, parametres.gestmaxUrlFront) : null;
 ---
 
-<Base titre="Offres d'emploi" description={`${offres.length} offres d'emploi sur le territoire.`} ariane={[{ libelle: "Offres d'emploi" }]}>
-  <EnTetePage titre="Offres d'emploi" chapo={`${offres.length} offres à pourvoir chez les employeurs du territoire.`} />
+<Base titre={titre} seo={page?.seo} description={`${offres.length} offres d'emploi sur le territoire.`} ariane={[{ libelle: titre }]}>
+  <EnTetePage titre={titre} chapo={chapo} />
 
   <section class="section section--serree">
-    <div class="conteneur">
+    <div class:list={['conteneur', page?.carte && 'conteneur--large']}>
       <form action="/offres" method="get" role="search" aria-label="Filtrer les offres" class="filtres-offres" data-filtres>
         <div class="filtres-offres__principal">
           <div class="recherche__champ recherche__champ--large">
@@ -82,25 +92,56 @@ const lienSpontanee = parametres.lienCandidatureSpontanee ? resoudreLien(paramet
         <button type="button" class="lien-bouton" data-effacer>Tout effacer</button>
       </div>
 
-      <p class="resultats" aria-live="polite" data-resultats>{offres.length} offre{offres.length > 1 ? 's' : ''}</p>
+      <!-- Avec la carte (activée dans le BO) : liste à gauche, carte à droite ; déplacer la carte filtre la liste. -->
+      <div class="offres-resultats" data-resultats-offres>
+        <div class="offres-resultats__liste">
+          <div class="offres-resultats__barre">
+            <p class="resultats" aria-live="polite" data-resultats>{offres.length} offre{offres.length > 1 ? 's' : ''}</p>
+            <button type="button" class="lien-bouton" data-zone-toute hidden>Voir toutes les offres de la recherche</button>
+            {
+              page?.carte && (
+                <button type="button" class="bouton bouton--contour bouton--petit offres-resultats__bascule" data-basculer-carte aria-controls="carte-offres" hidden>
+                  <Icone nom="carte" taille={18} /><span data-basculer-libelle>Afficher la carte</span>
+                </button>
+              )
+            }
+          </div>
 
-      <ul class="grille grille--3" data-liste-offres data-api={PUBLIC_STRAPI_URL} data-par-page={PAR_PAGE}>
-        {premieres.map((o) => <li><CarteOffre offre={o} niveauTitre={2} /></li>)}
-      </ul>
+          <ul
+            class:list={['grille grille--offres', enLignes && 'grille--lignes']}
+            style={`--colonnes: ${enLignes ? 1 : colonnes}`}
+            data-liste-offres
+            data-api={PUBLIC_STRAPI_URL}
+            data-par-page={PAR_PAGE}
+            data-masquer={masquerAttr}
+          >
+            {premieres.map((o) => <li><CarteOffre offre={o} niveauTitre={2} masquer={masquer} /></li>)}
+          </ul>
 
-      <div class="aucun-resultat" data-aucun hidden>
-        <Icone nom="cloche" taille={36} />
-        <h2>Aucune offre ne correspond pour le moment</h2>
-        <p>Élargissez votre recherche, ou soyez prévenu dès qu'une offre correspondante est publiée.</p>
-        <p class="aucun-resultat__actions">
-          {lienAlerte && <a class="bouton bouton--plein" href={lienAlerte}><Icone nom="cloche" taille={18} />Créer une alerte e-mail</a>}
-          <button type="button" class="bouton bouton--contour" data-effacer>Effacer les filtres</button>
-        </p>
+          <div class="aucun-resultat" data-aucun hidden>
+            <Icone nom="cloche" taille={36} />
+            <h2>Aucune offre ne correspond pour le moment</h2>
+            <p>Élargissez votre recherche, ou soyez prévenu dès qu'une offre correspondante est publiée.</p>
+            <p class="aucun-resultat__actions">
+              {lienAlerte && <a class="bouton bouton--plein" href={lienAlerte}><Icone nom="cloche" taille={18} />Créer une alerte e-mail</a>}
+              <button type="button" class="bouton bouton--contour" data-effacer>Effacer les filtres</button>
+            </p>
+          </div>
+
+          <p class="section__suite">
+            <button type="button" class="bouton bouton--contour" data-plus hidden={offres.length <= PAR_PAGE}>Afficher plus d'offres</button>
+          </p>
+        </div>
+
+        {
+          page?.carte && (
+            <div class="offres-resultats__carte carte-offres" id="carte-offres" data-carte-offres hidden>
+              <div class="carte-offres__carte" data-carte role="region" aria-label="Carte des offres d'emploi"></div>
+              <p class="sr-only">Déplacer ou zoomer la carte limite la liste des offres à la zone affichée.</p>
+            </div>
+          )
+        }
       </div>
-
-      <p class="section__suite">
-        <button type="button" class="bouton bouton--contour" data-plus hidden={offres.length <= PAR_PAGE}>Afficher plus d'offres</button>
-      </p>
 
       {
         lienSpontanee && (
@@ -113,10 +154,14 @@ const lienSpontanee = parametres.lienCandidatureSpontanee ? resoudreLien(paramet
       }
     </div>
   </section>
+
+  <Sections sections={page?.sections} />
 </Base>
 
 <script>
-  import { htmlCarteOffre } from '../../lib/carte-offre';
+  import { htmlCarteOffre, lireMasquer } from '../../lib/carte-offre';
+  import { dansZone, zoneAutour, type Zone } from '../../lib/carte-offres';
+  import type { CarteOffres } from '../../lib/carte-leaflet';
   import {
     boiteEnglobante, distanceKm, ecrireFiltres, filtresActifs, lireFiltres, rechercheAutour, requeteStrapi,
     type Filtres, type Position,
@@ -131,16 +176,37 @@ const lienSpontanee = parametres.lienCandidatureSpontanee ? resoudreLien(paramet
   const actifsListe = document.querySelector<HTMLElement>('[data-actifs-liste]')!;
   const selectContrat = document.querySelector<HTMLSelectElement>('[data-contrats]')!;
   const selectTri = formulaire.elements.namedItem('tri') as HTMLSelectElement;
+  const blocResultats = document.querySelector<HTMLElement>('[data-resultats-offres]')!;
+  const boutonToutesZones = document.querySelector<HTMLButtonElement>('[data-zone-toute]')!;
   const api = liste.dataset.api!;
   const parPage = Number(liste.dataset.parPage);
-  const contrats = [...selectContrat.options].map((o) => o.value).filter(Boolean);
+  const masquer = lireMasquer(liste.dataset.masquer);
+
+  // Carte des offres (activée dans « Ma page d'offres » du BO). Dans ce mode, toutes les offres de la recherche sont
+  // chargées puis paginées ici : la liste peut ainsi être limitée à la zone affichée sur la carte.
+  const blocCarte = document.querySelector<HTMLElement>('[data-carte-offres]');
+  const bascule = document.querySelector<HTMLButtonElement>('[data-basculer-carte]');
+  const modeCarte = !!blocCarte;
+  const MAX_PAGES = 10; // 1 000 offres
+  const CLE_CARTE = 'mjc-carte-offres';
 
   // Formulaire filtré en direct : le bouton ne sert plus qu'en l'absence de JavaScript.
   formulaire.querySelector('.filtres-offres__valider')?.setAttribute('hidden', '');
 
   let page = 1;
-  let resultatsAutour: any[] = []; // recherche autour d'une ville : résultats complets, paginés ici
   let jeton = 0; // ignore les réponses d'une recherche dépassée
+  let ensemble: any[] = []; // résultats complets (autour d'une ville, ou mode carte), paginés ici
+  let cercle: { centre: Position; km: number } | null = null;
+  // Zone choisie en déplaçant la carte, ou repère choisi dans une infobulle (libelle : nom du lieu).
+  let zoneCarte: (Zone & { libelle?: string }) | null = null;
+  let carteVisible = false;
+  let carte: Promise<CarteOffres> | null = null;
+  // Liste courante : « ensemble » (toutes les offres chargées, paginées ici) ou « api » (page par page via Strapi).
+  let modeListe: 'ensemble' | 'api' = 'api';
+  let tronque = false; // plus de MAX_PAGES pages : l'ensemble chargé est incomplet, on l'indique
+
+  /** Toutes les offres sont chargées d'un coup seulement si la carte est affichée ou la recherche autour d'une ville. */
+  const chargerTout = (f: Filtres) => (modeCarte && carteVisible) || rechercheAutour(f);
 
   const lire = (): Filtres => lireFiltres(new URLSearchParams(new FormData(formulaire) as any).toString());
   const appeler = (p: URLSearchParams) =>
@@ -168,6 +234,71 @@ const lienSpontanee = parametres.lienCandidatureSpontanee ? resoudreLien(paramet
     return positions.get(cle)!;
   }
 
+  // ---------- Carte ----------
+
+  /** Leaflet n'est téléchargé qu'au premier affichage de la carte. */
+  const chargerCarte = () =>
+    (carte ??= import('../../lib/carte-leaflet').then((m) =>
+      m.creerCarte(blocCarte!.querySelector<HTMLElement>('[data-carte]')!, {
+        surDeplacement: (zone) => {
+          zoneCarte = zone;
+          page = 1;
+          afficherEnsemble(false, lire());
+        },
+      }),
+    ));
+
+  function dessinerCarte() {
+    if (!carteVisible) return;
+    chargerCarte()
+      .then((c) => c.afficher(ensemble, cercle))
+      .catch(() => {
+        // Carte indisponible (réseau) : la liste reste utilisable.
+      });
+  }
+
+  function oublierZone() {
+    if (!zoneCarte) return;
+    zoneCarte = null;
+    page = 1;
+    afficherEnsemble(false, lire());
+  }
+
+  /** `relancer` : si la liste n'a été chargée que page par page, recharge toutes les offres pour la carte. */
+  function montrerCarte(visible: boolean, relancer = true) {
+    if (!blocCarte || !bascule) return;
+    carteVisible = visible;
+    blocCarte.hidden = !visible;
+    blocResultats.classList.toggle('offres-resultats--carte', visible);
+    bascule.hidden = false;
+    bascule.setAttribute('aria-expanded', String(visible));
+    bascule.querySelector('[data-basculer-libelle]')!.textContent = visible ? 'Masquer la carte' : 'Afficher la carte';
+    if (visible && relancer && modeListe === 'api') {
+      page = 1;
+      chercher(); // charge l'ensemble puis dessine la carte
+    } else if (visible) {
+      chargerCarte()
+        .then((c) => {
+          c.ajuster();
+          c.afficher(ensemble, cercle);
+        })
+        .catch(() => {});
+    } else {
+      oublierZone();
+    }
+  }
+
+  function preferenceCarte(): boolean {
+    try {
+      const v = localStorage.getItem(CLE_CARTE);
+      if (v) return v === '1';
+    } catch {}
+    // Par défaut : visible sur grand écran, repliée sur mobile.
+    return matchMedia('(min-width: 960px)').matches;
+  }
+
+  // ---------- Liste ----------
+
   function afficherActifs(f: Filtres) {
     const liste = filtresActifs(f);
     actifs.hidden = liste.length === 0;
@@ -188,17 +319,68 @@ const lienSpontanee = parametres.lienCandidatureSpontanee ? resoudreLien(paramet
     }
   }
 
+  const s = (n: number) => (n > 1 ? 's' : '');
+
   function afficher(offres: any[], total: number, ajouter: boolean, f: Filtres) {
-    const html = offres.map((o) => `<li>${htmlCarteOffre(o, { niveauTitre: 2 })}</li>`).join('');
+    const html = offres.map((o) => `<li>${htmlCarteOffre(o, { niveauTitre: 2, masquer })}</li>`).join('');
     if (ajouter) liste.insertAdjacentHTML('beforeend', html);
     else liste.innerHTML = html;
     const filtre = filtresActifs(f).length > 0;
-    resultats.textContent = total
-      ? `${total} offre${total > 1 ? 's' : ''}${filtre ? ` correspond${total > 1 ? 'ent' : ''} à votre recherche` : ''}`
-      : 'Aucune offre ne correspond à votre recherche.';
-    aucun.hidden = total > 0;
+    if (zoneCarte) {
+      resultats.textContent = total
+        ? `${total} offre${s(total)} ${zoneCarte.libelle ? `à ${zoneCarte.libelle}` : 'dans la zone de la carte'}`
+        : 'Aucune offre dans cette zone : dézoomez ou déplacez la carte.';
+    } else {
+      resultats.textContent = total
+        ? `${total} offre${s(total)}${filtre ? ` correspond${total > 1 ? 'ent' : ''} à votre recherche` : ''}`
+        : 'Aucune offre ne correspond à votre recherche.';
+      if (modeListe === 'ensemble' && tronque) resultats.textContent += ` (les ${MAX_PAGES * 100} plus récentes : précisez votre recherche pour voir les autres)`;
+    }
+    boutonToutesZones.hidden = !zoneCarte;
+    aucun.hidden = total > 0 || !!zoneCarte;
     plus.hidden = page * parPage >= total;
     if (ajouter) liste.querySelectorAll<HTMLAnchorElement>('.carte__lien')[(page - 1) * parPage]?.focus();
+  }
+
+  /** Page courante des résultats complets, limités à la zone de la carte si le visiteur l'a déplacée. */
+  function afficherEnsemble(ajouter: boolean, f: Filtres) {
+    const visibles = zoneCarte ? ensemble.filter((o) => dansZone(o, zoneCarte!)) : ensemble;
+    afficher(visibles.slice((page - 1) * parPage, page * parPage), visibles.length, ajouter, f);
+  }
+
+  /** Toutes les offres de la recherche, avec le nombre par contrat. null : recherche dépassée entre-temps. */
+  async function chargerEnsemble(f: Filtres, moi: number) {
+    let centre: Position | null = null;
+    if (rechercheAutour(f)) {
+      centre = await geocoder(f.lieu);
+      if (moi !== jeton) return null;
+      if (!centre) return { offres: [], comptes: {}, cercle: null };
+    }
+    const boite = centre ? boiteEnglobante(centre, Number(f.rayon)) : null;
+    // Première page, puis les suivantes en parallèle.
+    const page1 = await appeler(requeteStrapi(f, { page: 1, parPage: 100, boite, sansContrat: true }));
+    if (moi !== jeton) return null;
+    const pages = page1.meta.pagination.pageCount;
+    const suivantes = await Promise.all(
+      Array.from({ length: Math.min(pages, MAX_PAGES) - 1 }, (_, i) =>
+        appeler(requeteStrapi(f, { page: i + 2, parPage: 100, boite, sansContrat: true })),
+      ),
+    );
+    if (moi !== jeton) return null;
+    let offres: any[] = [page1, ...suivantes].flatMap((j) => j.data);
+    tronque = pages > MAX_PAGES;
+    // Autour d'une ville : distance exacte (le serveur n'a filtré que sur un rectangle).
+    if (centre) {
+      const c = centre;
+      offres = offres
+        .map((o) => ({ ...o, distance: o.latitude == null ? null : distanceKm(c, o) }))
+        .filter((o) => o.distance != null && o.distance <= Number(f.rayon));
+    }
+    const comptes: Record<string, number> = {};
+    for (const o of offres) comptes[o.typeContrat] = (comptes[o.typeContrat] ?? 0) + 1;
+    offres = offres.filter((o) => !f.contrat || o.typeContrat === f.contrat);
+    if (centre && f.tri === 'proche') offres.sort((a, b) => a.distance - b.distance);
+    return { offres, comptes, cercle: centre ? { centre, km: Number(f.rayon) } : null };
   }
 
   async function chercher(ajouter = false) {
@@ -212,31 +394,26 @@ const lienSpontanee = parametres.lienCandidatureSpontanee ? resoudreLien(paramet
     afficherActifs(f);
     selectTri.querySelector<HTMLOptionElement>('option[value="proche"]')!.disabled = !rechercheAutour(f);
     liste.setAttribute('aria-busy', 'true');
+    // Pas de « plus » pendant un chargement : il annulerait la recherche en cours.
+    plus.disabled = true;
+    // Un déplacement de carte pas encore signalé porterait sur les anciens résultats.
+    if (!ajouter) carte?.then((c) => c.annulerDeplacement());
 
     try {
-      if (rechercheAutour(f)) {
-        // Autour d'une ville : on récupère toutes les offres de la zone, puis distance exacte, tri et pagination ici.
+      if (chargerTout(f)) {
         if (!ajouter) {
-          const centre = await geocoder(f.lieu);
-          if (moi !== jeton) return;
-          if (!centre) {
-            resultatsAutour = [];
-          } else {
-            const boite = boiteEnglobante(centre, Number(f.rayon));
-            const json = await appeler(requeteStrapi(f, { page: 1, parPage: 100, boite, sansContrat: true }));
-            if (moi !== jeton) return;
-            const tous = json.data
-              .map((o: any) => ({ ...o, distance: o.latitude == null ? null : distanceKm(centre, o) }))
-              .filter((o: any) => o.distance != null && o.distance <= Number(f.rayon));
-            const comptes: Record<string, number> = {};
-            for (const o of tous) comptes[o.typeContrat] = (comptes[o.typeContrat] ?? 0) + 1;
-            afficherComptes(comptes);
-            resultatsAutour = tous.filter((o: any) => !f.contrat || o.typeContrat === f.contrat);
-            if (f.tri === 'proche') resultatsAutour.sort((a: any, b: any) => a.distance - b.distance);
-          }
+          const r = await chargerEnsemble(f, moi);
+          if (!r) return;
+          modeListe = 'ensemble';
+          ensemble = r.offres;
+          cercle = r.cercle;
+          zoneCarte = null; // nouvelle recherche : la carte se recadre sur tous les résultats
+          afficherComptes(r.comptes);
+          dessinerCarte();
         }
-        afficher(resultatsAutour.slice((page - 1) * parPage, page * parPage), resultatsAutour.length, ajouter, f);
+        afficherEnsemble(ajouter, f);
       } else {
+        const contrats = [...selectContrat.options].map((o) => o.value).filter(Boolean);
         const [json, comptes] = await Promise.all([
           appeler(requeteStrapi(f, { page, parPage })),
           ajouter
@@ -248,15 +425,22 @@ const lienSpontanee = parametres.lienCandidatureSpontanee ? resoudreLien(paramet
               ),
         ]);
         if (moi !== jeton) return;
+        modeListe = 'api';
+        zoneCarte = null;
         if (comptes) afficherComptes(Object.fromEntries(comptes));
         afficher(json.data, json.meta.pagination.total, ajouter, f);
       }
     } catch {
       resultats.textContent = 'La recherche est momentanément indisponible. Réessayez dans quelques instants.';
     } finally {
-      if (moi === jeton) liste.removeAttribute('aria-busy');
+      if (moi === jeton) {
+        liste.removeAttribute('aria-busy');
+        plus.disabled = false;
+      }
     }
   }
+
+  // ---------- Événements ----------
 
   // Filtres appliqués en direct : immédiatement pour les listes, après une courte pause pour la saisie.
   let attente: ReturnType<typeof setTimeout>;
@@ -279,8 +463,36 @@ const lienSpontanee = parametres.lienCandidatureSpontanee ? resoudreLien(paramet
     chercher();
   });
 
+  bascule?.addEventListener('click', () => {
+    montrerCarte(!carteVisible);
+    try {
+      localStorage.setItem(CLE_CARTE, carteVisible ? '1' : '0');
+    } catch {}
+  });
+
+  boutonToutesZones.addEventListener('click', () => {
+    oublierZone();
+    carte?.then((c) => c.recadrer());
+  });
+
   document.addEventListener('click', (e) => {
     const cible = e.target as HTMLElement;
+    // Infobulle de la carte : « Voir les N offres à <ville> » limite la liste aux offres de ce repère (par position,
+    // pas par nom : une même ville est parfois écrite de plusieurs façons) et zoome dessus.
+    const lieuCarte = cible.closest<HTMLElement>('[data-carte-lieu]');
+    if (lieuCarte) {
+      const latitude = Number(lieuCarte.dataset.carteLat);
+      const longitude = Number(lieuCarte.dataset.carteLon);
+      zoneCarte = { ...zoneAutour(latitude, longitude), libelle: lieuCarte.dataset.carteLieu };
+      page = 1;
+      afficherEnsemble(false, lire());
+      carte?.then((c) => {
+        c.fermerInfobulle();
+        c.centrerSur(latitude, longitude);
+      });
+      resultats.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     const retirer = cible.closest<HTMLElement>('[data-retirer]');
     if (retirer) {
       const cle = retirer.dataset.retirer!;
@@ -301,7 +513,24 @@ const lienSpontanee = parametres.lienCandidatureSpontanee ? resoudreLien(paramet
 
   plus.addEventListener('click', () => {
     page++;
-    chercher(true);
+    // Offres déjà chargées : on affiche la page suivante sans relancer de recherche.
+    if (modeListe === 'ensemble') afficherEnsemble(true, lire());
+    else chercher(true);
+  });
+
+  // Survol (ou focus clavier) d'une offre de la liste : son repère est mis en évidence sur la carte.
+  let survolee: string | null = null;
+  const surligner = (slug: string | null) => {
+    if (slug === survolee || !carteVisible || !carte) return;
+    survolee = slug;
+    carte.then((c) => c.surligner(slug));
+  };
+  const slugDe = (e: Event) => (e.target as HTMLElement).closest<HTMLElement>('[data-slug]')?.dataset.slug ?? null;
+  liste.addEventListener('mouseover', (e) => surligner(slugDe(e)));
+  liste.addEventListener('mouseleave', () => surligner(null));
+  liste.addEventListener('focusin', (e) => surligner(slugDe(e)));
+  liste.addEventListener('focusout', (e) => {
+    if (!liste.contains(e.relatedTarget as Node | null)) surligner(null);
   });
 
   // Filtres venant de l'URL (menu, accueil, fiche entreprise, retour depuis une offre).
@@ -310,6 +539,8 @@ const lienSpontanee = parametres.lienCandidatureSpontanee ? resoudreLien(paramet
     const champ = formulaire.elements.namedItem(cle) as HTMLInputElement | HTMLSelectElement | null;
     if (champ && valeur) champ.value = valeur;
   }
-  if (location.search) chercher();
+  if (modeCarte) montrerCarte(preferenceCarte(), false);
+  // Carte affichée : toutes les offres sont chargées dès l'arrivée (repères et filtrage par zone).
+  if (location.search || carteVisible) chercher();
   else afficherActifs(initiaux);
 </script>

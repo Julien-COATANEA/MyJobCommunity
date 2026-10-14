@@ -30,6 +30,7 @@ export const TRACES: Record<string, string> = {
   alerte: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/>',
   calendrier: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 14v4M10 16h4"/>',
   filtre: '<path d="M4 5h16l-6 8v6l-4-2v-4z"/>',
+  carte: '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
   retour: '<path d="M19 12H5M11 18l-6-6 6-6"/>',
   cloche: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0"/>',
   guillemet: '<path d="M9 7H5v6h4v-2c0 2-1 4-3 4M19 7h-4v6h4v-2c0 2-1 4-3 4"/>',

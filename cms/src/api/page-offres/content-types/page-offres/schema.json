@@ -1,0 +1,88 @@
+{
+  "kind": "singleType",
+  "collectionName": "page_offres",
+  "info": {
+    "singularName": "page-offres",
+    "pluralName": "pages-offres",
+    "displayName": "Page des offres d'emploi",
+    "description": "Page /offres : titre, introduction, carte des offres et blocs affichés sous la liste"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "titre": {
+      "type": "string",
+      "default": "Offres d'emploi",
+      "maxLength": 80
+    },
+    "chapo": {
+      "type": "text",
+      "maxLength": 300
+    },
+    "carte": {
+      "type": "boolean",
+      "default": false
+    },
+    "affichage": {
+      "type": "enumeration",
+      "enum": [
+        "colonnes",
+        "lignes"
+      ],
+      "default": "colonnes",
+      "required": true
+    },
+    "colonnes": {
+      "type": "integer",
+      "min": 1,
+      "max": 4,
+      "default": 3,
+      "required": true
+    },
+    "offresParPage": {
+      "type": "integer",
+      "min": 6,
+      "max": 60,
+      "default": 24,
+      "required": true
+    },
+    "afficherLogo": {
+      "type": "boolean",
+      "default": true
+    },
+    "afficherSalaire": {
+      "type": "boolean",
+      "default": true
+    },
+    "afficherDate": {
+      "type": "boolean",
+      "default": true
+    },
+    "sections": {
+      "type": "dynamiczone",
+      "components": [
+        "blocs.texte",
+        "blocs.texte-image",
+        "blocs.chiffres-cles",
+        "blocs.cartes",
+        "blocs.appel-action",
+        "blocs.faq",
+        "blocs.logos",
+        "blocs.recherche-offres",
+        "blocs.dernieres-offres",
+        "blocs.dernieres-actualites",
+        "blocs.prochains-evenements",
+        "blocs.entreprises",
+        "blocs.temoignages",
+        "blocs.iframe"
+      ]
+    },
+    "seo": {
+      "type": "component",
+      "component": "shared.seo",
+      "repeatable": false
+    }
+  }
+}

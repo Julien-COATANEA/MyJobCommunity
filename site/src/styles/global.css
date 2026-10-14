@@ -73,6 +73,7 @@ main:focus { outline: none; }
 }
 .conteneur { width: 100%; max-width: var(--largeur); margin-inline: auto; padding-inline: clamp(1rem, 4vw, 2rem); }
 .conteneur--etroit { max-width: var(--largeur-etroite); }
+.conteneur--large { max-width: 1440px; }
 .petit { font-size: 0.9rem; color: var(--c-texte-doux); }
 .souligne { text-decoration: underline; }
 
@@ -251,6 +252,27 @@ main:focus { outline: none; }
 .grille { display: grid; gap: 1.5rem; list-style: none; padding: 0; }
 .grille--3 { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
 .grille--4 { grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
+/* Page /offres : --colonnes colonnes (réglage du BO) quand la place le permet, moins si chaque carte ferait < 16 rem. */
+.grille--offres {
+  --largeur-colonne: calc((100% - (var(--colonnes, 3) - 1) * 1.5rem) / var(--colonnes, 3) - 0.1px);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, max(16rem, var(--largeur-colonne))), 1fr));
+}
+/* Présentation « lignes » : une offre par ligne, logo à gauche, badges à droite. */
+.grille--lignes { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+.grille--lignes .carte__corps {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 0.2rem 1.25rem;
+  grid-template-areas: "logo titre badges" "logo entreprise badges" "logo meta badges";
+}
+.grille--lignes .offre__haut { display: contents; }
+.grille--lignes .offre__logo { grid-area: logo; width: 64px; height: 64px; }
+.grille--lignes .offre__badges { grid-area: badges; }
+.grille--lignes .carte__titre { grid-area: titre; }
+.grille--lignes .offre__entreprise { grid-area: entreprise; margin-top: 0; }
+.grille--lignes .meta { grid-area: meta; flex-direction: row; flex-wrap: wrap; gap: 0.3rem 1.25rem; margin-top: 0.3rem; }
+@media (max-width: 640px) {
+  .grille--lignes .carte__corps { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "logo badges" "titre titre" "entreprise entreprise" "meta meta"; }
+  .grille--lignes .offre__logo { width: 48px; height: 48px; }
+}
 .grille > li { display: flex; }
 .grille > li > * { flex: 1; }
 
@@ -470,3 +492,44 @@ main:focus { outline: none; }
 .cookies__texte { font-size: 0.95rem; }
 .cookies__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 @media print { .cookies { display: none !important; } }
+
+/* ---------- Carte des offres (page /offres, Leaflet) ---------- */
+/* Liste à gauche, carte à droite qui reste visible pendant le défilement ; empilées sur mobile (carte au-dessus). */
+.offres-resultats__barre { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; margin-block: 1.25rem; }
+.offres-resultats__barre .resultats { margin: 0; }
+.offres-resultats__bascule { margin-left: auto; }
+.offres-resultats__barre [data-zone-toute] { order: 3; flex-basis: 100%; text-align: left; padding-inline: 0; }
+.offres-resultats--carte { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 1.75rem; align-items: start; }
+.offres-resultats__carte { position: sticky; top: 6rem; margin-top: 1.25rem; }
+.carte-offres__carte {
+  height: calc(100vh - 8rem); min-height: 420px; border: 1px solid var(--c-bordure); border-radius: var(--rayon-grand);
+  overflow: hidden; background: var(--c-surface); z-index: 0; /* les contrôles Leaflet restent sous le menu */
+}
+@media (max-width: 960px) {
+  .offres-resultats--carte { grid-template-columns: 1fr; gap: 0; }
+  .offres-resultats__carte { position: static; order: -1; }
+  .carte-offres__carte { height: 60vh; min-height: 320px; }
+}
+.carte-offres .carte-offres__epingle { color: var(--c-primaire); filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.3)); }
+.carte-offres .carte-offres__epingle svg { display: block; }
+/* Leaflet place les repères avec transform : le cercle est l'élément intérieur, qu'on peut agrandir au survol. */
+.carte-offres__repere span {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%;
+  background: var(--c-primaire); color: #fff; border: 3px solid #fff; box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
+  font-family: var(--police-texte); font-size: 0.9rem; font-weight: 800; transition: transform 0.15s, background-color 0.15s;
+}
+.carte-offres__repere:focus-visible, .carte-offres__epingle:focus-visible { outline: 3px solid var(--c-accent); outline-offset: 2px; border-radius: 50%; }
+/* Offre survolée dans la liste. */
+.carte-offres__repere.est-actif span { background: var(--c-accent); color: var(--c-sur-accent); transform: scale(1.25); }
+.carte-offres__epingle svg { transition: transform 0.15s; transform-origin: 50% 100%; }
+.carte-offres .carte-offres__epingle.est-actif { color: var(--c-accent); }
+.carte-offres__epingle.est-actif svg { transform: scale(1.35); }
+/* La carte de la liste est aussi mise en avant quand son repère l'est (survol). */
+.grille--offres .carte--offre { transition: box-shadow 0.15s, border-color 0.15s; }
+.grille--offres .carte--offre:hover { border-left-color: var(--c-accent); }
+.carte-offres__zone { stroke: var(--c-primaire); fill: var(--c-primaire); fill-opacity: 0.06; }
+.carte-offres .leaflet-popup-content { margin: 0.9rem 1rem; font-family: var(--police-texte); font-size: 0.92rem; line-height: 1.45; }
+.carte-offres__lieu { font-weight: 800; margin: 0 0 0.4rem !important; }
+.carte-offres__liste { list-style: none; padding: 0; margin: 0 0 0.4rem; display: grid; gap: 0.45rem; }
+.carte-offres__liste a { font-weight: 700; }
+.carte-offres__liste span { display: block; color: var(--c-texte-doux); font-size: 0.85rem; }

@@ -152,6 +152,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         'api::page.page': { libelle: 'La page', unique: false, champ: 'titre' },
         'api::article.article': { libelle: "L'article", unique: false, champ: 'titre' },
         'api::accueil.accueil': { libelle: "La page d'accueil", unique: true, champ: 'heroTitre' },
+        'api::page-offres.page-offres': { libelle: 'La page des offres', unique: true, champ: 'titre' },
       };
       const type = types[uid];
       if (!type) return ctx.badRequest('Contenu non concerné.');

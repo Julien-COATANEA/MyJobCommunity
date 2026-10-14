@@ -5,7 +5,7 @@
 // Les variables STRAPI_ADMIN_* sont lues au build de l'admin : chaque client a son nom, sa couleur, son logo.
 import type { StrapiApp } from '@strapi/strapi/admin';
 import {
-  Book, Briefcase, Calendar, ChartPie, CheckCircle, Earth, File, Information, Layout, List, PaintBrush, Pencil, Shield, Store, User, WarningCircle,
+  Book, Briefcase, Calendar, ChartPie, CheckCircle, Earth, File, Information, Layout, List, PaintBrush, Pencil, Search, Shield, Store, User, WarningCircle,
 } from '@strapi/icons';
 import logo from './extensions/logo.svg';
 import './espace/menu.css';
@@ -148,6 +148,7 @@ export default {
       lienContenu(`${c}/api::page.page`, 'api::page.page', 'pages', 'Mes pages', File, 0.2),
       lienContenu(`${c}/api::article.article`, 'api::article.article', 'articles', 'Mes articles', Pencil, 0.3),
       lienContenu(`${c}/api::evenement.evenement`, 'api::evenement.evenement', 'evenements', 'Mes événements', Calendar, 0.4),
+      lienContenu(`${s}/api::page-offres.page-offres`, 'api::page-offres.page-offres', 'page-offres', "Ma page d'offres", Search, 0.61),
       lienContenu(`${c}/api::entreprise.entreprise`, 'api::entreprise.entreprise', 'entreprises', 'Annuaire des entreprises', Store, 0.5),
       lienContenu(`${s}/api::navigation.navigation`, 'api::navigation.navigation', 'menus', 'Menus du site', List, 0.8),
       lienContenu(`${s}/api::parametres.parametres`, 'api::parametres.parametres', 'informations', 'Informations du site', Information, 0.9),

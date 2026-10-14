@@ -3,8 +3,8 @@ import * as React from 'react';
 import { Box, Button, Flex, Textarea, Typography } from '@strapi/design-system';
 import { Mail } from '@strapi/icons';
 import { useAuth, useFetchClient, useNotification } from '@strapi/strapi/admin';
+import { definition } from '../types';
 
-const TYPES = ['api::page.page', 'api::article.article', 'api::accueil.accueil'];
 const ACTION_PUBLIER = 'plugin::content-manager.explorer.publish';
 
 function Contenu({ model, documentId }: { model: string; documentId?: string }) {
@@ -55,7 +55,8 @@ function Contenu({ model, documentId }: { model: string; documentId?: string }) 
 
 export const PanneauDemandePublication = ({ model, documentId }: { model: string; documentId?: string }) => {
   const permissions = useAuth('PanneauDemandePublication', (s) => s.permissions);
-  if (!TYPES.includes(model) || (!documentId && model !== 'api::accueil.accueil')) return null;
+  const def = definition(model);
+  if (!def?.demandePublication || (!documentId && !def.unique)) return null;
   // Les personnes qui peuvent publier n'ont pas besoin de cet encart.
   if (permissions.some((p) => p.action === ACTION_PUBLIER && p.subject === model)) return null;
   return { title: 'Publication', content: <Contenu model={model} documentId={documentId} /> };

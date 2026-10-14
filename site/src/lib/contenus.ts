@@ -56,6 +56,20 @@ export interface Accueil {
   seo: Seo | null;
 }
 
+export interface PageOffres {
+  titre: string | null;
+  chapo: string | null;
+  carte: boolean | null;
+  affichage: 'colonnes' | 'lignes' | null;
+  colonnes: number | null;
+  offresParPage: number | null;
+  afficherLogo: boolean | null;
+  afficherSalaire: boolean | null;
+  afficherDate: boolean | null;
+  sections: Section[];
+  seo: Seo | null;
+}
+
 export interface Page {
   documentId: string;
   titre: string;
@@ -158,6 +172,8 @@ export const lireParametres = async () => {
 export const lireNavigation = async () =>
   (await lireUnique<Navigation>('navigation')) ?? { menuPrincipal: [], liensPiedDePage: [], liensLegaux: [] };
 export const lireAccueil = () => lireUnique<Accueil>('accueil');
+/** Réglages de la page /offres (« Ma page d'offres » du BO) ; null tant qu'elle n'a pas été enregistrée. */
+export const lirePageOffres = () => lireUnique<PageOffres>('page-offres');
 export const lirePages = () => lireTous<Page>('pages', { sort: 'titre:asc' });
 export const lireArticles = () => lireTous<Article>('articles', { sort: 'datePublication:desc' });
 export const lireEvenements = () => lireTous<Evenement>('evenements', { sort: 'dateDebut:asc' });

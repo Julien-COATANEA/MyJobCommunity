@@ -25,6 +25,7 @@ const LECTURE_PUBLIQUE = [
   'api::page.page.find',
   'api::page.page.findOne',
   'api::accueil.accueil.find',
+  'api::page-offres.page-offres.find',
   'api::navigation.navigation.find',
   'api::parametres.parametres.find',
 ];

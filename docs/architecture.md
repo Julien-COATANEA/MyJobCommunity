@@ -30,6 +30,7 @@
 | Paramètres du site | single | Identité, **tokens de thème** (5 couleurs, 2 polices, arrondis), coordonnées, réseaux, URL du front Gestmax, SEO par défaut |
 | Menus | single | Menu principal (2 niveaux), liens de pied de page, liens légaux |
 | Accueil | single | Hero + zone de blocs |
+| Page des offres | single (brouillon puis publication) | Titre, introduction, carte OpenStreetMap activable (Leaflet : liste à gauche, carte à droite, repères regroupés selon le zoom, déplacer la carte filtre la liste, survol d'une offre = repère mis en évidence), présentation de la liste (colonnes ou lignes, 1 à 4 colonnes, offres par page, logo / salaire / date) et blocs sous la liste de /offres. Droits des rôles synchronisés au démarrage (`assurerDroitsType`) |
 | Page | collection | Pages libres : titre, chapô, bandeau + **zone de blocs** |
 | Article, Catégorie d'article | collection | Actualités |
 | Événement, Inscription | collection | Événements, inscription en ligne (jauge, date limite) ou lien externe |

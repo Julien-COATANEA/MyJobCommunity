@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { htmlCarteOffre, type OffreCarte } from './carte-offre';
+import { htmlCarteOffre, lireMasquer, type OffreCarte } from './carte-offre';
 
 const maintenant = new Date('2026-10-13T12:00:00Z').getTime();
 const offre: OffreCarte = {
@@ -31,5 +31,13 @@ describe('htmlCarteOffre', () => {
 
   it('indique la distance lors d’une recherche autour d’une ville', () => {
     expect(htmlCarteOffre({ ...offre, distance: 12.4 }, { maintenant })).toContain('(12 km)');
+  });
+
+  it('masque le logo, le salaire et la date selon les réglages de la page', () => {
+    const html = htmlCarteOffre(offre, { maintenant, masquer: lireMasquer('logo,salaire,date') });
+    expect(html).not.toContain('offre__logo');
+    expect(html).not.toContain('35-40 K€');
+    expect(html).not.toContain('Publiée');
+    expect(html).toContain('data-slug="technicien-1042"');
   });
 });

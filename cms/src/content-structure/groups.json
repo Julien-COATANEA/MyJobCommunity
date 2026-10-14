@@ -42,6 +42,7 @@
           "parent": null,
           "children": [
             { "type": "contentType", "uid": "api::accueil.accueil" },
+            { "type": "contentType", "uid": "api::page-offres.page-offres" },
             { "type": "contentType", "uid": "api::navigation.navigation" },
             { "type": "contentType", "uid": "api::parametres.parametres" }
           ]

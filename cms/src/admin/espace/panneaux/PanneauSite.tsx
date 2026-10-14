@@ -3,10 +3,7 @@ import * as React from 'react';
 import { Badge, Flex, LinkButton, Typography } from '@strapi/design-system';
 import { Eye } from '@strapi/icons';
 import { useFetchClient } from '@strapi/strapi/admin';
-
-const TYPES_PUBLIES = [
-  'api::accueil.accueil', 'api::page.page', 'api::article.article', 'api::evenement.evenement', 'api::entreprise.entreprise',
-];
+import { definition } from '../types';
 
 interface Etat { publie: boolean; modifie: boolean; url: string | null }
 
@@ -15,7 +12,7 @@ function Contenu({ model, documentId, maj }: { model: string; documentId?: strin
   const [etat, setEtat] = React.useState<Etat | null>(null);
 
   React.useEffect(() => {
-    if (!documentId && model !== 'api::accueil.accueil') return;
+    if (!documentId && !definition(model)?.unique) return;
     const params = new URLSearchParams({ uid: model, documentId: documentId ?? '' });
     get<Etat>(`/espace/lien-public?${params}`).then(({ data }) => setEtat(data)).catch(() => setEtat(null));
   }, [get, model, documentId, maj]);
@@ -51,7 +48,7 @@ function Contenu({ model, documentId, maj }: { model: string; documentId?: strin
 }
 
 export const PanneauSite = ({ model, documentId, document }: { model: string; documentId?: string; document?: any }) => {
-  if (!TYPES_PUBLIES.includes(model)) return null;
+  if (!definition(model)) return null;
   return {
     title: 'Sur le site',
     content: <Contenu model={model} documentId={documentId} maj={document?.updatedAt ?? document?.publishedAt} />,

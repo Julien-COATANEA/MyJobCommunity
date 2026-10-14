@@ -94,6 +94,26 @@ const types = {
       seo,
     },
   },
+  'page-offres': {
+    kind: 'singleType', draftAndPublish: true,
+    singular: 'page-offres', plural: 'pages-offres',
+    displayName: "Page des offres d'emploi",
+    description: 'Page /offres : titre, introduction, carte des offres et blocs affichés sous la liste',
+    attributes: {
+      titre: str({ default: "Offres d'emploi", maxLength: 80 }),
+      chapo: { type: 'text', maxLength: 300 },
+      carte: { type: 'boolean', default: false },
+      // Présentation de la liste
+      affichage: { type: 'enumeration', enum: ['colonnes', 'lignes'], default: 'colonnes', required: true },
+      colonnes: { type: 'integer', min: 1, max: 4, default: 3, required: true },
+      offresParPage: { type: 'integer', min: 6, max: 60, default: 24, required: true },
+      afficherLogo: { type: 'boolean', default: true },
+      afficherSalaire: { type: 'boolean', default: true },
+      afficherDate: { type: 'boolean', default: true },
+      sections: { type: 'dynamiczone', components: BLOCS },
+      seo,
+    },
+  },
 
   // ---------- Contenus éditoriaux ----------
   page: {

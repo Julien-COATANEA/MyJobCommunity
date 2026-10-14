@@ -4,8 +4,8 @@ import { Box, Flex, Typography } from '@strapi/design-system';
 import { CheckCircle, WarningCircle } from '@strapi/icons';
 import { useFetchClient, useForm } from '@strapi/strapi/admin';
 import { controler, liensInternes, type Niveau } from '../qualite';
+import { definition } from '../types';
 
-const TYPES_CONTROLES = ['api::page.page', 'api::article.article', 'api::evenement.evenement', 'api::entreprise.entreprise', 'api::accueil.accueil'];
 
 const COULEURS: Record<Niveau, { fond: string; texte: string; puce: string }> = {
   erreur: { fond: '#fcecea', texte: '#b72b1a', puce: '#d02b20' },
@@ -82,7 +82,7 @@ function Contenu({ model }: { model: string }) {
 }
 
 export const PanneauQualite = ({ model }: { model: string }) => {
-  if (!TYPES_CONTROLES.includes(model)) return null;
+  if (!definition(model)?.qualite) return null;
   return { title: 'Avant de publier', content: <Contenu model={model} /> };
 };
 PanneauQualite.type = 'mjc-qualite';
