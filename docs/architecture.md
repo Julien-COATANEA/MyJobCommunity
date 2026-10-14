@@ -70,6 +70,10 @@ Objectif : un BO aussi simple à prendre en main que WordPress (`cms/src/admin/`
   Menus du site, Informations du site) ; *Avancé* (Tous les contenus, Médiathèque, Paramètres). Strapi n'affiche
   que des icônes : `espace/menu.css` révèle les libellés au-delà de 1100 px. Chaque entrée n'apparaît que si le rôle
   de l'utilisateur y a accès.
+- **Mes pages** (`espace/pages/MesPages.tsx`, `GET /espace/pages`) : écran dédié qui liste la page d'accueil et la
+  page des offres (contenus uniques) en tête, puis toutes les pages, avec leur état (en ligne, modifications non
+  publiées, brouillon, publication programmée). La liste du gestionnaire de contenu reste accessible par
+  « Liste détaillée » pour les filtres et actions groupées.
 - **Tableau de bord** (page d'accueil du BO) en widgets : actions rapides, chiffres clés, prochains événements avec
   remplissage des jauges et dernières inscriptions, état du site (dernière mise en ligne, bouton « Mettre à jour
   maintenant ») et des offres Gestmax. Les widgets Strapi destinés aux développeurs et la visite guidée sont masqués.
@@ -92,7 +96,7 @@ Limite : le menu à libellés repose sur la structure HTML du BO Strapi ; à rev
   secteur, tri, **recherche autour d'une ville** (géocodage IGN Géoplateforme au moment de la synchronisation pour les
   offres, dans le navigateur pour la ville saisie) et état « aucun résultat » qui propose de créer une alerte Gestmax.
 - Fiche offre : barre « Postuler » fixe sur mobile, « Retour aux résultats » qui conserve les filtres, encart entreprise,
-  offres similaires, message avant le passage sur le site carrière.
+  offres similaires, message avant le passage sur le site Gestmax.
 - Accueil : compteur réel d'offres, recherche réduite à un champ sur mobile, chiffres clés automatiques
   (`{offres}`, `{entreprises}`, `{evenements}`), bloc **Témoignages**, en-têtes « Tout voir » pour les blocs de liste.
 - Événements : places restantes sur les cartes (en direct), filtre par type, fichier « Ajouter à mon agenda » (.ics).
@@ -190,14 +194,14 @@ attendu par ce plugin (en-tête, marqueur `<!--COUPURE-->`, pied de page, liens 
 JS puisque Gestmax retire les scripts). Le front Gestmax du client prend ainsi exactement le même habillage que le
 site. Configuration Gestmax : `headerFooterWp.url = <SITE_URL>/header-footer/?token=…`, `headerFooterWp.base_url = <SITE_URL>`.
 
-### Site carrière (décision du 13/10/2026)
+### Site Gestmax (décision du 13/10/2026)
 
 Le parcours candidat (candidature, compte candidat `/account/login`, alertes `/alert`, candidature spontanée) reste
 sur **un second site : le front Gestmax**, habillé avec l'en-tête et le pied de page du site. Pas d'iframe.
 
-- **Espace BO « Site carrière »** (rubrique Emploi) : adresses du site carrière et des liens candidats, configuration
+- **Espace BO « Site Gestmax »** (rubrique Emploi) : adresses du site Gestmax et des liens candidats, configuration
   `gestmax.ini` prête à copier ou à envoyer par e-mail, lien vers l'en-tête et le pied de page, vérifications de bout en bout
-  (format de la page, protection par jeton, site carrière joignable, habillage effectivement visible, liens candidats).
+  (format de la page, protection par jeton, site Gestmax joignable, habillage effectivement visible, liens candidats).
 - **Page `/header-footer/` protégée par jeton** (`HEADER_FOOTER_TOKEN`, contrôlé par Nginx) et non indexée, comme
   l'exige le plugin.
 - **Styles isolés** : l'en-tête et le pied de page ont leur propre feuille (`site/src/styles/shell.css`), confinée sous

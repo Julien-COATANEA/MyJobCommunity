@@ -66,7 +66,7 @@ export default function Guide() {
           <Grid.Item col={12} direction="column" alignItems="stretch">
             <Fiche titre="3. Composer une page avec des blocs">
               <p>
-                Dans <Link to="/content-manager/collection-types/api::page.page">Mes pages</Link> ou{' '}
+                Dans <Link to="/mes-pages">Mes pages</Link> ou{' '}
                 <Link to="/content-manager/single-types/api::accueil.accueil">Ma page d’accueil</Link>, ajoutez des blocs dans « Contenu
                 de la page », puis réordonnez-les par glisser-déposer. Chaque bloc a une mise en forme déjà prévue : vous n’avez qu’à
                 remplir le texte. Pour gagner du temps, le bouton « À partir d’un modèle » de Mes pages crée une page déjà composée.
@@ -111,7 +111,7 @@ export default function Guide() {
             <Fiche titre="7. Besoin d’aide ?">
               <p>
                 Logo, couleurs : <Link to="/apparence">Apparence</Link>. Menus : <Link to="/content-manager/single-types/api::navigation.navigation">Menus du site</Link>.
-                Candidatures : <Link to="/site-carriere">Site carrière</Link>. Collègues : <Link to="/equipe">Mon équipe</Link>.
+                Candidatures : <Link to="/site-carriere">Site Gestmax</Link>. Collègues : <Link to="/equipe">Mon équipe</Link>.
                 Points à corriger : <Link to="/sante">Santé du site</Link>. Bandeau de cookies et outils de mesure : <Link to="/cookies">Cookies et suivi</Link>.
               </p>
               {support && (

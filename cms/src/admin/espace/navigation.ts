@@ -112,6 +112,43 @@ function installerVolet() {
   placer();
 }
 
+// ---------- Entrée de menu active ----------
+// « Mes pages » est un écran dédié (/mes-pages) : Strapi ne l'allume donc pas quand on modifie une page dans le
+// gestionnaire de contenu. On pose aria-current nous-mêmes sur ces adresses (repris par menu.css et les lecteurs d'écran).
+
+const ACTIFS: { lien: string; chemin: RegExp }[] = [
+  { lien: '/admin/mes-pages', chemin: /^\/admin\/content-manager\/collection-types\/api::page\.page(\/|$)/ },
+];
+
+function installerMenuActif() {
+  const appliquer = () => {
+    for (const { lien, chemin } of ACTIFS) {
+      const a = document.querySelector<HTMLAnchorElement>(`nav a[href="${lien}"]`);
+      if (!a) continue;
+      const actif = chemin.test(window.location.pathname);
+      if (actif && a.getAttribute('aria-current') !== 'page') {
+        a.setAttribute('aria-current', 'page');
+        a.dataset.mjcActif = '';
+      } else if (!actif && 'mjcActif' in a.dataset) {
+        // On ne retire que ce qu'on a posé : sur l'écran lui-même (/mes-pages), c'est Strapi qui gère l'attribut.
+        if (!window.location.pathname.startsWith(lien)) a.removeAttribute('aria-current');
+        delete a.dataset.mjcActif;
+      }
+    }
+  };
+  let planifie = false;
+  new MutationObserver(() => {
+    if (planifie) return;
+    planifie = true;
+    requestAnimationFrame(() => {
+      planifie = false;
+      appliquer();
+    });
+  }).observe(document.body, { childList: true, subtree: true });
+  window.addEventListener('popstate', appliquer);
+  appliquer();
+}
+
 export function monterNavigation() {
   if (document.getElementById('mjc-navigation-ok')) return;
   const marque = document.createElement('meta');
@@ -119,4 +156,5 @@ export function monterNavigation() {
   document.head.appendChild(marque);
   installerRetour();
   installerVolet();
+  installerMenuActif();
 }

@@ -4,29 +4,30 @@ import {
   EVENEMENT, INSCRIPTION, emailConfirmation, etatInscriptions, formatDate, lieuEvenement, nouveauJeton, promouvoirListeAttente,
 } from '../../../utils/inscriptions';
 import { tropDeRequetes } from '../../../utils/limiteur';
+import { origineSite } from '../../../utils/origine';
+import { brut, coche, erreurEmail, erreurTelephone } from '../../../utils/validation';
 
 type Statut = 'ok' | 'attente' | 'invalide' | 'ferme' | 'complet' | 'deja-inscrit' | 'trop-de-demandes';
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const TELEPHONE = /^[0-9+().\s-]{6,20}$/;
-
-const coche = (v: unknown) => v === true || v === 'true' || v === 'on' || v === '1';
 const nettoyer = (v: unknown, max = 120) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
 function valider(corps: Record<string, unknown>) {
   const donnees = {
     prenom: nettoyer(corps.prenom),
     nom: nettoyer(corps.nom),
-    email: nettoyer(corps.email, 254).toLowerCase(),
-    telephone: nettoyer(corps.telephone, 20),
+    // E-mail (destinataire de la confirmation) et téléphone validés tels que saisis, jamais tronqués.
+    email: brut(corps.email).toLowerCase(),
+    telephone: brut(corps.telephone),
     structure: nettoyer(corps.structure),
     consentement: coche(corps.consentement),
   };
   const erreurs: Record<string, string> = {};
   if (!donnees.prenom) erreurs.prenom = 'Indiquez votre prénom.';
   if (!donnees.nom) erreurs.nom = 'Indiquez votre nom.';
-  if (!EMAIL.test(donnees.email)) erreurs.email = 'Indiquez une adresse e-mail valide, par exemple nom@domaine.fr.';
-  if (donnees.telephone && !TELEPHONE.test(donnees.telephone)) erreurs.telephone = 'Indiquez un numéro de téléphone valide, par exemple 06 12 34 56 78.';
+  const email = erreurEmail(donnees.email);
+  if (email) erreurs.email = email;
+  const telephone = erreurTelephone(donnees.telephone);
+  if (telephone) erreurs.telephone = telephone;
   if (!donnees.consentement) erreurs.consentement = 'Vous devez accepter le traitement de vos données pour vous inscrire.';
   return { donnees, erreurs };
 }
@@ -129,19 +130,5 @@ export default factories.createCoreController(INSCRIPTION, ({ strapi }) => ({
     ctx.body = { statut: 'annulee', titre: inscription.evenement.titre };
   },
 }));
-
-/** Origine du site pour la redirection : celle de la requête si elle est autorisée, sinon SITE_URL. */
-function origineSite(ctx: any): string {
-  const autorisees = (process.env.CORS_ORIGINS ?? '').split(',').map((o) => o.trim()).filter(Boolean);
-  let origine = ctx.get('origin');
-  if (!origine && ctx.get('referer')) {
-    try {
-      origine = new URL(ctx.get('referer')).origin;
-    } catch {
-      origine = '';
-    }
-  }
-  return autorisees.includes(origine) ? origine : (process.env.SITE_URL ?? '').replace(/\/+$/, '');
-}
 
 export { EVENEMENT };

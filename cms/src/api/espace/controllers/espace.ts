@@ -49,7 +49,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       { cle: 'logo', libelle: 'Déposer votre logo et choisir vos couleurs', fait: !!p?.logo && p?.couleurPrimaire !== '#1a5f7a', lien: '/apparence' },
       { cle: 'coordonnees', libelle: 'Renseigner vos coordonnées', fait: !!(p?.email && p?.telephone), lien: cm('api::parametres.parametres', true) },
       { cle: 'menu', libelle: 'Construire le menu du site', fait: (navigation?.menuPrincipal?.length ?? 0) > 0, lien: cm('api::navigation.navigation', true) },
-      { cle: 'carriere', libelle: 'Relier votre site carrière Gestmax', fait: !!p?.gestmaxUrlFront, lien: '/site-carriere' },
+      { cle: 'carriere', libelle: 'Relier votre site Gestmax', fait: !!p?.gestmaxUrlFront, lien: '/site-carriere' },
       { cle: 'legal', libelle: 'Publier les mentions légales et la page accessibilité', fait: pagesLegales >= 2, lien: cm(UID.page) },
       { cle: 'entreprises', libelle: "Présenter au moins 3 entreprises dans l'annuaire", fait: c.entreprises >= 3, lien: cm(UID.entreprise) },
       { cle: 'articles', libelle: 'Publier vos 3 premiers articles', fait: c.articles >= 3, lien: cm(UID.article) },

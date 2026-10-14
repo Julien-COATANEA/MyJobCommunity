@@ -1,4 +1,4 @@
-// Espace « Site carrière » : le site Gestmax où les candidats postulent, habillé avec l'en-tête et le pied
+// Espace « Site Gestmax » : le site Gestmax où les candidats postulent, habillé avec l'en-tête et le pied
 // de page du site (plugin Gestmax HeaderFooterWp qui lit la page /header-footer/ du site).
 import type { Core } from '@strapi/strapi';
 
@@ -24,7 +24,7 @@ const estLocal = (url: string) => /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(
 function configurationGestmax(nomSite: string) {
   const site = urlSite();
   return [
-    `; Site carrière de ${nomSite} : en-tête et pied de page repris du site ${site}`,
+    `; Site Gestmax de ${nomSite} : en-tête et pied de page repris du site ${site}`,
     'plugin.HeaderFooterWp        = true',
     `headerFooterWp.url           = ${site}/header-footer/?token=${jeton()}`,
     `headerFooterWp.base_url      = ${site}`,
@@ -66,7 +66,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (data.gestmaxUrlFront) {
         if (!/^https?:\/\/[^\s/]+/.test(data.gestmaxUrlFront)) {
           ctx.status = 400;
-          ctx.body = { error: { message: "L'adresse du site carrière doit commencer par https://" } };
+          ctx.body = { error: { message: "L'adresse du site Gestmax doit commencer par https://" } };
           return;
         }
         data.gestmaxUrlFront = sansSlashFinal(data.gestmaxUrlFront);
@@ -75,7 +75,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       ctx.body = await strapi.documents(PARAMETRES).update({ documentId: p.documentId, data } as any);
     },
 
-    /** Contrôle de bout en bout : page d'en-tête protégée, site carrière joignable et habillé, liens candidats. */
+    /** Contrôle de bout en bout : page d'en-tête protégée, site Gestmax joignable et habillé, liens candidats. */
     async verifier(ctx: any) {
       const p = await lireParametres();
       const front = p?.gestmaxUrlFront ? sansSlashFinal(p.gestmaxUrlFront) : '';
@@ -108,20 +108,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           ? `${urlSite()} n'est accessible que depuis ce poste : Gestmax ne pourra pas lire l'en-tête tant que le site n'est pas en ligne.`
           : `${urlSite()}`);
 
-      // 4 et 5. Site carrière joignable, puis habillé avec l'en-tête du site
+      // 4 et 5. Site Gestmax joignable, puis habillé avec l'en-tête du site
       if (!front) {
-        ajouter('front', 'Site carrière Gestmax', 'erreur', "Renseignez l'adresse du site carrière.");
+        ajouter('front', 'Site Gestmax', 'erreur', "Renseignez l'adresse du site Gestmax.");
       } else {
         try {
           const r = await lire(front);
-          ajouter('front', 'Site carrière Gestmax', r.statut < 400 ? 'ok' : 'erreur', `${front} répond (${r.statut}).`);
+          ajouter('front', 'Site Gestmax', r.statut < 400 ? 'ok' : 'erreur', `${front} répond (${r.statut}).`);
           const habille = r.texte.includes('data-mjc-shell');
-          ajouter('habillage', 'En-tête et pied de page sur le site carrière', habille ? 'ok' : 'attention',
+          ajouter('habillage', 'En-tête et pied de page sur le site Gestmax', habille ? 'ok' : 'attention',
             habille
-              ? 'Le site carrière affiche bien votre en-tête et votre pied de page.'
+              ? 'Le site Gestmax affiche bien votre en-tête et votre pied de page.'
               : `Pas encore visibles : la configuration Gestmax n'est pas faite, ou son cache n'est pas encore renouvelé (${TTL_CACHE_SECONDES / 60} min).`);
         } catch (e) {
-          ajouter('front', 'Site carrière Gestmax', 'erreur', `${front} ne répond pas : ${(e as Error).message}`);
+          ajouter('front', 'Site Gestmax', 'erreur', `${front} ne répond pas : ${(e as Error).message}`);
         }
       }
 

@@ -19,7 +19,7 @@ export const RACCOURCIS_GESTMAX: OptionLien[] = [
   { libelle: 'Espace candidat (connexion, candidatures)', valeur: 'gestmax:/account/login' },
   { libelle: 'Alerte e-mail sur les offres', valeur: 'gestmax:/alert' },
   { libelle: 'Candidature spontanée', valeur: 'gestmax:/apply/1/1/candidature-spontanee' },
-  { libelle: 'Accueil du site carrière', valeur: 'gestmax:/' },
+  { libelle: 'Accueil du site Gestmax', valeur: 'gestmax:/' },
 ];
 
 const DOCUMENTS: { uid: string; groupe: string; chemin: (slug: string) => string; champ: string; tri: string; limite: number }[] = [
@@ -46,7 +46,7 @@ export async function listerLiens(strapi: Core.Strapi, avecGestmax: boolean): Pr
       options: distincts.map((c) => ({ libelle: `Offres : ${c}`, valeur: `/offres?contrat=${encodeURIComponent(c)}` })),
     });
   }
-  if (avecGestmax) groupes.push({ libelle: 'Site carrière (Gestmax)', options: RACCOURCIS_GESTMAX });
+  if (avecGestmax) groupes.push({ libelle: 'Site Gestmax', options: RACCOURCIS_GESTMAX });
   return groupes;
 }
 

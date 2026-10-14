@@ -1,0 +1,155 @@
+---
+// Formulaire de contact, envoyé directement à Strapi (le site est statique), sur le modèle de l'inscription :
+//  - sans JavaScript : envoi classique, Strapi redirige vers /message-envoye/ ou /message-impossible/<raison>/ ;
+//  - avec JavaScript : envoi en JSON, erreurs affichées sur place avec un récapitulatif (RGAA 11.10 et 11.11).
+import { lireParametres } from '../lib/contenus';
+import { PUBLIC_STRAPI_URL } from '../lib/strapi';
+
+interface Props {
+  /** Préfixe des identifiants, unique sur la page (plusieurs formulaires possibles). */
+  prefixe?: string;
+}
+
+const { prefixe = 'contact' } = Astro.props;
+const { nomSite } = await lireParametres();
+const action = `${PUBLIC_STRAPI_URL}/api/contact`;
+const champs = [
+  { nom: 'nom', libelle: 'Nom et prénom', type: 'text', autocomplete: 'name', requis: true },
+  { nom: 'email', libelle: 'Adresse e-mail', aide: 'Format attendu : nom@domaine.fr', type: 'email', autocomplete: 'email', requis: true },
+  { nom: 'telephone', libelle: 'Téléphone', aide: 'Format attendu : 06 12 34 56 78', type: 'tel', autocomplete: 'tel', requis: false },
+  { nom: 'sujet', libelle: 'Sujet', type: 'text', autocomplete: 'off', requis: false },
+];
+---
+
+<div class="contact" data-contact={prefixe}>
+  <div class="alerte alerte--erreur" data-resume tabindex="-1" hidden>
+    <h3 class="alerte__titre">Le formulaire contient des erreurs</h3>
+    <ul data-resume-liste></ul>
+  </div>
+
+  <form action={action} method="post" class="formulaire" data-formulaire>
+    <p class="formulaire__legende">Tous les champs sont obligatoires, sauf mention contraire.</p>
+    <div class="formulaire__grille">
+      {
+        champs.map((c) => (
+          <div class="champ">
+            <label for={`${prefixe}-${c.nom}`}>
+              {c.libelle}
+              {!c.requis && <span class="champ__facultatif"> (facultatif)</span>}
+            </label>
+            {c.aide && <p class="champ__aide" id={`${prefixe}-${c.nom}-aide`}>{c.aide}</p>}
+            <p class="champ__erreur" id={`${prefixe}-${c.nom}-erreur`} hidden />
+            <input
+              id={`${prefixe}-${c.nom}`}
+              name={c.nom}
+              type={c.type}
+              autocomplete={c.autocomplete}
+              required={c.requis}
+              aria-describedby={c.aide ? `${prefixe}-${c.nom}-aide` : undefined}
+            />
+          </div>
+        ))
+      }
+    </div>
+    <div class="champ">
+      <label for={`${prefixe}-message`}>Votre message</label>
+      <p class="champ__erreur" id={`${prefixe}-message-erreur`} hidden></p>
+      <textarea id={`${prefixe}-message`} name="message" rows="7" required minlength="10" maxlength="5000"></textarea>
+    </div>
+
+    <!-- Champ piège anti-robots : masqué à tous les utilisateurs. -->
+    <div class="piege" aria-hidden="true">
+      <label for={`${prefixe}-site-web`}>Ne pas remplir ce champ</label>
+      <input id={`${prefixe}-site-web`} name="site_web" type="text" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <div class="champ champ--case">
+      <p class="champ__erreur" id={`${prefixe}-consentement-erreur`} hidden></p>
+      <input id={`${prefixe}-consentement`} name="consentement" type="checkbox" value="true" required />
+      <label for={`${prefixe}-consentement`}>
+        J'accepte que {nomSite} utilise ces informations pour répondre à mon message
+        (<a href="/donnees-personnelles">en savoir plus sur vos données</a>).
+      </label>
+    </div>
+
+    <button type="submit" class="bouton bouton--plein" data-envoyer>Envoyer mon message</button>
+  </form>
+
+  <div class="alerte alerte--succes" data-succes tabindex="-1" hidden>
+    <h3 class="alerte__titre">Votre message a bien été envoyé</h3>
+    <p>Merci ! Nous vous répondrons dans les meilleurs délais à l'adresse que vous avez indiquée.</p>
+  </div>
+</div>
+
+<script>
+  import { creerAffichageErreurs } from '../lib/formulaire';
+  import { erreurEmail, erreurTelephone } from '../lib/validation';
+
+  const MESSAGES: Record<string, string> = {
+    indisponible: 'Le formulaire de contact est momentanément indisponible. Écrivez-nous directement par e-mail.',
+    'trop-de-demandes': 'Trop d’envois en peu de temps. Réessayez dans quelques minutes.',
+    erreur: 'Votre message n’a pas pu être envoyé. Réessayez dans quelques instants.',
+  };
+
+  for (const bloc of document.querySelectorAll<HTMLElement>('[data-contact]')) {
+    const prefixe = bloc.dataset.contact!;
+    const formulaire = bloc.querySelector<HTMLFormElement>('[data-formulaire]')!;
+    const succes = bloc.querySelector<HTMLElement>('[data-succes]')!;
+    const bouton = bloc.querySelector<HTMLButtonElement>('[data-envoyer]')!;
+    const libelleBouton = bouton.textContent ?? 'Envoyer mon message';
+    const erreurs = creerAffichageErreurs({
+      formulaire,
+      resume: bloc.querySelector<HTMLElement>('[data-resume]')!,
+      resumeListe: bloc.querySelector<HTMLElement>('[data-resume-liste]')!,
+      prefixe,
+    });
+    // Validation gérée par le script : messages en français, identiques à ceux du serveur.
+    formulaire.noValidate = true;
+
+    const validerLocalement = (): Record<string, string> => {
+      const d = new FormData(formulaire);
+      const texte = (nom: string) => String(d.get(nom) ?? '').trim();
+      const e: Record<string, string> = {};
+      if (!texte('nom')) e.nom = 'Indiquez votre nom.';
+      const email = erreurEmail(texte('email'));
+      if (email) e.email = email;
+      const telephone = erreurTelephone(texte('telephone'));
+      if (telephone) e.telephone = telephone;
+      if (texte('message').length < 10) e.message = 'Écrivez votre message (10 caractères au moins, hors espaces de début et de fin).';
+      if (!d.get('consentement')) e.consentement = 'Vous devez accepter le traitement de vos données pour envoyer votre message.';
+      return e;
+    };
+
+    formulaire.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      erreurs.nettoyer();
+      const locales = validerLocalement();
+      if (Object.keys(locales).length) return erreurs.afficher(locales);
+
+      bouton.disabled = true;
+      bouton.textContent = 'Envoi en cours…';
+      try {
+        const reponse = await fetch(formulaire.action, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(Object.fromEntries(new FormData(formulaire))),
+        });
+        const json = await reponse.json().catch(() => ({ statut: 'erreur' }));
+        if (json.statut === 'ok') {
+          formulaire.hidden = true;
+          succes.hidden = false;
+          succes.focus();
+        } else if (json.statut === 'invalide') {
+          erreurs.afficher(json.erreurs ?? {});
+        } else {
+          erreurs.afficherMessage(MESSAGES[json.statut] ?? MESSAGES.erreur);
+        }
+      } catch {
+        erreurs.afficherMessage(MESSAGES.erreur);
+      } finally {
+        bouton.disabled = false;
+        bouton.textContent = libelleBouton;
+      }
+    });
+  }
+</script>

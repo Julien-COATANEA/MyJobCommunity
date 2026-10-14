@@ -1,0 +1,27 @@
+{
+  "collectionName": "components_blocs_formulaire_contact",
+  "info": {
+    "displayName": "Formulaire de contact",
+    "icon": "envelop",
+    "description": "Les messages sont envoyés à l’e-mail de contact des Informations du site"
+  },
+  "options": {},
+  "attributes": {
+    "surtitre": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "titre": {
+      "type": "string",
+      "default": "Écrivez-nous"
+    },
+    "introduction": {
+      "type": "text",
+      "maxLength": 400
+    },
+    "afficherCoordonnees": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

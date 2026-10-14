@@ -1,0 +1,42 @@
+---
+// Bloc « Formulaire de contact » (maquette, page Contact) : formulaire à gauche, coordonnées du site à droite.
+import TitreSection from '../TitreSection.astro';
+import FormulaireContact from '../FormulaireContact.astro';
+import Icone from '../Icone.astro';
+import { lireParametres } from '../../lib/contenus';
+
+const { bloc, index } = Astro.props;
+// Identifiants uniques sur la page, même si l'éditeur ajoute deux formulaires.
+const prefixe = `contact-${index ?? 0}`;
+const p = await lireParametres();
+const coordonnees = bloc.afficherCoordonnees !== false && (p.adresse || p.telephone || p.email);
+---
+
+<section class="section">
+  <div class="conteneur">
+    <TitreSection surtitre={bloc.surtitre} titre={bloc.titre} introduction={bloc.introduction} />
+    <div class:list={['contact-grille', { 'contact-grille--seul': !coordonnees }]}>
+      <div class="aside-carte">
+        <FormulaireContact prefixe={prefixe} />
+      </div>
+      {
+        coordonnees && (
+          <aside class="aside-carte contact-coordonnees" aria-labelledby={`${prefixe}-coordonnees`}>
+            <h3 id={`${prefixe}-coordonnees`} class="aside-carte__titre">Nos coordonnées</h3>
+            <dl class="infos">
+              {p.adresse && (
+                <div><dt><Icone nom="lieu" taille={20} />Adresse</dt><dd class="contact-coordonnees__adresse">{p.adresse}</dd></div>
+              )}
+              {p.telephone && (
+                <div><dt><Icone nom="telephone" taille={20} />Téléphone</dt><dd><a href={`tel:${p.telephone.replace(/\s/g, '')}`}>{p.telephone}</a></dd></div>
+              )}
+              {p.email && (
+                <div><dt><Icone nom="email" taille={20} />E-mail</dt><dd><a href={`mailto:${p.email}`}>{p.email}</a></dd></div>
+              )}
+            </dl>
+          </aside>
+        )
+      }
+    </div>
+  </div>
+</section>

@@ -82,6 +82,9 @@ const champs = [
 </div>
 
 <script>
+  import { creerAffichageErreurs } from '../lib/formulaire';
+  import { erreurEmail, erreurTelephone } from '../lib/validation';
+
   const MESSAGES: Record<string, string> = {
     ferme: 'Les inscriptions à cet événement sont closes.',
     complet: 'Cet événement est complet.',
@@ -125,65 +128,27 @@ const champs = [
       .then((p) => p && afficherPlaces(p))
       .catch(() => {});
 
-    const nettoyerErreurs = () => {
-      resume.hidden = true;
-      resumeListe.replaceChildren();
-      for (const p of formulaire.querySelectorAll<HTMLElement>('.champ__erreur')) {
-        p.hidden = true;
-        p.textContent = '';
-      }
-      for (const champ of formulaire.querySelectorAll<HTMLInputElement>('input[aria-invalid]')) {
-        champ.removeAttribute('aria-invalid');
-        champ.setAttribute('aria-describedby', champ.getAttribute('aria-describedby')?.replace(/\s*\S+-erreur/, '') ?? '');
-        if (!champ.getAttribute('aria-describedby')) champ.removeAttribute('aria-describedby');
-      }
-    };
-
-    const afficherErreurs = (erreurs: Record<string, string>) => {
-      for (const [nom, message] of Object.entries(erreurs)) {
-        const champ = formulaire.querySelector<HTMLInputElement>(`#ins-${nom}`);
-        const zone = formulaire.querySelector<HTMLElement>(`#ins-${nom}-erreur`);
-        if (!champ || !zone) continue;
-        zone.textContent = message;
-        zone.hidden = false;
-        champ.setAttribute('aria-invalid', 'true');
-        champ.setAttribute('aria-describedby', [champ.getAttribute('aria-describedby'), zone.id].filter(Boolean).join(' '));
-        const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.href = `#${champ.id}`;
-        a.textContent = message;
-        li.append(a);
-        resumeListe.append(li);
-      }
-      resume.hidden = false;
-      resume.focus();
-    };
-
-    const afficherMessageGlobal = (message: string) => {
-      const li = document.createElement('li');
-      li.textContent = message;
-      resumeListe.append(li);
-      resume.hidden = false;
-      resume.focus();
-    };
+    const erreurs = creerAffichageErreurs({ formulaire, resume, resumeListe, prefixe: 'ins' });
 
     const validerLocalement = (): Record<string, string> => {
       const d = new FormData(formulaire);
+      const texte = (nom: string) => String(d.get(nom) ?? '').trim();
       const e: Record<string, string> = {};
-      if (!String(d.get('prenom') ?? '').trim()) e.prenom = 'Indiquez votre prénom.';
-      if (!String(d.get('nom') ?? '').trim()) e.nom = 'Indiquez votre nom.';
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(d.get('email') ?? '').trim())) e.email = 'Indiquez une adresse e-mail valide, par exemple nom@domaine.fr.';
-      const tel = String(d.get('telephone') ?? '').trim();
-      if (tel && !/^[0-9+().\s-]{6,20}$/.test(tel)) e.telephone = 'Indiquez un numéro de téléphone valide, par exemple 06 12 34 56 78.';
+      if (!texte('prenom')) e.prenom = 'Indiquez votre prénom.';
+      if (!texte('nom')) e.nom = 'Indiquez votre nom.';
+      const email = erreurEmail(texte('email'));
+      if (email) e.email = email;
+      const telephone = erreurTelephone(texte('telephone'));
+      if (telephone) e.telephone = telephone;
       if (!d.get('consentement')) e.consentement = 'Vous devez accepter le traitement de vos données pour vous inscrire.';
       return e;
     };
 
     formulaire.addEventListener('submit', async (ev) => {
       ev.preventDefault();
-      nettoyerErreurs();
-      const erreurs = validerLocalement();
-      if (Object.keys(erreurs).length) return afficherErreurs(erreurs);
+      erreurs.nettoyer();
+      const locales = validerLocalement();
+      if (Object.keys(locales).length) return erreurs.afficher(locales);
 
       bouton.disabled = true;
       bouton.textContent = 'Envoi en cours…';
@@ -206,12 +171,12 @@ const champs = [
           succes.hidden = false;
           succes.focus();
         } else if (json.statut === 'invalide') {
-          afficherErreurs(json.erreurs ?? {});
+          erreurs.afficher(json.erreurs ?? {});
         } else {
-          afficherMessageGlobal(MESSAGES[json.statut] ?? MESSAGES.erreur);
+          erreurs.afficherMessage(MESSAGES[json.statut] ?? MESSAGES.erreur);
         }
       } catch {
-        afficherMessageGlobal(MESSAGES.erreur);
+        erreurs.afficherMessage(MESSAGES.erreur);
       } finally {
         bouton.disabled = false;
         bouton.textContent = libelleBouton;

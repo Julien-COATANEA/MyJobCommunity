@@ -25,7 +25,7 @@ export default function Chiffres() {
     { valeur: c.inscriptions30j, libelle: 'inscriptions (30 jours)', to: liste('api::inscription.inscription') },
     { valeur: c.articles, libelle: 'articles publiés', to: liste('api::article.article') },
     { valeur: c.entreprises, libelle: "entreprises dans l'annuaire", to: liste('api::entreprise.entreprise') },
-    { valeur: c.pages, libelle: 'pages publiées', to: liste('api::page.page') },
+    { valeur: c.pages, libelle: 'pages publiées', to: '/mes-pages' },
   ];
 
   return (

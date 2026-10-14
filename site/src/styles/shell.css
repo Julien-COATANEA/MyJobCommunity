@@ -1,6 +1,6 @@
 /* ============================================================
    En-tête et pied de page (« shell »), habillage de la maquette MyJobCommunity.
-   Utilisés par le site ET repris par le site carrière Gestmax (plugin HeaderFooterWp, page /header-footer/).
+   Utilisés par le site ET repris par le site Gestmax (plugin HeaderFooterWp, page /header-footer/).
    Tout est confiné sous .mjc-shell : rien ne doit modifier les pages Gestmax en dehors de l'en-tête et du pied.
    Tailles en em (base fixée ci-dessous) : la taille de police racine de Gestmax peut différer de celle du site.
    ============================================================ */

@@ -85,6 +85,12 @@
     "contenu": {
       "type": "blocks"
     },
+    "programme": {
+      "type": "component",
+      "component": "elements.creneau",
+      "repeatable": true,
+      "max": 20
+    },
     "inscriptionActive": {
       "type": "boolean",
       "default": false

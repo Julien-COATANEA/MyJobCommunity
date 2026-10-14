@@ -1,4 +1,4 @@
-// Page « Site carrière » : adresses du site Gestmax, configuration à transmettre à l'équipe Gestmax
+// Page « Site Gestmax » : adresses du site Gestmax, configuration à transmettre à l'équipe Gestmax
 // pour qu'il reprenne l'en-tête et le pied de page du site, et vérifications de bout en bout.
 import * as React from 'react';
 import {
@@ -122,11 +122,11 @@ export default function SiteCarriere() {
     toggleNotification({ type: 'success', message: 'Configuration copiée.' });
   };
 
-  const courriel = `mailto:?subject=${encodeURIComponent(`Site carrière ${donnees.nomSite} : habillage avec l'en-tête du site`)}&body=${encodeURIComponent(
+  const courriel = `mailto:?subject=${encodeURIComponent(`Site Gestmax ${donnees.nomSite} : habillage avec l'en-tête du site`)}&body=${encodeURIComponent(
     [
       'Bonjour,',
       '',
-      `Merci d'activer sur le site carrière ${liens.gestmaxUrlFront || '(adresse à préciser)'} la reprise de l'en-tête et du pied de page de ${donnees.urlSite}.`,
+      `Merci d'activer sur le site Gestmax ${liens.gestmaxUrlFront || '(adresse à préciser)'} la reprise de l'en-tête et du pied de page de ${donnees.urlSite}.`,
       '',
       'Configuration à ajouter dans gestmax.ini :',
       '',
@@ -143,10 +143,10 @@ export default function SiteCarriere() {
 
   return (
     <Page.Main>
-      <Page.Title>Site carrière</Page.Title>
+      <Page.Title>Site Gestmax</Page.Title>
       <Layouts.Header
-        title="Site carrière"
-        subtitle="Les candidats postulent, créent leur compte et gèrent leurs alertes sur votre site carrière Gestmax, habillé automatiquement avec l'en-tête et le pied de page de votre site."
+        title="Site Gestmax"
+        subtitle="Les candidats postulent, créent leur compte et gèrent leurs alertes sur votre site Gestmax, habillé automatiquement avec l'en-tête et le pied de page de votre site."
         primaryAction={
           <Button startIcon={<Check />} onClick={verifier} loading={verificationEnCours} variant="secondary">
             Lancer les vérifications
@@ -155,7 +155,7 @@ export default function SiteCarriere() {
         secondaryAction={
           front ? (
             <LinkButton variant="tertiary" startIcon={<Eye />} href={front} isExternal>
-              Ouvrir le site carrière
+              Ouvrir le site Gestmax
             </LinkButton>
           ) : undefined
         }
@@ -165,20 +165,20 @@ export default function SiteCarriere() {
           {/* Comment ça marche */}
           <Box padding={6} hasRadius background="neutral0" shadow="tableShadow">
             <Flex gap={6} alignItems="flex-start" wrap="wrap">
-              <Etape couleur="primary" icone={<Earth />} titre="Votre site" texte="Offres, entreprises, actualités, événements. Le bouton « Postuler » mène au site carrière." />
+              <Etape couleur="primary" icone={<Earth />} titre="Votre site" texte="Offres, entreprises, actualités, événements. Le bouton « Postuler » mène au site Gestmax." />
               <ArrowRight />
-              <Etape couleur="warning" icone={<Briefcase />} titre="Le site carrière Gestmax" texte="Formulaire de candidature, compte candidat, alertes, candidature spontanée. Les candidatures arrivent directement dans Gestmax." />
+              <Etape couleur="warning" icone={<Briefcase />} titre="Le site Gestmax" texte="Formulaire de candidature, compte candidat, alertes, candidature spontanée. Les candidatures arrivent directement dans Gestmax." />
               <ArrowRight />
-              <Etape couleur="success" icone={<File />} titre="Un seul en-tête, un seul pied de page" texte={`Vos menus et vos couleurs s'appliquent aussi au site carrière, ${donnees.ttlMinutes} minutes au plus après chaque modification.`} />
+              <Etape couleur="success" icone={<File />} titre="Un seul en-tête, un seul pied de page" texte={`Vos menus et vos couleurs s'appliquent aussi au site Gestmax, ${donnees.ttlMinutes} minutes au plus après chaque modification.`} />
             </Flex>
           </Box>
 
           <Grid.Root gap={6}>
             {/* Adresses */}
             <Grid.Item col={6} s={12} direction="column" alignItems="stretch">
-              <Carte titre="Adresses" sousTitre="Les liens « gestmax:/chemin » sont complétés automatiquement avec l'adresse du site carrière.">
+              <Carte titre="Adresses" sousTitre="Les liens « gestmax:/chemin » sont complétés automatiquement avec l'adresse du site Gestmax.">
                 <Field.Root name="gestmaxUrlFront" hint="Ex. : https://emploi.ma-collectivite.fr" required>
-                  <Field.Label>Adresse du site carrière Gestmax</Field.Label>
+                  <Field.Label>Adresse du site Gestmax</Field.Label>
                   <TextInput
                     value={liens.gestmaxUrlFront}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLiens({ ...liens, gestmaxUrlFront: e.target.value })}
@@ -218,7 +218,7 @@ export default function SiteCarriere() {
 
             {/* Configuration Gestmax */}
             <Grid.Item col={6} s={12} direction="column" alignItems="stretch">
-              <Carte titre="À transmettre à l'équipe Gestmax" sousTitre="Une seule fois, lors de la mise en place du site carrière.">
+              <Carte titre="À transmettre à l'équipe Gestmax" sousTitre="Une seule fois, lors de la mise en place du site Gestmax.">
                 {donnees.siteLocal && (
                   <Alert variant="warning" title="Site pas encore en ligne" closeLabel="Fermer">
                     {`L'adresse ${donnees.urlSite} n'est accessible que depuis ce poste : Gestmax pourra lire l'en-tête une fois le site publié sur son adresse définitive.`}

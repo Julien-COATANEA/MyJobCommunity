@@ -28,6 +28,24 @@ const adresseLieu = e.enLigne ? null : [e.lieu, e.adresse].filter(Boolean).join(
   <div class="evenement__contenu">
     {e.image && <ImageStrapi media={e.image} class="evenement__image" largeurs={[640, 1000]} sizes="(min-width: 960px) 720px, 100vw" />}
     {e.contenu && <div class="prose" set:html={rendreBlocks(e.contenu, { baseMedias: PUBLIC_STRAPI_URL })} />}
+    {
+      e.programme && e.programme.length > 0 && (
+        <section class="programme" aria-labelledby="programme-titre">
+          <h2 id="programme-titre" class="programme__titre">Programme</h2>
+          <ol class="programme__liste">
+            {e.programme.map((c) => (
+              <li class="creneau">
+                <span class="creneau__horaire">{c.horaire}</span>
+                <span class="creneau__corps">
+                  <strong>{c.titre}</strong>
+                  {c.description && <span>{c.description}</span>}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )
+    }
   </div>
 
   <aside class="evenement__infos" aria-labelledby="infos-pratiques">

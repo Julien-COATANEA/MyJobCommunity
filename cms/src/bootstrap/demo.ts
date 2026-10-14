@@ -189,6 +189,7 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
   for (const [titre, categorie, decalage, extrait, image, miseEnAvant] of articles) {
     await publier('api::article.article', {
       titre, slug: slugifier(titre), extrait, image, miseEnAvant,
+      auteur: 'Service emploi de la Vallée Verte',
       datePublication: date(decalage),
       categorie: categories[categorie].documentId,
       contenu: [
@@ -210,6 +211,12 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
     extrait: '60 entreprises, 400 postes à pourvoir et des ateliers CV toute la journée.',
     image: img.ville,
     contenu: [p('Venez rencontrer les recruteurs du territoire, munis de plusieurs CV.'), ul('Espace job dating', 'Ateliers CV et entretien', 'Stand création d’entreprise')],
+    programme: [
+      { horaire: '9 h 00', titre: 'Accueil et ouverture des stands', description: 'Retrait du plan du forum et de la liste des entreprises présentes.' },
+      { horaire: '10 h 30', titre: 'Atelier « Un CV qui se démarque »', description: 'Avec les conseillers emploi, sur inscription à l’accueil.' },
+      { horaire: '14 h 00', titre: 'Job dating express', description: 'Entretiens de 10 minutes avec les recruteurs.' },
+      { horaire: '17 h 00', titre: 'Fermeture du forum' },
+    ],
     inscriptionActive: true, placesMax: 300, dateLimiteInscription: jours(20, 18),
   });
   await publier('api::evenement.evenement', {
@@ -399,6 +406,13 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
 
   const pageLegale = (titre: string, slug: string, contenu: object[]) =>
     publier('api::page.page', { titre, slug, sections: [{ __component: 'blocs.texte', contenu }] });
+
+  await publier('api::page.page', {
+    titre: 'Contact',
+    slug: 'contact',
+    chapo: 'Une question sur l’emploi, un événement ou une offre ? Écrivez-nous, nous vous répondons rapidement.',
+    sections: [{ __component: 'blocs.formulaire-contact', surtitre: 'Nous écrire', titre: 'Écrivez-nous', afficherCoordonnees: true }],
+  });
 
   await pageLegale('Mentions légales', 'mentions-legales', [
     h(2, 'Éditeur du site'),

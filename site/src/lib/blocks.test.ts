@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rendreBlocks, texteBrut, type Bloc } from './blocks';
+import { rendreBlocks, tempsLecture, texteBrut, type Bloc } from './blocks';
 
 describe('rendreBlocks', () => {
   it('rend paragraphes, styles et liens', () => {
@@ -42,5 +42,14 @@ describe('texteBrut', () => {
   it('tronque proprement', () => {
     const blocs: Bloc[] = [{ type: 'paragraph', children: [{ type: 'text', text: 'a '.repeat(200) }] }];
     expect(texteBrut(blocs, 20).length).toBeLessThanOrEqual(20);
+  });
+});
+
+describe('tempsLecture', () => {
+  const paragraphe = (mots: number): Bloc => ({ type: 'paragraph', children: [{ type: 'text', text: Array(mots).fill('mot').join(' ') }] } as Bloc);
+  it('compte 200 mots par minute, 1 minute au moins', () => {
+    expect(tempsLecture([paragraphe(30)])).toBe(1);
+    expect(tempsLecture([paragraphe(600), paragraphe(400)])).toBe(5);
+    expect(tempsLecture(null, 'un chapô de quelques mots')).toBe(1);
   });
 });

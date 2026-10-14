@@ -24,7 +24,7 @@ const seo = comp('shared.seo', false);
 const BLOCS = [
   'blocs.texte', 'blocs.texte-image', 'blocs.chiffres-cles', 'blocs.cartes', 'blocs.appel-action',
   'blocs.faq', 'blocs.logos', 'blocs.recherche-offres', 'blocs.dernieres-offres',
-  'blocs.dernieres-actualites', 'blocs.prochains-evenements', 'blocs.entreprises', 'blocs.temoignages', 'blocs.espaces', 'blocs.cartes-photo', 'blocs.galerie', 'blocs.iframe',
+  'blocs.dernieres-actualites', 'blocs.prochains-evenements', 'blocs.entreprises', 'blocs.temoignages', 'blocs.espaces', 'blocs.cartes-photo', 'blocs.galerie', 'blocs.formulaire-contact', 'blocs.iframe',
 ];
 
 const types = {
@@ -150,6 +150,7 @@ const types = {
       slug: { type: 'uid', targetField: 'titre', required: true },
       datePublication: { type: 'date', required: true },
       categorie: { type: 'relation', relation: 'manyToOne', target: 'api::categorie-article.categorie-article', inversedBy: 'articles' },
+      auteur: str({ maxLength: 80 }),
       extrait: { type: 'text', required: true, maxLength: 300 },
       image: image(),
       contenu: { type: 'blocks', required: true },
@@ -175,6 +176,7 @@ const types = {
       extrait: { type: 'text', required: true, maxLength: 300 },
       image: image(),
       contenu: { type: 'blocks' },
+      programme: comp('elements.creneau', true, { max: 20 }),
       // Inscription en ligne
       inscriptionActive: { type: 'boolean', default: false },
       placesMax: { type: 'integer', min: 1, conditions: { visible: { '==': [{ var: 'inscriptionActive' }, true] } } },

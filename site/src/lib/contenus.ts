@@ -87,6 +87,7 @@ export interface Article {
   slug: string;
   datePublication: string;
   categorie: { nom: string; slug: string } | null;
+  auteur?: string | null;
   extrait: string;
   image: Media | null;
   contenu: Bloc[];
@@ -108,6 +109,7 @@ export interface Evenement {
   extrait: string;
   image: Media | null;
   contenu: Bloc[] | null;
+  programme?: { horaire: string; titre: string; description?: string | null }[] | null;
   inscriptionActive: boolean;
   placesMax: number | null;
   dateLimiteInscription: string | null;

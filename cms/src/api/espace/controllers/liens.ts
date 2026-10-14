@@ -3,7 +3,7 @@ import type { Core } from '@strapi/strapi';
 import { cheminsConnus, estInterne, listerLiens, normaliserChemin } from '../../../utils/liens';
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
-  /** Liste des liens possibles. Les raccourcis Gestmax ne sont proposés que si le site carrière est renseigné. */
+  /** Liste des liens possibles. Les raccourcis Gestmax ne sont proposés que si le site Gestmax est renseigné. */
   async lister(ctx: any) {
     const parametres: any = await strapi.db.query('api::parametres.parametres').findOne({ select: ['gestmaxUrlFront', 'nomSite'] });
     ctx.set('Cache-Control', 'no-store');

@@ -30,6 +30,10 @@
       "target": "api::categorie-article.categorie-article",
       "inversedBy": "articles"
     },
+    "auteur": {
+      "type": "string",
+      "maxLength": 80
+    },
     "extrait": {
       "type": "text",
       "required": true,

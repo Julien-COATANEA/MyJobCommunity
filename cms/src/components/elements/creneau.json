@@ -1,0 +1,23 @@
+{
+  "collectionName": "components_elements_creneau",
+  "info": {
+    "displayName": "Créneau du programme",
+    "icon": "clock"
+  },
+  "options": {},
+  "attributes": {
+    "horaire": {
+      "type": "string",
+      "required": true,
+      "maxLength": 30
+    },
+    "titre": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text",
+      "maxLength": 300
+    }
+  }
+}

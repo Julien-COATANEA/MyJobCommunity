@@ -19,7 +19,7 @@ const chemin = Astro.url.pathname;
 const lien = (url: string | null | undefined) => absolu(resoudreLien(url, parametres.gestmaxUrlFront), base);
 const logo = urlMedia(parametres.logo, true);
 const acces = [
-  // Espace recruteur : le back-office (Strapi), sauf si un autre lien est saisi dans « Site carrière ».
+  // Espace recruteur : le back-office (Strapi), sauf si un autre lien est saisi dans « Site Gestmax ».
   { libelle: 'recruteur', url: parametres.lienEspaceRecruteur || `${PUBLIC_STRAPI_URL}/admin`, icone: 'emploi', classe: 'acces--recruteur' },
   { libelle: 'candidat', url: parametres.lienEspaceCandidat, icone: 'utilisateur', classe: 'acces--candidat' },
 ].filter((a) => a.url);

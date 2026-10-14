@@ -97,3 +97,10 @@ export function texteBrut(blocs: Bloc[] | null | undefined, max = 160): string {
   const brut = (blocs ?? []).map(extraire).join(' ').replace(/\s+/g, ' ').trim();
   return brut.length > max ? `${brut.slice(0, max - 1).trimEnd()}…` : brut;
 }
+
+/** Temps de lecture estimé, en minutes (200 mots par minute, 1 minute au moins). */
+export function tempsLecture(blocs: Bloc[] | null | undefined, ...autres: (string | null | undefined)[]): number {
+  const texte = [texteBrut(blocs, Number.POSITIVE_INFINITY), ...autres].filter(Boolean).join(' ');
+  const mots = texte.split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(mots / 200));
+}

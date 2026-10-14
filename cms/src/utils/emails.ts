@@ -14,8 +14,12 @@ function versHtml(texte: string): string {
 
 export const urlSite = () => (process.env.SITE_URL ?? '').replace(/\/+$/, '');
 
-export async function envoyerEmail(strapi: Core.Strapi, { to, sujet, texte }: { to: string; sujet: string; texte: string }) {
-  await strapi.plugin('email').service('email').send({ to, subject: sujet, text: texte, html: versHtml(texte) });
+/** `repondreA` : adresse utilisée par « Répondre » (ex. l'expéditeur d'un message de contact). */
+export async function envoyerEmail(
+  strapi: Core.Strapi,
+  { to, sujet, texte, repondreA }: { to: string; sujet: string; texte: string; repondreA?: string },
+) {
+  await strapi.plugin('email').service('email').send({ to, subject: sujet, text: texte, html: versHtml(texte), ...(repondreA ? { replyTo: repondreA } : {}) });
 }
 
 export async function lireIdentite(strapi: Core.Strapi) {

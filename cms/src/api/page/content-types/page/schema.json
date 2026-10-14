@@ -50,6 +50,7 @@
         "blocs.espaces",
         "blocs.cartes-photo",
         "blocs.galerie",
+        "blocs.formulaire-contact",
         "blocs.iframe"
       ]
     },

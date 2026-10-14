@@ -79,17 +79,18 @@ export const MODELES: Modele[] = [
   {
     cle: 'contact',
     titre: 'Contact',
-    description: 'Comment joindre la collectivité : e-mail, téléphone, adresse.',
+    description: 'Formulaire de contact (messages reçus à l’e-mail de contact du site) et coordonnées de la collectivité.',
     titrePage: 'Contact',
     chapo: '[Une question sur l’emploi, un événement ou une offre ? Contactez-nous.]',
-    blocs: ['Cartes (moyens de contact)', 'Texte'],
+    blocs: ['Formulaire de contact (avec nos coordonnées)', 'Cartes (horaires, accès)'],
     sections: [
+      { __component: 'blocs.formulaire-contact', surtitre: 'Nous écrire', titre: 'Écrivez-nous', afficherCoordonnees: true },
       {
-        __component: 'blocs.cartes', titre: 'Nous joindre',
+        __component: 'blocs.cartes', titre: 'Venir nous voir',
         cartes: [
-          { icone: 'info', titre: 'Par e-mail', texte: '[adresse@collectivite.fr]' },
-          { icone: 'accompagnement', titre: 'Par téléphone', texte: '[01 23 45 67 89, du lundi au vendredi de 9 h à 17 h]' },
-          { icone: 'territoire', titre: 'Sur place', texte: '[Adresse du service emploi et horaires d’ouverture]' },
+          { icone: 'evenement', titre: 'Horaires d’accueil', texte: '[Du lundi au vendredi, de 9 h à 17 h]' },
+          { icone: 'transport', titre: 'Accès', texte: '[Bus, tram, parking à proximité]' },
+          { icone: 'accompagnement', titre: 'Sur rendez-vous', texte: '[Un conseiller vous reçoit pour faire le point sur votre projet]' },
         ],
       },
     ],

@@ -1,0 +1,12 @@
+---
+// Page de retour du formulaire de contact envoyé sans JavaScript (redirection de Strapi).
+import Base from '../layouts/Base.astro';
+import EnTetePage from '../components/EnTetePage.astro';
+---
+
+<Base titre="Message envoyé" noIndex ariane={[{ libelle: 'Message envoyé' }]}>
+  <EnTetePage titre="Votre message a bien été envoyé" chapo="Merci ! Nous vous répondrons dans les meilleurs délais à l'adresse que vous avez indiquée." />
+  <div class="conteneur conteneur--etroit section prose">
+    <p><a href="/" class="bouton bouton--plein">Retour à l'accueil</a></p>
+  </div>
+</Base>

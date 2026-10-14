@@ -1,6 +1,6 @@
 /* ============================================================
    Jetons de couleur, ombres et rayons dérivés du thème : SOURCE UNIQUE.
-   Chargé par le site (Base.astro) ET par l'habillage du site carrière Gestmax (page /header-footer/).
+   Chargé par le site (Base.astro) ET par l'habillage du site Gestmax (page /header-footer/).
    Les trois couleurs du BO (--c-primaire, --c-secondaire, --c-accent) sont injectées en ligne dans le <head>
    (voir src/lib/theme.ts) ; tout le reste en découle. Correspondance avec la maquette MyJobCommunity :
    primaire = vert-600, --c-fonce = vert-900, --c-primaire-pale = vert-100, secondaire = bleu-700…

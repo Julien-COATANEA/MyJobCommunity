@@ -145,7 +145,6 @@ export default {
     const s = 'content-manager/single-types';
     [
       lienContenu(`${s}/api::accueil.accueil`, 'api::accueil.accueil', 'accueil', "Ma page d'accueil", Layout, 0.1),
-      lienContenu(`${c}/api::page.page`, 'api::page.page', 'pages', 'Mes pages', File, 0.2),
       lienContenu(`${c}/api::article.article`, 'api::article.article', 'articles', 'Mes articles', Pencil, 0.3),
       lienContenu(`${c}/api::evenement.evenement`, 'api::evenement.evenement', 'evenements', 'Mes événements', Calendar, 0.4),
       lienContenu(`${s}/api::page-offres.page-offres`, 'api::page-offres.page-offres', 'page-offres', "Ma page d'offres", Search, 0.61),
@@ -154,6 +153,15 @@ export default {
       lienContenu(`${s}/api::parametres.parametres`, 'api::parametres.parametres', 'informations', 'Informations du site', Information, 0.9),
     ].forEach((lien) => app.addMenuLink(lien));
 
+    // « Mes pages » : écran dédié, pour lister aussi la page d'accueil et la page des offres (contenus uniques).
+    app.addMenuLink({
+      to: 'mes-pages',
+      icon: File,
+      intlLabel: { id: 'mjc.menu.pages', defaultMessage: 'Mes pages' },
+      permissions: [{ action: 'plugin::content-manager.explorer.read', subject: 'api::page.page' }],
+      position: 0.2,
+      Component: () => import('./espace/pages/MesPages'),
+    } as any);
     app.addMenuLink({
       to: 'mes-offres',
       icon: Briefcase,
@@ -165,7 +173,7 @@ export default {
     app.addMenuLink({
       to: 'site-carriere',
       icon: Earth,
-      intlLabel: { id: 'mjc.menu.site-carriere', defaultMessage: 'Site carrière' },
+      intlLabel: { id: 'mjc.menu.site-carriere', defaultMessage: 'Site Gestmax' },
       permissions: [{ action: 'plugin::content-manager.explorer.update', subject: 'api::parametres.parametres' }],
       position: 0.65,
       Component: () => import('./espace/pages/SiteCarriere'),

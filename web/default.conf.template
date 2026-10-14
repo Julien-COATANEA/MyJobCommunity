@@ -30,7 +30,7 @@ server {
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
 
-    # Feuilles de style et polices : chargées aussi par le site carrière Gestmax (autre domaine possible).
+    # Feuilles de style et polices : chargées aussi par le site Gestmax (autre domaine possible).
     location /_astro/ {
         add_header Cache-Control $cache_control always;
         add_header X-Content-Type-Options "nosniff" always;
@@ -38,7 +38,7 @@ server {
         try_files $uri =404;
     }
 
-    # En-tête/pied de page lus par le site carrière Gestmax (plugin HeaderFooterWp) : uniquement avec le jeton.
+    # En-tête/pied de page lus par le site Gestmax (plugin HeaderFooterWp) : uniquement avec le jeton.
     location ^~ /header-footer/ {
         if ($arg_token != "${HEADER_FOOTER_TOKEN}") { return 404; }
         add_header Cache-Control "no-cache" always;

@@ -4,8 +4,8 @@
 import ImageStrapi from '../ImageStrapi.astro';
 import Partage from '../Partage.astro';
 import { lireArticles, type Article } from '../../lib/contenus';
-import { rendreBlocks } from '../../lib/blocks';
-import { formatDate } from '../../lib/format';
+import { rendreBlocks, tempsLecture } from '../../lib/blocks';
+import { formatDate, initiales } from '../../lib/format';
 import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
 
 interface Props {
@@ -23,7 +23,18 @@ const aLire = [...autres.filter(memeCategorie), ...autres.filter((a) => !memeCat
   <header class="conteneur article__entete">
     {article.categorie && <p class="etiquette">{article.categorie.nom}</p>}
     <h1>{article.titre}</h1>
-    <p class="article__date">Publié le <time datetime={article.datePublication}>{formatDate(article.datePublication)}</time></p>
+    <p class="article__signature">
+      {
+        article.auteur && (
+          <span class="article__auteur">
+            <span class="article__avatar" aria-hidden="true">{initiales(article.auteur)}</span>
+            Par {article.auteur}
+          </span>
+        )
+      }
+      <span>Publié le <time datetime={article.datePublication}>{formatDate(article.datePublication)}</time></span>
+      <span>{tempsLecture(article.contenu, article.extrait)} min de lecture</span>
+    </p>
   </header>
   {
     article.image && (

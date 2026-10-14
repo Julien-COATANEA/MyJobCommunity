@@ -1,6 +1,6 @@
 // Bouton « À partir d'un modèle » de la liste « Mes pages », juste sous « Créer une nouvelle entrée » :
 // on choisit un modèle (page prête à remplir) dans une fenêtre au lieu de partir d'une page vide.
-// Injecté dans la zone « listView.actions » du gestionnaire de contenu (voir app.tsx).
+// Affiché sur l'écran « Mes pages » et injecté dans la zone « listView.actions » du gestionnaire de contenu (voir app.tsx).
 import * as React from 'react';
 import { Box, Button, Field, Flex, Grid, Loader, Modal, TextInput, Typography } from '@strapi/design-system';
 import { Layout } from '@strapi/icons';
@@ -102,13 +102,12 @@ function FenetreModeles({ fermer }: { fermer: () => void }) {
   );
 }
 
-export function BoutonModele() {
-  const { pathname } = useLocation();
-  const surMesPages = /\/content-manager\/collection-types\/api::page\.page\/?$/.test(pathname);
+/** Bouton seul, pour l'écran « Mes pages » (masqué sans le droit de créer une page). */
+export function BoutonModeleSeul() {
   const { allowedActions } = useRBAC(PERMISSIONS);
   const [ouvert, setOuvert] = React.useState(false);
 
-  if (!surMesPages || !allowedActions.canCreate) return null;
+  if (!allowedActions.canCreate) return null;
 
   return (
     <Modal.Root open={ouvert} onOpenChange={setOuvert}>
@@ -118,4 +117,11 @@ export function BoutonModele() {
       {ouvert && <FenetreModeles fermer={() => setOuvert(false)} />}
     </Modal.Root>
   );
+}
+
+/** Version injectée dans le gestionnaire de contenu : seulement sur sa liste des pages. */
+export function BoutonModele() {
+  const { pathname } = useLocation();
+  const surMesPages = /\/content-manager\/collection-types\/api::page\.page\/?$/.test(pathname);
+  return surMesPages ? <BoutonModeleSeul /> : null;
 }

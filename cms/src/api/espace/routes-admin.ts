@@ -28,7 +28,10 @@ export const routesEspace = {
     route('GET', '/espace/evenements/:documentId/inscriptions.csv', 'suivi', 'inscriptionsCsv'),
     route('POST', '/espace/evenements/:documentId/message', 'suivi', 'messageInscrits'),
 
-    // Site carrière Gestmax
+    // Mes pages (page d'accueil, page des offres et pages)
+    route('GET', '/espace/pages', 'pages', 'lister'),
+
+    // Site Gestmax
     route('GET', '/espace/site-carriere', 'site-carriere', 'lire'),
     route('PUT', '/espace/site-carriere', 'site-carriere', 'enregistrer'),
     route('POST', '/espace/site-carriere/verifier', 'site-carriere', 'verifier'),

@@ -1,0 +1,52 @@
+---
+// Pages de retour du formulaire de contact envoyé sans JavaScript, en cas d'échec : une page par raison (Strapi
+// redirige vers /message-impossible/<raison>/), pour dire précisément quoi faire même sans script.
+import Base from '../../layouts/Base.astro';
+import EnTetePage from '../../components/EnTetePage.astro';
+import { lireParametres } from '../../lib/contenus';
+
+const RAISONS: Record<string, { titre: string; texte: string[]; liste?: string[] }> = {
+  invalide: {
+    titre: 'Un champ du formulaire est incomplet',
+    texte: ['Vérifiez que vous avez bien indiqué :'],
+    liste: [
+      'votre nom ;',
+      'une adresse e-mail valide, par exemple nom@domaine.fr (une seule adresse) ;',
+      'un message d’au moins 10 caractères ;',
+      'votre accord pour le traitement de vos données (case à cocher) ;',
+      'un téléphone au format 06 12 34 56 78, si vous en indiquez un.',
+    ],
+  },
+  'trop-de-demandes': {
+    titre: 'Trop d’envois en peu de temps',
+    texte: ['Pour éviter les abus, le nombre d’envois est limité. Patientez une dizaine de minutes avant de réessayer.'],
+  },
+  indisponible: {
+    titre: 'Le formulaire est momentanément indisponible',
+    texte: ['Votre message n’a pas pu être transmis. Vous pouvez nous écrire directement par e-mail.'],
+  },
+  erreur: {
+    titre: 'L’envoi a échoué',
+    texte: ['Un incident technique a empêché l’envoi. Réessayez dans quelques instants ou écrivez-nous directement par e-mail.'],
+  },
+};
+
+export function getStaticPaths() {
+  // Une page par raison, plus /message-impossible/ (raison inconnue).
+  return [undefined, 'invalide', 'trop-de-demandes', 'indisponible', 'erreur'].map((raison) => ({ params: { raison } }));
+}
+
+const raison = RAISONS[Astro.params.raison ?? ''] ?? { titre: 'Votre message n’a pas pu être envoyé', texte: ['Vérifiez les champs du formulaire, puis réessayez.'] };
+const { email } = await lireParametres();
+---
+
+<Base titre="Message non envoyé" noIndex ariane={[{ libelle: 'Message non envoyé' }]}>
+  <EnTetePage titre={raison.titre} />
+  <div class="conteneur conteneur--etroit section prose">
+    {raison.texte.map((t) => <p>{t}</p>)}
+    {raison.liste && <ul>{raison.liste.map((l) => <li>{l}</li>)}</ul>}
+    {email && <p>Vous pouvez aussi nous écrire directement : <a href={`mailto:${email}`}>{email}</a>.</p>}
+    <p>Utilisez le bouton « Précédent » de votre navigateur pour revenir au formulaire : vos informations y sont généralement conservées.</p>
+    <p><a href="/" class="bouton bouton--contour">Retour à l'accueil</a></p>
+  </div>
+</Base>

@@ -18,6 +18,7 @@ import BlocTemoignages from './blocs/BlocTemoignages.astro';
 import BlocEspaces from './blocs/BlocEspaces.astro';
 import BlocCartesPhoto from './blocs/BlocCartesPhoto.astro';
 import BlocGalerie from './blocs/BlocGalerie.astro';
+import BlocFormulaireContact from './blocs/BlocFormulaireContact.astro';
 
 interface Props {
   sections: Section[] | null | undefined;
@@ -40,6 +41,7 @@ const COMPOSANTS: Record<string, any> = {
   'blocs.espaces': BlocEspaces,
   'blocs.cartes-photo': BlocCartesPhoto,
   'blocs.galerie': BlocGalerie,
+  'blocs.formulaire-contact': BlocFormulaireContact,
   'blocs.iframe': BlocIframe,
 };
 

@@ -37,7 +37,7 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
       BUILDER_WEBHOOK_URL: http://builder:4000/build
-      # Adresse du site vue depuis Strapi (vérifications de l'espace « Site carrière »)
+      # Adresse du site vue depuis Strapi (vérifications de l'espace « Site Gestmax »)
       SITE_INTERNAL_URL: http://web
       # Les fichiers viennent d'un montage Windows : pas d'événements inotify.
       CHOKIDAR_USEPOLLING: "true"

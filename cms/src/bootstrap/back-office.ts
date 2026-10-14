@@ -47,6 +47,10 @@ const COMMUNS: Record<string, Libelle> = {
   introduction: ['Introduction', 'Une ou deux phrases sous le titre (facultatif).'],
   surtitre: ['Surtitre', 'Petite pastille au-dessus du titre, ex. : « Votre espace personnel » (facultatif).'],
   espaces: 'Espaces',
+  auteur: ['Auteur', 'Facultatif : affiché sous le titre (« Par Marie Rousset »).'],
+  programme: ['Programme', 'Facultatif : les grandes étapes de la journée, dans l’ordre.'],
+  horaire: ['Horaire', 'Ex. : 9 h 00, ou 9 h – 10 h 30'],
+  afficherCoordonnees: ['Afficher nos coordonnées', 'Adresse, téléphone et e-mail des Informations du site, à côté du formulaire.'],
   imagesComplementaires: ['Photos complémentaires', 'Facultatif : ajoutez 2 photos pour une mosaïque de trois photos (au-delà, seules les 2 premières sont affichées).'],
   atouts: ['Atouts', 'Facultatif : courtes mentions avec icône sous le texte (ex. « Cadre de vie — Montagne, lacs, nature à 20 min »).'],
   etiquette: ['Étiquette', 'Petite pastille sur la photo, ex. : numéro de département (69).'],
@@ -60,7 +64,7 @@ const COMMUNS: Record<string, Libelle> = {
   positionImage: "Position de l'image",
   questions: 'Questions',
   logos: 'Logos',
-  mode: ['Affichage', 'Liste du site (recommandé : référencée par Google) ou intégration du site carrière Gestmax.'],
+  mode: ['Affichage', 'Liste du site (recommandé : référencée par Google) ou intégration du site Gestmax.'],
   nombre: "Nombre d'éléments affichés",
   typeContrat: 'Type de contrat',
   cheminIframe: ['Page Gestmax intégrée', 'Uniquement en mode iframe. Par défaut : /search/last'],
@@ -169,7 +173,7 @@ const PAR_TYPE: Record<string, Record<string, Libelle>> = {
     email: 'E-mail de contact',
     reseauxSociaux: 'Réseaux sociaux',
     emailNotificationInscriptions: ['E-mail de notification', 'Reçoit un message à chaque inscription à un événement.'],
-    gestmaxUrlFront: ['Adresse du site carrière Gestmax', 'Ex. : https://emploi.ma-collectivite.fr'],
+    gestmaxUrlFront: ['Adresse du site Gestmax', 'Ex. : https://emploi.ma-collectivite.fr'],
     lienEspaceCandidat: 'Lien « Espace candidat »',
     lienEspaceRecruteur: 'Lien « Espace recruteur »',
     lienCandidatureSpontanee: 'Lien « Candidature spontanée »',
@@ -233,6 +237,7 @@ const FORMULAIRES: Record<string, Ligne[]> = {
     [['extrait', 12]],
     [['image', 6], ['slug', 6]],
     [['contenu', 12]],
+    [['programme', 12]],
     [['inscriptionActive', 4], ['placesMax', 4], ['dateLimiteInscription', 4]],
     [['listeAttente', 12]],
     [['inscriptionExterneUrl', 12]],
@@ -244,7 +249,7 @@ const FORMULAIRES: Record<string, Ligne[]> = {
     [['extrait', 12]],
     [['image', 6], ['slug', 6]],
     [['contenu', 12]],
-    [['publierLe', 6]],
+    [['auteur', 6], ['publierLe', 6]],
     [['seo', 12]],
   ],
   'api::entreprise.entreprise': [
@@ -308,7 +313,13 @@ const EXEMPLES: Record<string, string> = {
   url: '/page, https://… ou gestmax:/chemin',
 };
 
-const VERSION_LISTES = 4;
+const VERSION_LISTES = 5;
+
+/** Contenus dont les droits (et les champs) des rôles des collectivités sont tenus à jour au démarrage. */
+const TYPES_EDITORIAUX = [
+  'api::accueil.accueil', 'api::page-offres.page-offres', 'api::page.page', 'api::article.article',
+  'api::evenement.evenement', 'api::entreprise.entreprise',
+];
 
 export async function configurerBackOffice(strapi: Core.Strapi) {
   const cm = strapi.plugin('content-manager');
@@ -388,8 +399,10 @@ export async function configurerBackOffice(strapi: Core.Strapi) {
 
   await configuration.set({ value: { ...etat, versionListes: VERSION_LISTES } });
   await assurerRoles(strapi);
-  // Types créés après les rôles : droits des éditeurs, responsables et rédacteurs (champs compris).
-  await assurerDroitsType(strapi, 'api::page-offres.page-offres');
+  // Droits des éditeurs, responsables et rédacteurs sur les contenus éditoriaux, nouveaux champs compris (Strapi ne
+  // les ajoute pas aux rôles existants). Exclus volontairement : les Informations du site (scripts de suivi réservés
+  // aux responsables, via l'écran « Cookies et suivi ») et les offres (lecture seule, voir restreindreOffres).
+  for (const uid of TYPES_EDITORIAUX) await assurerDroitsType(strapi, uid);
   await restreindreOffres(strapi);
 }
 

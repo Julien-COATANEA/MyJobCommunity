@@ -98,6 +98,11 @@ const composants = {
     sousTitre: str(),
     lien: lien(),
   }],
+  'elements/creneau': ['Créneau du programme', 'clock', {
+    horaire: str({ required: true, maxLength: 30 }),
+    titre: str({ required: true }),
+    description: { type: 'text', maxLength: 300 },
+  }],
   'elements/espace': ['Espace (candidat, recruteur…)', 'user', {
     titre: str({ required: true }),
     texte: { type: 'text', maxLength: 300 },
@@ -207,6 +212,12 @@ const composants = {
     introduction,
     photos: { type: 'media', multiple: true, required: true, allowedTypes: ['images'] },
   }, 'Mosaïque de photos ; la légende de chaque photo (médiathèque) s’affiche dessus'],
+  'blocs/formulaire-contact': ['Formulaire de contact', 'envelop', {
+    surtitre,
+    titre: str({ default: 'Écrivez-nous' }),
+    introduction,
+    afficherCoordonnees: { type: 'boolean', default: true },
+  }, 'Les messages sont envoyés à l’e-mail de contact des Informations du site'],
   'blocs/iframe': ['Contenu externe intégré', 'code', {
     titre: str(),
     url: str({ required: true }),
