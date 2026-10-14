@@ -16,6 +16,11 @@ server {
     index index.html;
     charset utf-8;
 
+    # Redirection « /page » vers « /page/ » en adresse relative : une adresse absolue reprendrait le port 80 du
+    # conteneur (http://localhost/page/ au lieu de http://localhost:8080/page/) et, derrière un reverse proxy
+    # HTTPS, le mauvais protocole.
+    absolute_redirect off;
+
     gzip on;
     gzip_comp_level 6;
     gzip_types text/plain text/css application/javascript application/json image/svg+xml application/xml;

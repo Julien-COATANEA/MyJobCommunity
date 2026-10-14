@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { Box, Flex, Typography } from '@strapi/design-system';
-import { useFetchClient } from '@strapi/strapi/admin';
+import { getFetchClient } from '@strapi/strapi/admin';
 
 // ---------- Données ----------
 
@@ -11,28 +11,35 @@ const DUREE_CACHE_MS = 5000;
 
 /** Charge une route admin (/espace/...). Plusieurs widgets peuvent partager le même appel. */
 export function useDonnees<T>(url: string) {
-  const { get } = useFetchClient();
   const [etat, setEtat] = React.useState<{ donnees?: T; erreur?: string; chargement: boolean }>({ chargement: true });
+  const monte = React.useRef(true);
 
   const charger = React.useCallback(
     async (forcer = false) => {
       const enCache = cache.get(url);
       if (forcer || !enCache || Date.now() - enCache.instant > DUREE_CACHE_MS) {
-        cache.set(url, { instant: Date.now(), promesse: get(url).then((r: any) => r.data) });
+        // Requête partagée entre widgets : surtout pas useFetchClient, qui l'annulerait au démontage du premier
+        // widget (remontage du tableau de bord pendant un chargement lent) et ferait échouer tous les autres.
+        cache.set(url, { instant: Date.now(), promesse: getFetchClient().get(url).then((r: any) => r.data) });
       }
       try {
         setEtat((e) => ({ ...e, chargement: true }));
-        setEtat({ donnees: await cache.get(url)!.promesse, chargement: false });
+        const donnees = await cache.get(url)!.promesse;
+        if (monte.current) setEtat({ donnees, chargement: false });
       } catch (e) {
         cache.delete(url);
-        setEtat({ erreur: (e as Error).message, chargement: false });
+        if (monte.current) setEtat({ erreur: (e as Error).message, chargement: false });
       }
     },
-    [url, get],
+    [url],
   );
 
   React.useEffect(() => {
+    monte.current = true;
     charger();
+    return () => {
+      monte.current = false;
+    };
   }, [charger]);
 
   return { ...etat, recharger: () => charger(true) };

@@ -29,7 +29,8 @@ export default function Chiffres() {
   ];
 
   return (
-    <Grid.Root gap={3}>
+    // Marge intérieure : le contenu du widget défile (overflow), il rognerait l'ombre et le soulèvement au survol.
+    <Grid.Root gap={3} paddingTop={1} paddingLeft={2} paddingRight={2} paddingBottom={3}>
       {chiffres.map((ch) => (
         <Grid.Item key={ch.libelle} col={4} s={6} direction="column" alignItems="stretch">
           <Link to={ch.to} style={{ textDecoration: 'none', height: '100%' }}>

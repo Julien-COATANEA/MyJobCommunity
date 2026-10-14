@@ -73,7 +73,25 @@ export async function lireBrouillon<T>(
   const reponse = await fetch(url, { headers: entetes });
   if (!reponse.ok) return null;
   const { data } = await reponse.json();
-  return (Array.isArray(data) ? data[0] : data) ?? null;
+  const doc = (Array.isArray(data) ? data[0] : data) ?? null;
+  return sourcesVisuelles ? (nettoyerDates(doc) as T | null) : doc;
+}
+
+/** Caractères invisibles que Strapi ajoute aux chaînes pour l'édition visuelle (encodage « stega »). */
+const STEGA = /[​-‍﻿]/g;
+const DATE_ISO = /^\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?$/;
+
+/** Retire ce marquage des dates : `new Date()` ne sait pas les lire, et une date formatée ne peut pas le garder. */
+function nettoyerDates(valeur: unknown): unknown {
+  if (typeof valeur === 'string') {
+    const propre = valeur.replace(STEGA, '');
+    return DATE_ISO.test(propre) ? propre : valeur;
+  }
+  if (Array.isArray(valeur)) return valeur.map(nettoyerDates);
+  if (valeur && typeof valeur === 'object') {
+    return Object.fromEntries(Object.entries(valeur).map(([cle, v]) => [cle, nettoyerDates(v)]));
+  }
+  return valeur;
 }
 
 // ---------- Types partagés ----------

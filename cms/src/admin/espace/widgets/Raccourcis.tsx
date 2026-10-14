@@ -16,7 +16,8 @@ export default function Raccourcis() {
   return (
     <>
       <StylesEspace />
-      <Grid.Root gap={3}>
+      {/* Marge intérieure : le contenu du widget défile (overflow), il rognerait l'ombre et le soulèvement au survol. */}
+      <Grid.Root gap={3} paddingTop={1} paddingLeft={2} paddingRight={2} paddingBottom={3}>
         {actions.map((a) => (
           <Grid.Item key={a.titre} col={6} xs={12} direction="column" alignItems="stretch">
             <Tuile {...a} />
