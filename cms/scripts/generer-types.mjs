@@ -61,6 +61,13 @@ const types = {
       lienEspaceRecruteur: lien(),
       lienCandidatureSpontanee: lien(),
       seoParDefaut: seo,
+      // Cookies et mesure d'audience (écran « Cookies et suivi »)
+      bandeauCookies: { type: 'boolean', default: false },
+      texteBandeauCookies: { type: 'text', maxLength: 600 },
+      lienPolitiqueCookies: lien(),
+      googleTagManagerId: str({ maxLength: 20 }),
+      googleAnalyticsId: str({ maxLength: 20 }),
+      scripts: comp('shared.script', true),
     },
   },
   navigation: {

@@ -1,0 +1,107 @@
+---
+// Bandeau de consentement aux cookies (activé dans « Cookies et suivi » du BO). « Tout accepter » et « Tout refuser »
+// ont le même poids (recommandation CNIL) ; le choix est conservé 6 mois dans le navigateur. Après accord, les
+// <template data-mjc-suivi> écrits par Base.astro sont transformés en vrais scripts. Placé en tête du <body> pour
+// être atteint en premier au clavier et par les lecteurs d'écran.
+import { resoudreLien } from '../lib/liens';
+import { TEXTE_BANDEAU } from '../lib/suivi';
+
+interface Props {
+  texte?: string | null;
+  lien?: string | null;
+  gestmaxUrlFront?: string | null;
+}
+
+const { texte, lien, gestmaxUrlFront } = Astro.props;
+const href = lien ? resoudreLien(lien, gestmaxUrlFront) : null;
+---
+
+<section id="mjc-cookies" class="cookies" aria-labelledby="mjc-cookies-titre" hidden>
+  <div class="cookies__contenu">
+    <h2 id="mjc-cookies-titre" class="cookies__titre">Gestion des cookies</h2>
+    <p class="cookies__texte">
+      {texte?.trim() || TEXTE_BANDEAU}
+      {href && <> <a href={href}>En savoir plus</a></>}
+    </p>
+  </div>
+  <div class="cookies__actions">
+    <button type="button" class="bouton bouton--plein bouton--petit" data-mjc-cookies="non">Tout refuser</button>
+    <button type="button" class="bouton bouton--plein bouton--petit" data-mjc-cookies="oui">Tout accepter</button>
+  </div>
+</section>
+
+<script is:inline>
+  (() => {
+    const CLE = 'mjc-cookies';
+    const DUREE = 182 * 24 * 3600 * 1000;
+    const bandeau = document.getElementById('mjc-cookies');
+    if (!bandeau) return;
+
+    const lire = () => {
+      try {
+        const v = JSON.parse(localStorage.getItem(CLE) || 'null');
+        return v && Date.now() - v.date < DUREE ? v.choix : null;
+      } catch {
+        return null;
+      }
+    };
+    const ecrire = (choix) => {
+      try {
+        localStorage.setItem(CLE, JSON.stringify({ choix, date: Date.now() }));
+      } catch {
+        // Stockage indisponible : le bandeau réapparaîtra à la prochaine page.
+      }
+    };
+
+    // Un <script> copié depuis un <template> ne s'exécute pas : on le recrée.
+    const recreer = (ancien) => {
+      const s = document.createElement('script');
+      for (const a of ancien.attributes) s.setAttribute(a.name, a.value);
+      if (ancien.src && !ancien.hasAttribute('async')) s.async = false;
+      s.text = ancien.textContent;
+      return s;
+    };
+    let actifs = false;
+    const activer = () => {
+      if (actifs) return;
+      actifs = true;
+      document.querySelectorAll('template[data-mjc-suivi]').forEach((t) => {
+        const cible = t.dataset.mjcSuivi === 'head' ? document.head : document.body;
+        for (const noeud of Array.from(t.content.childNodes)) {
+          if (noeud.nodeName === 'SCRIPT') {
+            cible.appendChild(recreer(noeud));
+            continue;
+          }
+          const copie = noeud.cloneNode(true);
+          if (copie.querySelectorAll) copie.querySelectorAll('script').forEach((s) => s.replaceWith(recreer(s)));
+          cible.appendChild(copie);
+        }
+      });
+    };
+
+    const ouvrir = () => {
+      bandeau.hidden = false;
+      bandeau.querySelector('button')?.focus();
+    };
+    bandeau.addEventListener('click', (e) => {
+      const choix = e.target.closest?.('[data-mjc-cookies]')?.dataset.mjcCookies;
+      if (!choix) return;
+      ecrire(choix);
+      bandeau.hidden = true;
+      if (choix === 'oui') activer();
+      // Des outils déjà lancés ne s'arrêtent pas : on recharge la page sans eux.
+      else if (actifs) location.reload();
+    });
+    document.addEventListener('click', (e) => {
+      if (e.target.closest?.('[data-mjc-cookies-ouvrir]')) ouvrir();
+    });
+
+    const choix = lire();
+    if (!choix) bandeau.hidden = false;
+    // Le bandeau est en haut de page : les <template> de fin de page ne sont pas encore lus.
+    else if (choix === 'oui') {
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', activer);
+      else activer();
+    }
+  })();
+</script>

@@ -1,6 +1,7 @@
 // Accès typés aux contenus Strapi.
 import { lireTous, lireUnique, type Media, type Seo } from './strapi';
 import type { Bloc } from './blocks';
+import type { ScriptPersonnalise } from './suivi';
 
 export interface Lien { libelle: string; url: string; nouvelOnglet?: boolean | null }
 export interface SousLien extends Lien { description?: string | null }
@@ -29,6 +30,12 @@ export interface Parametres {
   lienEspaceRecruteur: string | null;
   lienCandidatureSpontanee: string | null;
   seoParDefaut: Seo | null;
+  bandeauCookies: boolean | null;
+  texteBandeauCookies: string | null;
+  lienPolitiqueCookies: string | null;
+  googleTagManagerId: string | null;
+  googleAnalyticsId: string | null;
+  scripts: ScriptPersonnalise[] | null;
 }
 
 export interface Navigation {

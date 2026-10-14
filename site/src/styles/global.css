@@ -457,3 +457,16 @@ main:focus { outline: none; }
 /* ---------- Offre « à la une » ---------- */
 .badge-une { display: inline-block; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; background: var(--c-secondaire); color: #fff; }
 .annulation__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.5rem; }
+
+/* ---------- Bandeau de cookies ---------- */
+.cookies {
+  position: fixed; z-index: 100; inset: auto 1rem 1rem 1rem; max-width: 46rem; margin-inline: auto;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem; padding: 1.25rem 1.5rem;
+  background: var(--c-fond); color: var(--c-texte); border: 1px solid var(--c-bordure);
+  border-radius: var(--rayon-grand); box-shadow: var(--ombre-forte);
+}
+.cookies__contenu { flex: 1 1 22rem; }
+.cookies__titre { font-size: 1.1rem; margin-bottom: 0.35rem; }
+.cookies__texte { font-size: 0.95rem; }
+.cookies__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+@media print { .cookies { display: none !important; } }

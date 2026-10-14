@@ -69,7 +69,7 @@ export default function Guide() {
                 Dans <Link to="/content-manager/collection-types/api::page.page">Mes pages</Link> ou{' '}
                 <Link to="/content-manager/single-types/api::accueil.accueil">Ma page d’accueil</Link>, ajoutez des blocs dans « Contenu
                 de la page », puis réordonnez-les par glisser-déposer. Chaque bloc a une mise en forme déjà prévue : vous n’avez qu’à
-                remplir le texte.
+                remplir le texte. Pour gagner du temps, le bouton « À partir d’un modèle » de Mes pages crée une page déjà composée.
               </p>
               <ul>
                 {BLOCS.map(([nom, usage]) => (
@@ -93,7 +93,7 @@ export default function Guide() {
             <Fiche titre="5. Offres d’emploi">
               <ul>
                 <li>Les offres se créent dans <strong>Gestmax</strong> et arrivent seules sur le site (toutes les 30 minutes).</li>
-                <li>Pour relier une offre à une fiche de l’annuaire, renseignez le <strong>Nom dans Gestmax</strong> de l’entreprise.</li>
+                <li>Pour relier les offres d’une entreprise à sa fiche de l’annuaire, utilisez « Coupler les entreprises » dans Mes offres d’emploi.</li>
                 <li>Elles ne se créent ni ne se modifient ici. Dans <Link to="/mes-offres">Mes offres d’emploi</Link>, vous pouvez seulement en mettre à la une ou en masquer.</li>
               </ul>
             </Fiche>
@@ -112,7 +112,7 @@ export default function Guide() {
               <p>
                 Logo, couleurs : <Link to="/apparence">Apparence</Link>. Menus : <Link to="/content-manager/single-types/api::navigation.navigation">Menus du site</Link>.
                 Candidatures : <Link to="/site-carriere">Site carrière</Link>. Collègues : <Link to="/equipe">Mon équipe</Link>.
-                Points à corriger : <Link to="/sante">Santé du site</Link>. Plusieurs fiches d’un coup : <Link to="/importer-entreprises">Importer des entreprises</Link>.
+                Points à corriger : <Link to="/sante">Santé du site</Link>. Bandeau de cookies et outils de mesure : <Link to="/cookies">Cookies et suivi</Link>.
               </p>
               {support && (
                 <p>

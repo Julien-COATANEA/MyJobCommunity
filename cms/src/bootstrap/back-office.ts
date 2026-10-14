@@ -109,7 +109,7 @@ const PAR_TYPE: Record<string, Record<string, Libelle>> = {
     logo: 'Logo',
     image: 'Photo',
     siteWeb: 'Site web',
-    nomEntiteGestmax: ['Nom dans Gestmax', "Nom exact de l'entité dans Gestmax : ses offres seront rattachées automatiquement à cette fiche."],
+    nomEntiteGestmax: ['Nom dans Gestmax', "Nom exact de l'entité dans Gestmax : ses offres seront rattachées automatiquement à cette fiche. Plusieurs noms : séparez-les par « ; »."],
     offres: 'Offres en ligne',
   },
   'api::offre.offre': {
@@ -154,6 +154,19 @@ const PAR_TYPE: Record<string, Record<string, Libelle>> = {
     lienEspaceRecruteur: 'Lien « Espace recruteur »',
     lienCandidatureSpontanee: 'Lien « Candidature spontanée »',
     seoParDefaut: 'Référencement par défaut',
+    bandeauCookies: ['Bandeau de cookies', 'Demande l’accord des visiteurs avant de lancer les outils de mesure (écran « Cookies et suivi »).'],
+    texteBandeauCookies: 'Texte du bandeau de cookies',
+    lienPolitiqueCookies: 'Lien « En savoir plus » du bandeau',
+    googleTagManagerId: ['Google Tag Manager', 'Identifiant du conteneur, ex. : GTM-ABC1234'],
+    googleAnalyticsId: ['Google Analytics', 'Identifiant de mesure, ex. : G-ABC123XYZ'],
+    scripts: ['Scripts personnalisés', 'Code ajouté à toutes les pages du site.'],
+  },
+  'shared.script': {
+    nom: ['Nom', 'Pour vous repérer, ex. : Matomo, chat en ligne.'],
+    code: ['Code', 'Collez le code fourni par l’outil, balises <script> comprises.'],
+    emplacement: ['Emplacement', 'head : en haut de page (recommandé pour la mesure) ; body : en bas de page.'],
+    actif: ['Actif', 'Décochez pour retirer le script du site sans le perdre.'],
+    consentement: ['Soumis au consentement', 'Le script attend que le visiteur accepte les cookies (si le bandeau est activé).'],
   },
   'api::navigation.navigation': {
     menuPrincipal: ['Menu principal', 'Les entrées avec un sous-menu s’ouvrent au clic.'],

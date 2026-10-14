@@ -30,6 +30,13 @@ const composants = {
     reseau: { type: 'enumeration', enum: ['facebook', 'linkedin', 'instagram', 'youtube', 'x', 'tiktok'], required: true },
     url: str({ required: true }),
   }],
+  'shared/script': ['Script', 'code', {
+    nom: str({ required: true, maxLength: 80 }),
+    code: { type: 'text', required: true },
+    emplacement: { type: 'enumeration', enum: ['head', 'body'], default: 'head', required: true },
+    actif: { type: 'boolean', default: true },
+    consentement: { type: 'boolean', default: true },
+  }, 'Code HTML / JavaScript ajouté à toutes les pages du site (mesure d’audience, chat…)'],
   'navigation/entree': ['Entrée de menu', 'bulletList', {
     libelle: str({ required: true }),
     url: lien(),

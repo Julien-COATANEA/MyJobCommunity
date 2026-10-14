@@ -15,6 +15,7 @@ export const routesEspace = {
     { method: 'GET', path: '/espace/tableau-de-bord', handler: handler('tableauDeBord'), config },
     { method: 'GET', path: '/espace/offres', handler: handler('offres'), config },
     { method: 'PUT', path: '/espace/offres/:documentId', handler: handler('reglerOffre'), config },
+    { method: 'POST', path: '/espace/offres/rattacher', handler: handler('rattacherEntreprise'), config },
     { method: 'POST', path: '/espace/offres/synchroniser', handler: handler('synchroniserOffres'), config },
     { method: 'POST', path: '/espace/site/regenerer', handler: handler('regenererSite'), config },
     { method: 'GET', path: '/espace/apparence', handler: handler('lireApparence'), config },
@@ -32,13 +33,16 @@ export const routesEspace = {
     route('PUT', '/espace/site-carriere', 'site-carriere', 'enregistrer'),
     route('POST', '/espace/site-carriere/verifier', 'site-carriere', 'verifier'),
 
-    // Sélecteur de liens, santé du site, modèles de pages, import, recherche, équipe, statistiques
+    // Cookies et scripts de suivi
+    route('GET', '/espace/cookies', 'cookies', 'lire'),
+    route('PUT', '/espace/cookies', 'cookies', 'enregistrer'),
+
+    // Sélecteur de liens, santé du site, modèles de pages, recherche, équipe, statistiques
     route('GET', '/espace/liens', 'liens', 'lister'),
     route('POST', '/espace/liens/verifier', 'liens', 'verifier'),
     route('GET', '/espace/sante', 'sante', 'sante'),
     route('GET', '/espace/modeles', 'modeles', 'lister'),
     route('POST', '/espace/modeles/creer', 'modeles', 'creer'),
-    route('POST', '/espace/import-entreprises', 'import', 'importer'),
     route('GET', '/espace/recherche', 'recherche', 'chercher'),
     route('GET', '/espace/equipe', 'equipe', 'lister'),
     route('POST', '/espace/equipe/inviter', 'equipe', 'inviter'),

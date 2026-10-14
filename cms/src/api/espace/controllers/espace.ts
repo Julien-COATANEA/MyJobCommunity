@@ -1,6 +1,7 @@
 import type { Core } from '@strapi/strapi';
 import { lireDerniereSynchro } from '../../../utils/synchro';
 import { OFFRES_VISIBLES } from '../../../utils/garde-offres';
+import { normaliserNom, rattacher } from '../../../utils/rattachement';
 
 const UID = {
   page: 'api::page.page',
@@ -130,6 +131,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           .sort((a, b) => b.nombre - a.nombre);
       const parametres = await db(UID.parametres).findOne({ select: ['gestmaxUrlFront'] });
 
+      // Entreprises des offres (nom Gestmax) et fiche de l'annuaire à laquelle elles sont couplées.
+      const parNom = new Map<string, { nom: string; nombre: number; entreprise: { documentId: string; nom: string } | null }>();
+      for (const o of toutes as any[]) {
+        if (!o.nomEntreprise) continue;
+        const cle = normaliserNom(o.nomEntreprise);
+        const ligne = parNom.get(cle) ?? { nom: o.nomEntreprise.trim(), nombre: 0, entreprise: null };
+        ligne.nombre++;
+        ligne.entreprise ??= o.entreprise ? { documentId: o.entreprise.documentId, nom: o.entreprise.nom } : null;
+        parNom.set(cle, ligne);
+      }
+      const annuaire = await db(UID.entreprise).findMany({ select: ['documentId', 'nom'], orderBy: { nom: 'asc' } });
+
       ctx.body = {
         total: visibles.length,
         masquees: toutes.length - visibles.length,
@@ -137,6 +150,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         parContrat: compter((o) => o.typeContrat),
         parEntreprise: compter((o) => o.nomEntreprise).slice(0, 8),
         nonRattachees: visibles.filter((o: any) => !o.entreprise).length,
+        // Non couplées d'abord, puis par nombre d'offres.
+        entreprisesOffres: [...parNom.values()].sort((a, b) => Number(!!a.entreprise) - Number(!!b.entreprise) || b.nombre - a.nombre),
+        annuaire,
         dernieres: [...toutes].sort((a: any, b: any) => Number(!!b.aLaUne) - Number(!!a.aLaUne)).slice(0, 100),
         synchro: await lireDerniereSynchro(strapi),
         mock: strapi.config.get('gestmax.mock'),
@@ -160,6 +176,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (data.masquee) data.aLaUne = false;
       await strapi.documents(UID.offre).update({ documentId: ctx.params.documentId, data } as any);
       ctx.body = data;
+    },
+
+    /** Couple le nom d'entreprise Gestmax des offres avec une fiche de l'annuaire (documentId null : découple). */
+    async rattacherEntreprise(ctx: any) {
+      const { nomEntreprise, entreprise } = ctx.request.body ?? {};
+      if (typeof nomEntreprise !== 'string' || !nomEntreprise.trim()) return ctx.badRequest('Nom d’entreprise manquant.');
+      if (entreprise !== null && typeof entreprise !== 'string') return ctx.badRequest('Fiche entreprise invalide.');
+      try {
+        ctx.body = await rattacher(strapi, nomEntreprise, entreprise);
+      } catch (e) {
+        return ctx.badRequest((e as Error).message);
+      }
     },
 
     async synchroniserOffres(ctx: any) {

@@ -1,0 +1,37 @@
+{
+  "collectionName": "components_shared_script",
+  "info": {
+    "displayName": "Script",
+    "icon": "code",
+    "description": "Code HTML / JavaScript ajouté à toutes les pages du site (mesure d’audience, chat…)"
+  },
+  "options": {},
+  "attributes": {
+    "nom": {
+      "type": "string",
+      "required": true,
+      "maxLength": 80
+    },
+    "code": {
+      "type": "text",
+      "required": true
+    },
+    "emplacement": {
+      "type": "enumeration",
+      "enum": [
+        "head",
+        "body"
+      ],
+      "default": "head",
+      "required": true
+    },
+    "actif": {
+      "type": "boolean",
+      "default": true
+    },
+    "consentement": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

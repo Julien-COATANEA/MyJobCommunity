@@ -6,9 +6,11 @@ interface Props {
   parametres: Parametres;
   navigation: Navigation;
   base?: string;
+  /** Bouton « Gestion des cookies » (rouvre le bandeau ; absent de l'habillage Gestmax, sans scripts). */
+  gestionCookies?: boolean;
 }
 
-const { parametres, navigation, base } = Astro.props;
+const { parametres, navigation, base, gestionCookies } = Astro.props;
 const lien = (url: string) => absolu(resoudreLien(url, parametres.gestmaxUrlFront), base);
 const NOMS_RESEAUX: Record<string, string> = {
   facebook: 'Facebook', linkedin: 'LinkedIn', instagram: 'Instagram', youtube: 'YouTube', x: 'X', tiktok: 'TikTok',
@@ -60,6 +62,7 @@ const NOMS_RESEAUX: Record<string, string> = {
     <div class="conteneur pied__legal-barre">
       <ul>
         {navigation.liensLegaux.map((l) => <li><a href={lien(l.url)}>{l.libelle}</a></li>)}
+        {gestionCookies && <li><button type="button" class="pied__cookies" data-mjc-cookies-ouvrir>Gestion des cookies</button></li>}
       </ul>
       <p>Propulsé par My Job Community</p>
     </div>

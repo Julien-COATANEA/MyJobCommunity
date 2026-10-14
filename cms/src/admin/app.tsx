@@ -5,7 +5,7 @@
 // Les variables STRAPI_ADMIN_* sont lues au build de l'admin : chaque client a son nom, sa couleur, son logo.
 import type { StrapiApp } from '@strapi/strapi/admin';
 import {
-  Book, Briefcase, Calendar, ChartPie, CheckCircle, Earth, File, Information, Layout, List, PaintBrush, Pencil, Plus, Store, Upload, User, WarningCircle,
+  Book, Briefcase, Calendar, ChartPie, CheckCircle, Earth, File, Information, Layout, List, PaintBrush, Pencil, Shield, Store, User, WarningCircle,
 } from '@strapi/icons';
 import logo from './extensions/logo.svg';
 import './espace/menu.css';
@@ -14,6 +14,7 @@ import { PanneauInscriptions } from './espace/panneaux/PanneauInscriptions';
 import { PanneauQualite } from './espace/panneaux/PanneauQualite';
 import { PanneauDemandePublication } from './espace/panneaux/PanneauDemandePublication';
 import { LienInput } from './espace/LienInput';
+import { BoutonModele } from './espace/BoutonModele';
 import { monterIndicateur } from './espace/IndicateurSite';
 import { monterRecherche } from './espace/Recherche';
 import { monterBienvenue } from './espace/Bienvenue';
@@ -178,12 +179,12 @@ export default {
     } as any);
     const responsable = [{ action: 'plugin::content-manager.explorer.publish', subject: 'api::page.page' }];
     app.addMenuLink({
-      to: 'nouvelle-page',
-      icon: Plus,
-      intlLabel: { id: 'mjc.menu.nouvelle-page', defaultMessage: 'Page à partir d’un modèle' },
-      permissions: [{ action: 'plugin::content-manager.explorer.create', subject: 'api::page.page' }],
-      position: 0.21,
-      Component: () => import('./espace/pages/NouvellePage'),
+      to: 'cookies',
+      icon: Shield,
+      intlLabel: { id: 'mjc.menu.cookies', defaultMessage: 'Cookies et suivi' },
+      permissions: [{ action: 'plugin::content-manager.explorer.update', subject: 'api::parametres.parametres' }],
+      position: 0.71,
+      Component: () => import('./espace/pages/Cookies'),
     } as any);
     app.addMenuLink({
       to: 'sante',
@@ -192,14 +193,6 @@ export default {
       permissions: [],
       position: 0.72,
       Component: () => import('./espace/pages/Sante'),
-    } as any);
-    app.addMenuLink({
-      to: 'importer-entreprises',
-      icon: Upload,
-      intlLabel: { id: 'mjc.menu.import', defaultMessage: 'Importer des entreprises' },
-      permissions: [{ action: 'plugin::content-manager.explorer.create', subject: 'api::entreprise.entreprise' }],
-      position: 0.55,
-      Component: () => import('./espace/pages/ImportEntreprises'),
     } as any);
     app.addMenuLink({
       to: 'equipe',
@@ -254,6 +247,8 @@ export default {
     }));
     // Encarts des fiches : « Sur le site » (état + Voir sur le site) et « Inscriptions » (événements).
     (app.getPlugin('content-manager').apis as any).addEditViewSidePanel([PanneauSite, PanneauQualite, PanneauDemandePublication, PanneauInscriptions]);
+    // « Mes pages » : bouton « À partir d'un modèle » sous « Créer une nouvelle entrée ».
+    (app.getPlugin('content-manager') as any).injectComponent('listView', 'actions', { name: 'mjc-modele-page', Component: BoutonModele });
     // Indicateur permanent « Site à jour / brouillons non publiés », recherche Ctrl + K, fenêtre d'accueil.
     monterIndicateur();
     monterRecherche();

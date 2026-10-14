@@ -4,6 +4,7 @@ import { executerSynchro } from '../../../utils/garde-offres';
 import { convertirOffre, estCandidatureSpontanee, recupererOffresGestmax, type ConfigGestmax } from '../../../utils/gestmax';
 import { enregistrerSynchro } from '../../../utils/synchro';
 import { creerGeocodeur } from '../../../utils/geocodage';
+import { indexEntreprises, normaliserNom } from '../../../utils/rattachement';
 
 const UID = 'api::offre.offre';
 
@@ -36,16 +37,13 @@ async function synchroniser(strapi: Core.Strapi) {
     }
     const offres = brutes.filter((v) => !estCandidatureSpontanee(v)).map((v) => convertirOffre(v, conf));
 
-    // Rattachement à l'annuaire via le nom de l'entité Gestmax (customer_company).
-    const entreprises = await strapi.db.query('api::entreprise.entreprise').findMany({
-      select: ['documentId', 'nomEntiteGestmax'],
-      where: { nomEntiteGestmax: { $notNull: true } },
-    });
-    const entrepriseParNom = new Map(
-      entreprises.map((e: any) => [e.nomEntiteGestmax.trim().toLowerCase(), e.documentId]),
-    );
+    // Rattachement à l'annuaire via le nom de l'entité Gestmax (customer_company), voir utils/rattachement.
+    const entrepriseParNom = await indexEntreprises(strapi);
 
-    const existantes = await strapi.db.query(UID).findMany({ select: ['documentId', 'sourceId', 'empreinte', 'latitude'] });
+    const existantes = await strapi.db.query(UID).findMany({
+      select: ['documentId', 'sourceId', 'empreinte', 'latitude'],
+      populate: { entreprise: { select: ['documentId'] } },
+    });
     const geocodeur = await creerGeocodeur(strapi);
     const parSourceId = new Map(existantes.map((o: any) => [o.sourceId, o]));
 
@@ -54,7 +52,7 @@ async function synchroniser(strapi: Core.Strapi) {
 
     for (const offre of offres) {
       vues.add(offre.sourceId);
-      const entreprise = offre.nomEntreprise ? entrepriseParNom.get(offre.nomEntreprise.toLowerCase()) ?? null : null;
+      const entreprise = offre.nomEntreprise ? entrepriseParNom.get(normaliserNom(offre.nomEntreprise)) ?? null : null;
       const position = await geocodeur.positionner(offre.lieu, offre.departement);
       const data: any = { ...offre, entreprise, latitude: position?.latitude ?? null, longitude: position?.longitude ?? null };
       const existante: any = parSourceId.get(offre.sourceId);
@@ -62,7 +60,12 @@ async function synchroniser(strapi: Core.Strapi) {
       if (!existante) {
         await strapi.documents(UID).create({ data });
         bilan.creees++;
-      } else if (existante.empreinte !== offre.empreinte || (position && existante.latitude == null)) {
+      } else if (
+        existante.empreinte !== offre.empreinte ||
+        (position && existante.latitude == null) ||
+        // Fiche entreprise créée ou « Nom dans Gestmax » modifié depuis le dernier passage.
+        (existante.entreprise?.documentId ?? null) !== entreprise
+      ) {
         await strapi.documents(UID).update({ documentId: existante.documentId, data });
         bilan.modifiees++;
       }

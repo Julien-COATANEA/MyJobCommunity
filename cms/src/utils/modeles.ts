@@ -132,7 +132,7 @@ export const MODELES: Modele[] = [
           h(2, 'Inscription aux événements'), p('Les données saisies (nom, prénom, e-mail, téléphone, organisme) servent uniquement à organiser l’événement et à vous contacter à son sujet.'), p('Elles sont conservées 12 mois après l’événement, puis supprimées automatiquement.'),
           h(2, 'Candidatures'), p('Les candidatures sont déposées sur la plateforme Gestmax, qui traite vos données selon sa propre politique de confidentialité.'),
           h(2, 'Vos droits'), ul('Accès à vos données', 'Rectification', 'Effacement', 'Opposition et limitation'), p('Pour exercer vos droits, écrivez à [e-mail]. Vous pouvez aussi saisir la CNIL (cnil.fr).'),
-          h(2, 'Cookies'), p('Ce site n’utilise pas de cookies de suivi publicitaire.'),
+          h(2, 'Cookies'), p('[Listez les outils de mesure d’audience utilisés, ou indiquez qu’aucun cookie de suivi n’est déposé.]'), p('Vous pouvez modifier votre choix à tout moment avec le lien « Gestion des cookies » en bas de chaque page.'),
         ],
       },
     ],

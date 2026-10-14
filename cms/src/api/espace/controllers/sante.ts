@@ -64,9 +64,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       sansFiche.length
         ? {
             cle: 'offres-sans-fiche', libelle: "Entreprises sans fiche dans l'annuaire", statut: 'attention',
-            detail: `${sansFiche.length} entreprise${sansFiche.length > 1 ? 's ont' : ' a'} des offres en ligne mais pas de fiche : les candidats ne peuvent pas la découvrir. Créez la fiche en renseignant le « Nom dans Gestmax » exact.`,
+            detail: `${sansFiche.length} entreprise${sansFiche.length > 1 ? 's ont' : ' a'} des offres en ligne mais pas de fiche : les candidats ne peuvent pas la découvrir. Créez la fiche, puis couplez-la depuis « Mes offres d'emploi ».`,
             elements: sansFiche.slice(0, 10).map((nom) => ({ titre: nom, lien: '/content-manager/collection-types/api::entreprise.entreprise/create' })),
-            lien: '/importer-entreprises', libelleLien: 'Importer des entreprises',
+            lien: '/mes-offres', libelleLien: 'Coupler les entreprises',
           }
         : { cle: 'offres-sans-fiche', libelle: "Entreprises sans fiche dans l'annuaire", statut: 'ok', detail: 'Toutes les entreprises qui recrutent ont leur fiche.' },
     );

@@ -41,7 +41,7 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
 const originesBO = [PUBLIC_STRAPI_URL];
 ---
 
-<Base titre={`Aperçu : ${titre}`} noIndex>
+<Base titre={`Aperçu : ${titre}`} noIndex sansSuivi>
   <div class="bandeau-apercu" role="status">
     {statut === 'draft' ? 'Aperçu du brouillon : cette version n’est pas encore publiée.' : 'Aperçu de la version publiée.'}
   </div>

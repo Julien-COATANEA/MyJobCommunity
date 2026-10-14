@@ -1,7 +1,7 @@
 // Page « Mes offres d'emploi » : suivi des offres importées de Gestmax.
 import * as React from 'react';
 import {
-  Alert, Badge, Box, Button, Checkbox, Flex, Grid, LinkButton, Table, Tbody, Td, Th, Thead, Tr, Typography,
+  Alert, Badge, Box, Button, Checkbox, Combobox, ComboboxOption, Flex, Grid, LinkButton, Table, Tbody, Td, Th, Thead, Tr, Typography,
 } from '@strapi/design-system';
 import { ArrowClockwise, Eye, Pencil } from '@strapi/icons';
 import { Layouts, Page, useFetchClient, useNotification } from '@strapi/strapi/admin';
@@ -29,6 +29,8 @@ interface Donnees {
   parContrat: { libelle: string; nombre: number }[];
   parEntreprise: { libelle: string; nombre: number }[];
   nonRattachees: number;
+  entreprisesOffres: { nom: string; nombre: number; entreprise: { documentId: string; nom: string } | null }[];
+  annuaire: { documentId: string; nom: string }[];
   dernieres: Offre[];
   synchro: { date: string | null; statut: string | null; erreur?: string; bilan?: { creees: number; modifiees: number; supprimees: number } };
   mock: boolean;
@@ -105,6 +107,21 @@ export default function MesOffres() {
     }
   };
 
+  const coupler = async (nomEntreprise: string, entreprise: string | null) => {
+    try {
+      const { data } = await post<{ offres: number }>('/espace/offres/rattacher', { nomEntreprise, entreprise });
+      toggleNotification({
+        type: 'success',
+        message: entreprise
+          ? `${pluriel(data.offres, 'offre')} de « ${nomEntreprise} » ${data.offres > 1 ? 'sont' : 'est'} maintenant ${data.offres > 1 ? 'liées' : 'liée'} à la fiche. Les prochaines le seront aussi.`
+          : `« ${nomEntreprise} » n’est plus lié à l’annuaire.`,
+      });
+      recharger();
+    } catch (e: any) {
+      toggleNotification({ type: 'danger', message: e?.response?.data?.error?.message ?? "Le couplage n'a pas pu être enregistré." });
+    }
+  };
+
   if (chargement && !donnees) return <Page.Loading />;
   if (erreur || !donnees) return <Page.Error />;
 
@@ -132,7 +149,8 @@ export default function MesOffres() {
         <Flex direction="column" alignItems="stretch" gap={6}>
           <Alert variant="default" title="Où modifier une offre ?" closeLabel="Fermer">
             Les offres se créent et se modifient dans Gestmax. Elles apparaissent sur votre site {frequenceLisible(donnees.frequence)},
-            sans action de votre part. Ici, vous choisissez seulement lesquelles mettre « à la une » ou masquer du site.
+            sans action de votre part. Ici, vous choisissez lesquelles mettre « à la une » ou masquer du site, et vous couplez
+            leurs entreprises avec les fiches de l'annuaire.
           </Alert>
 
           {donnees.synchro.statut === 'erreur' && (
@@ -163,7 +181,7 @@ export default function MesOffres() {
                 <Typography variant="beta">{pluriel(donnees.total - donnees.nonRattachees, 'offre rattachée', 'offres rattachées')}</Typography>
                 <Typography variant="pi" textColor="neutral600">
                   {donnees.nonRattachees > 0
-                    ? `${pluriel(donnees.nonRattachees, 'offre')} sans fiche entreprise : renseignez le « Nom dans Gestmax » de l'entreprise dans l'annuaire.`
+                    ? `${pluriel(donnees.nonRattachees, 'offre')} sans fiche entreprise : couplez-les ci-dessous avec l'annuaire.`
                     : 'Toutes les offres sont liées à une fiche entreprise.'}
                 </Typography>
               </Carte>
@@ -180,6 +198,54 @@ export default function MesOffres() {
               </Carte>
             </Grid.Item>
           </Grid.Root>
+
+          {donnees.entreprisesOffres.length > 0 && (
+            <Box hasRadius background="neutral0" shadow="tableShadow">
+              <Box padding={5} paddingBottom={3}>
+                <Typography variant="delta" tag="h2">Coupler les entreprises avec l'annuaire</Typography>
+                <Typography variant="pi" textColor="neutral600" tag="p">
+                  Choisissez la fiche de l'annuaire qui correspond à chaque entreprise des offres : ses offres apparaîtront sur sa fiche,
+                  y compris les prochaines publiées dans Gestmax.
+                </Typography>
+              </Box>
+              <Table colCount={3} rowCount={donnees.entreprisesOffres.length + 1}>
+                <Thead>
+                  <Tr>
+                    <Th><Typography variant="sigma">Entreprise dans Gestmax</Typography></Th>
+                    <Th><Typography variant="sigma">Offres</Typography></Th>
+                    <Th><Typography variant="sigma">Fiche de l'annuaire</Typography></Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {donnees.entreprisesOffres.map((e) => (
+                    <Tr key={e.nom}>
+                      <Td>
+                        <Flex gap={2}>
+                          <Typography fontWeight="bold" textColor="neutral800">{e.nom}</Typography>
+                          {!e.entreprise && <Badge backgroundColor="warning100" textColor="warning700">Non couplée</Badge>}
+                        </Flex>
+                      </Td>
+                      <Td><Typography>{e.nombre}</Typography></Td>
+                      <Td>
+                        <Box maxWidth="32rem">
+                          <Combobox
+                            aria-label={`Fiche de l'annuaire pour « ${e.nom} »`}
+                            placeholder="Choisir une fiche…"
+                            value={e.entreprise?.documentId ?? ''}
+                            onChange={(v?: string) => { if (v && v !== e.entreprise?.documentId) coupler(e.nom, v); }}
+                            onClear={e.entreprise ? () => coupler(e.nom, null) : undefined}
+                            noOptionsMessage={() => 'Aucune fiche : créez-la dans l’annuaire'}
+                          >
+                            {donnees.annuaire.map((a) => <ComboboxOption key={a.documentId} value={a.documentId}>{a.nom}</ComboboxOption>)}
+                          </Combobox>
+                        </Box>
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </Box>
+          )}
 
           <Box hasRadius background="neutral0" shadow="tableShadow">
             <Box padding={5} paddingBottom={3}>

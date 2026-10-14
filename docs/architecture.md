@@ -33,7 +33,7 @@
 | Page | collection | Pages libres : titre, chapô, bandeau + **zone de blocs** |
 | Article, Catégorie d'article | collection | Actualités |
 | Événement, Inscription | collection | Événements, inscription en ligne (jauge, date limite) ou lien externe |
-| Entreprise, Secteur | collection | Annuaire ; `nomEntiteGestmax` rattache les offres synchronisées |
+| Entreprise, Secteur | collection | Annuaire ; `nomEntiteGestmax` (un ou plusieurs noms séparés par « ; ») rattache les offres synchronisées, couplage depuis « Mes offres d'emploi » |
 | Offre | collection | **Synchronisée** depuis Gestmax, jamais saisie à la main |
 
 **Catalogue fermé de 13 blocs** (texte, texte + image, chiffres clés, cartes, appel à l'action, FAQ, logos,
@@ -129,7 +129,8 @@ site. Un échec de synchronisation prévient la collectivité par e-mail (une se
 | Santé du site | Page + widget « À traiter » : synchro, entreprises sans fiche, offres bientôt expirées, événements peu remplis, images sans alt, liens cassés, brouillons oubliés, adresse de notification (`controllers/sante.ts`) |
 | Inscriptions | Liste d'attente automatique, lien d'annulation personnel (jeton) avec promotion du suivant, message groupé (envois individuels), émargement imprimable, rappel J-1 (cron 8 h), purge RGPD à 12 mois (cron 3 h 30) |
 | Équipe | Rôles « Responsable » (publie, gère l'équipe) et « Rédacteur » (prépare, demande la publication par e-mail), créés au démarrage à partir du rôle Éditeur ; page « Mon équipe » avec invitation par e-mail |
-| Gagner du temps | Modèles de pages (`utils/modeles.ts`, page créée en brouillon), import CSV d'entreprises (simulation puis import, 500 lignes max), recherche globale Ctrl + K, fenêtre de bienvenue |
+| Gagner du temps | Modèles de pages (`utils/modeles.ts`, bouton « À partir d'un modèle » de Mes pages, page créée en brouillon), recherche globale Ctrl + K, fenêtre de bienvenue |
+| Cookies et suivi | Bandeau de consentement (choix conservé 6 mois), Google Tag Manager / Analytics par identifiant, scripts personnalisés head/body ; les scripts soumis au consentement attendent « Tout accepter » (`site/src/lib/suivi.ts`) |
 | Fréquentation | Widget lisant l'API Plausible (`PLAUSIBLE_URL`, `PLAUSIBLE_SITE`, `PLAUSIBLE_API_KEY`) ; sans configuration, le widget explique quoi renseigner |
 
 Toutes les routes `/espace/*` sont des routes d'admin (`strapi.server.routes({ type: 'admin' })`) protégées par

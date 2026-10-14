@@ -158,6 +158,31 @@
       "type": "component",
       "component": "shared.seo",
       "repeatable": false
+    },
+    "bandeauCookies": {
+      "type": "boolean",
+      "default": false
+    },
+    "texteBandeauCookies": {
+      "type": "text",
+      "maxLength": 600
+    },
+    "lienPolitiqueCookies": {
+      "type": "customField",
+      "customField": "global::lien"
+    },
+    "googleTagManagerId": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "googleAnalyticsId": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "scripts": {
+      "type": "component",
+      "component": "shared.script",
+      "repeatable": true
     }
   }
 }

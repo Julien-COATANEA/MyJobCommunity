@@ -4,9 +4,11 @@ import '../styles/shell.css';
 import Seo from '../components/Seo.astro';
 import Entete from '../components/Entete.astro';
 import PiedDePage from '../components/PiedDePage.astro';
+import BandeauCookies from '../components/BandeauCookies.astro';
 import FilAriane, { type Miette } from '../components/FilAriane.astro';
 import { lireNavigation, lireParametres } from '../lib/contenus';
 import { cssTheme, policesUtilisees } from '../lib/theme';
+import { codesSuivi } from '../lib/suivi';
 import { urlMedia, type Seo as SeoStrapi } from '../lib/strapi';
 
 interface Props {
@@ -19,11 +21,15 @@ interface Props {
   jsonLd?: Record<string, unknown>[];
   /** Fil d'Ariane (hors accueil). La dernière miette est la page courante. */
   ariane?: Miette[];
+  /** Sans bandeau de cookies ni outils de mesure (aperçu des brouillons du BO). */
+  sansSuivi?: boolean;
 }
 
-const { ariane, ...seo } = Astro.props;
+const { ariane, sansSuivi, ...seo } = Astro.props;
 const [parametres, navigation] = await Promise.all([lireParametres(), lireNavigation()]);
 const favicon = urlMedia(parametres.favicon, true);
+const suivi = sansSuivi ? { head: [], body: [] } : codesSuivi(parametres);
+const bandeau = !sansSuivi && !!parametres.bandeauCookies;
 ---
 
 <!doctype html>
@@ -36,13 +42,16 @@ const favicon = urlMedia(parametres.favicon, true);
     <style is:inline set:html={cssTheme(parametres)}></style>
     {favicon ? <link rel="icon" href={favicon} /> : <link rel="icon" href="/favicon.svg" type="image/svg+xml" />}
     <link rel="sitemap" href="/sitemap-index.xml" />
+    {suivi.head.map((s) => (s.differe ? <template data-mjc-suivi="head" set:html={s.code} /> : <Fragment set:html={s.code} />))}
   </head>
   <body>
+    {bandeau && <BandeauCookies texte={parametres.texteBandeauCookies} lien={parametres.lienPolitiqueCookies} gestmaxUrlFront={parametres.gestmaxUrlFront} />}
     <Entete parametres={parametres} navigation={navigation} />
     <main id="contenu" tabindex="-1">
       {ariane && <FilAriane miettes={ariane} />}
       <slot />
     </main>
-    <PiedDePage parametres={parametres} navigation={navigation} />
+    <PiedDePage parametres={parametres} navigation={navigation} gestionCookies={bandeau} />
+    {suivi.body.map((s) => (s.differe ? <template data-mjc-suivi="body" set:html={s.code} /> : <Fragment set:html={s.code} />))}
   </body>
 </html>
