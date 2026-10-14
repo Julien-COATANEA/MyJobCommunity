@@ -1,0 +1,38 @@
+---
+// Bloc « Espaces candidat et recruteur » (maquette « Votre espace personnel ») : grandes cartes colorées,
+// chacune avec une icône, un texte et un bouton (vers l'espace candidat Gestmax, le back-office…).
+import TitreSection from '../TitreSection.astro';
+import Bouton from '../Bouton.astro';
+import Icone from '../Icone.astro';
+
+interface Espace {
+  titre: string;
+  texte?: string | null;
+  icone?: string | null;
+  couleur?: 'principale' | 'secondaire' | null;
+  bouton?: { libelle: string; url: string; style?: 'principal' | 'secondaire' | null; nouvelOnglet?: boolean | null } | null;
+}
+
+const { bloc } = Astro.props;
+const espaces: Espace[] = bloc.espaces ?? [];
+---
+
+{
+  espaces.length > 0 && (
+    <section class="section section--teinte">
+      <div class="conteneur">
+        <TitreSection surtitre={bloc.surtitre} titre={bloc.titre} introduction={bloc.introduction} />
+        <ul class="espaces">
+          {espaces.map((e) => (
+            <li class:list={['espace', `espace--${e.couleur ?? 'principale'}`]}>
+              <span class="espace__icone" aria-hidden="true"><Icone nom={e.icone ?? 'utilisateur'} taille={26} /></span>
+              <h3 class="espace__titre">{e.titre}</h3>
+              {e.texte && <p class="espace__texte">{e.texte}</p>}
+              {e.bouton?.url && <p class="espace__action"><Bouton bouton={e.bouton} surFond /></p>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}

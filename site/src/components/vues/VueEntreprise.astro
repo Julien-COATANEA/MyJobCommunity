@@ -4,6 +4,7 @@ import EnTetePage from '../EnTetePage.astro';
 import CarteOffre from '../cartes/CarteOffre.astro';
 import Icone from '../Icone.astro';
 import ImageStrapi from '../ImageStrapi.astro';
+import Partage from '../Partage.astro';
 import type { Entreprise, Offre } from '../../lib/contenus';
 import { rendreBlocks } from '../../lib/blocks';
 import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
@@ -35,6 +36,7 @@ const lienOffres = e.nomEntiteGestmax ? `/offres?entreprise=${encodeURIComponent
       <div><dt><Icone nom="emploi" taille={20} />Offres en ligne</dt><dd>{offres.length || 'Aucune pour le moment'}</dd></div>
     </dl>
     {e.siteWeb && <p><a href={e.siteWeb} class="bouton bouton--contour bouton--large">Site de l'entreprise <Icone nom="externe" taille={18} /></a></p>}
+    <Partage titre={e.nom} chemin={`/entreprises/${e.slug}/`} />
   </aside>
 </div>
 
@@ -44,7 +46,7 @@ const lienOffres = e.nomEntiteGestmax ? `/offres?entreprise=${encodeURIComponent
       <h2 id="offres-entreprise" class="section__titre section__titre--gauche">Les offres de {e.nom}</h2>
       {
         lienOffres && offres.length > AFFICHEES && (
-          <a href={lienOffres} class="section__tout-voir">Voir ses {offres.length} offres <Icone nom="fleche" taille={18} /></a>
+          <a href={lienOffres} class="bouton bouton--contour bouton--petit section__tout-voir">Voir ses {offres.length} offres <Icone nom="fleche" taille={18} /></a>
         )
       }
     </div>

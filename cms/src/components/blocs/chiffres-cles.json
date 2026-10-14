@@ -3,12 +3,20 @@
   "info": {
     "displayName": "Chiffres clés",
     "icon": "chartBubble",
-    "description": "Dans une valeur, {offres}, {entreprises} et {evenements} sont remplacés par les chiffres réels"
+    "description": "Dans une valeur, {offres}, {entreprises}, {recrutent} (entreprises qui ont des offres) et {evenements} sont remplacés par les chiffres réels"
   },
   "options": {},
   "attributes": {
+    "surtitre": {
+      "type": "string",
+      "maxLength": 60
+    },
     "titre": {
       "type": "string"
+    },
+    "introduction": {
+      "type": "text",
+      "maxLength": 400
     },
     "chiffres": {
       "type": "component",

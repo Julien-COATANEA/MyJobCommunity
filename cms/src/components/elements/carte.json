@@ -21,7 +21,9 @@
         "accompagnement",
         "evenement",
         "actualite",
-        "info"
+        "info",
+        "utilisateur",
+        "valide"
       ]
     },
     "titre": {

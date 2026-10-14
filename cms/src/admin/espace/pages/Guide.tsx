@@ -21,7 +21,7 @@ function Fiche({ titre, children }: { titre: string; children: React.ReactNode }
 const BLOCS: [string, string][] = [
   ['Texte', 'Un ou plusieurs paragraphes, avec intertitres et listes.'],
   ['Texte et image côte à côte', 'Présenter un sujet avec une photo ; l’image peut être à gauche ou à droite.'],
-  ['Chiffres clés', 'Trois à six chiffres marquants. {offres}, {entreprises} et {evenements} se mettent à jour tout seuls.'],
+  ['Chiffres clés', 'Trois à six chiffres marquants. {offres}, {entreprises}, {recrutent} (entreprises qui ont des offres) et {evenements} se mettent à jour tout seuls.'],
   ['Cartes avec icônes', 'Quatre à huit thèmes courts (« S’installer », « Se former »…), avec un lien chacun.'],
   ['Témoignages', 'Paroles de salariés ou de nouveaux arrivants : très efficace pour l’attractivité.'],
   ['Questions fréquentes', 'Questions/réponses repliables.'],

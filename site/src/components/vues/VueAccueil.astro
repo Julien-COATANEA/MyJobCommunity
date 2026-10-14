@@ -1,5 +1,6 @@
 ---
 // Contenu de la page d'accueil (utilisé par la page publique et par l'aperçu des brouillons).
+// Mise en page de la maquette : hero clair en deux colonnes (texte + photo), carte de recherche qui le chevauche.
 import ImageStrapi from '../ImageStrapi.astro';
 import RechercheOffres from '../RechercheOffres.astro';
 import Sections from '../Sections.astro';
@@ -12,23 +13,61 @@ interface Props {
 
 const { accueil } = Astro.props;
 const [parametres, compteurs] = await Promise.all([lireParametres(), lireCompteurs()]);
-const nombre = new Intl.NumberFormat('fr-FR').format(compteurs.offres);
+const nombre = (n: number) => new Intl.NumberFormat('fr-FR').format(n);
+const s = (n: number) => (n > 1 ? 's' : '');
 ---
 
-<section class="hero">
-  {accueil?.heroImage && <ImageStrapi media={accueil.heroImage} class="hero__image" largeurs={[640, 1024, 1600]} sizes="100vw" prioritaire decorative />}
-  <div class="conteneur hero__contenu">
+<section class:list={['hero', { 'hero--sans-image': !accueil?.heroImage }]}>
+  <div class="conteneur hero__grille">
+    <div class="hero__contenu">
+      {
+        parametres.baseline && (
+          <p class="hero__pastille">
+            <Icone nom="territoire" taille={16} />
+            {parametres.baseline}
+          </p>
+        )
+      }
+      <h1 class="hero__titre">{accueil?.heroTitre ?? parametres.nomSite}</h1>
+      {accueil?.heroTexte && <p class="hero__texte">{accueil.heroTexte}</p>}
+      <div class="hero__actions">
+        <a href="/offres" class="bouton bouton--plein">Voir les offres<Icone nom="fleche" taille={18} /></a>
+        {
+          compteurs.offres > 0 && (
+            <p class="hero__compteur">
+              <strong>{nombre(compteurs.offres)}</strong> offre{s(compteurs.offres)} en ligne
+            </p>
+          )
+        }
+      </div>
+    </div>
     {
-      compteurs.offres > 0 && (
-        <p class="hero__compteur">
-          <a href="/offres"><Icone nom="emploi" taille={18} /><strong>{nombre}</strong> offre{compteurs.offres > 1 ? 's' : ''} à pourvoir</a>
-        </p>
+      accueil?.heroImage && (
+        <figure class="hero__figure">
+          <ImageStrapi media={accueil.heroImage} class="hero__image" largeurs={[480, 800, 1200]} sizes="(min-width: 980px) 560px, 100vw" prioritaire decorative />
+          {
+            compteurs.recrutent > 0 && (
+              <figcaption class="hero__vignette">
+                <span class="hero__vignette-icone" aria-hidden="true"><Icone nom="entreprise" taille={20} /></span>
+                <span><strong>{nombre(compteurs.recrutent)}</strong> entreprise{s(compteurs.recrutent)} qui recrute{compteurs.recrutent > 1 ? 'nt' : ''}</span>
+              </figcaption>
+            )
+          }
+        </figure>
       )
     }
-    <h1 class="hero__titre">{accueil?.heroTitre ?? parametres.nomSite}</h1>
-    {accueil?.heroTexte && <p class="hero__texte">{accueil.heroTexte}</p>}
-    {accueil?.heroRecherche && <RechercheOffres surFond id="recherche-hero" />}
   </div>
 </section>
+
+{
+  accueil?.heroRecherche && (
+    <div class="conteneur carte-recherche-wrap">
+      <div class="carte-recherche">
+        <p class="carte-recherche__titre"><Icone nom="recherche" taille={22} />Quel emploi recherchez-vous ?</p>
+        <RechercheOffres id="recherche-hero" />
+      </div>
+    </div>
+  )
+}
 
 <Sections sections={accueil?.sections} />

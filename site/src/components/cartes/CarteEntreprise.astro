@@ -2,6 +2,7 @@
 import Icone from '../Icone.astro';
 import ImageStrapi from '../ImageStrapi.astro';
 import type { Entreprise } from '../../lib/contenus';
+import { initiales } from '../../lib/format';
 
 interface Props {
   entreprise: Entreprise;
@@ -11,7 +12,7 @@ interface Props {
 const { entreprise: e, niveauTitre = 3 } = Astro.props;
 const Titre = `h${niveauTitre}`;
 const nbOffres = e.offres?.length ?? 0;
-const initiales = e.nom.split(/[\s-]+/).filter(Boolean).slice(0, 2).map((m) => m[0]!.toUpperCase()).join('');
+const lettres = initiales(e.nom);
 const lienOffres = e.nomEntiteGestmax ? `/offres?entreprise=${encodeURIComponent(e.nomEntiteGestmax)}` : null;
 ---
 
@@ -29,7 +30,7 @@ const lienOffres = e.nomEntiteGestmax ? `/offres?entreprise=${encodeURIComponent
         e.logo ? (
           <ImageStrapi media={{ ...e.logo, alternativeText: '' }} class="entreprise__vignette" largeurs={[112]} sizes="56px" />
         ) : (
-          <span class="entreprise__vignette entreprise__vignette--initiales" aria-hidden="true">{initiales}</span>
+          <span class="entreprise__vignette entreprise__vignette--initiales" aria-hidden="true">{lettres}</span>
         )
       }
       <div>

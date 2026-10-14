@@ -1,37 +1,63 @@
 ---
 import Base from '../../layouts/Base.astro';
 import EnTetePage from '../../components/EnTetePage.astro';
+import ALaUne from '../../components/ALaUne.astro';
+import TitreSection from '../../components/TitreSection.astro';
+import PastillesFiltre from '../../components/PastillesFiltre.astro';
+import Icone from '../../components/Icone.astro';
 import CarteEntreprise from '../../components/cartes/CarteEntreprise.astro';
 import { lireEntreprises } from '../../lib/contenus';
+import { initiales } from '../../lib/format';
 
 const entreprises = await lireEntreprises();
 const secteurs = [...new Map(entreprises.filter((e) => e.secteur).map((e) => [e.secteur!.slug, e.secteur!.nom])).entries()].sort((a, b) =>
   a[1].localeCompare(b[1], 'fr'),
 );
 const recrutent = entreprises.filter((e) => (e.offres?.length ?? 0) > 0).length;
+const nbOffres = entreprises.reduce((total, e) => total + (e.offres?.length ?? 0), 0);
+// « L'entreprise à la une » : une entreprise « mise en avant » dans le BO, de préférence avec une photo.
+const misesEnAvant = entreprises.filter((e) => e.miseEnAvant);
+const aLaUne = misesEnAvant.find((e) => e.image) ?? misesEnAvant[0] ?? null;
+const s = (n: number) => (n > 1 ? 's' : '');
 ---
 
 <Base titre="Annuaire des entreprises" description="Les entreprises qui recrutent sur le territoire." ariane={[{ libelle: 'Entreprises' }]}>
-  <EnTetePage titre="Annuaire des entreprises" chapo={`${entreprises.length} employeurs du territoire, dont ${recrutent} recrutent en ce moment.`} />
+  <EnTetePage titre="Annuaire des entreprises" chapo="Découvrez les employeurs du territoire : leur activité, leurs valeurs et tous leurs postes ouverts.">
+    <ul class="en-tete-page__pastilles">
+      <li><Icone nom="entreprise" taille={18} />{entreprises.length} entreprise{s(entreprises.length)}</li>
+      {nbOffres > 0 && <li><Icone nom="emploi" taille={18} />{nbOffres} poste{s(nbOffres)} ouvert{s(nbOffres)}</li>}
+      <li><Icone nom="valide" taille={18} />{recrutent} recrute{recrutent > 1 ? 'nt' : ''} en ce moment</li>
+    </ul>
+  </EnTetePage>
 
-  <section class="section section--serree">
+  {
+    aLaUne && (
+      <section class="section">
+        <div class="conteneur">
+          <TitreSection surtitre="Coup de projecteur" titre="L'entreprise à la une" />
+          <ALaUne
+            titre={aLaUne.nom}
+            texte={aLaUne.extrait}
+            image={aLaUne.image}
+            pastille={aLaUne.secteur?.nom}
+            surtitre={aLaUne.ville}
+            vignette={aLaUne.image ? null : initiales(aLaUne.nom)}
+            lien={`/entreprises/${aLaUne.slug}`}
+            libelleLien="Voir la fiche entreprise"
+          />
+        </div>
+      </section>
+    )
+  }
+
+  <section class:list={['section', { 'section--teinte': aLaUne }]}>
     <div class="conteneur">
+      <TitreSection surtitre="L'annuaire" titre="Toutes les entreprises" introduction="Filtrez par secteur pour trouver l'employeur qui vous correspond." />
       <form class="filtres-liste" role="search" aria-label="Filtrer l'annuaire" data-filtre-annuaire hidden>
         <div class="recherche__champ recherche__champ--large">
           <label for="filtre-nom">Nom de l'entreprise</label>
           <input id="filtre-nom" name="nom" type="search" autocomplete="off" placeholder="Ex. : Numérival" />
         </div>
-        {
-          secteurs.length > 1 && (
-            <div class="recherche__champ">
-              <label for="filtre-secteur">Secteur d'activité</label>
-              <select id="filtre-secteur" name="secteur">
-                <option value="">Tous les secteurs</option>
-                {secteurs.map(([slug, nom]) => <option value={slug}>{nom}</option>)}
-              </select>
-            </div>
-          )
-        }
         <div class="recherche__champ">
           <label for="filtre-offres">Offres</label>
           <select id="filtre-offres" name="offres">
@@ -39,14 +65,19 @@ const recrutent = entreprises.filter((e) => (e.offres?.length ?? 0) > 0).length;
             <option value="oui">Qui recrutent en ce moment</option>
           </select>
         </div>
+        {
+          secteurs.length > 1 && (
+            <PastillesFiltre nom="secteur" legende="Secteur d'activité" tous="Tous les secteurs" options={secteurs.map(([valeur, libelle]) => ({ valeur, libelle }))} />
+          )
+        }
       </form>
 
-      <p class="resultats" aria-live="polite" data-resultats>{entreprises.length} entreprise{entreprises.length > 1 ? 's' : ''}</p>
+      <p class="resultats" aria-live="polite" data-resultats>{entreprises.length} entreprise{s(entreprises.length)}</p>
       <ul class="grille grille--3" data-liste-entreprises>
         {
           entreprises.map((e) => (
             <li data-secteur={e.secteur?.slug ?? ''} data-nom={e.nom} data-offres={e.offres?.length ?? 0}>
-              <CarteEntreprise entreprise={e} niveauTitre={2} />
+              <CarteEntreprise entreprise={e} niveauTitre={3} />
             </li>
           ))
         }

@@ -7,9 +7,17 @@
   },
   "options": {},
   "attributes": {
+    "surtitre": {
+      "type": "string",
+      "maxLength": 60
+    },
     "titre": {
       "type": "string",
       "default": "Les dernières offres"
+    },
+    "introduction": {
+      "type": "text",
+      "maxLength": 400
     },
     "mode": {
       "type": "enumeration",

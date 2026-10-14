@@ -7,9 +7,17 @@
   },
   "options": {},
   "attributes": {
+    "surtitre": {
+      "type": "string",
+      "maxLength": 60
+    },
     "titre": {
       "type": "string",
       "default": "Ils ont choisi le territoire"
+    },
+    "introduction": {
+      "type": "text",
+      "maxLength": 400
     },
     "temoignages": {
       "type": "component",

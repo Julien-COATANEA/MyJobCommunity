@@ -1,5 +1,8 @@
 ---
+// Carte d'événement. Compacte (pastille de date à gauche, maquette « Forums, ateliers, job datings ») ou, avec
+// `couverture` et une image, photo en haut et pastille de date qui la chevauche (maquette, page Événements).
 import Icone from '../Icone.astro';
+import ImageStrapi from '../ImageStrapi.astro';
 import type { Evenement } from '../../lib/contenus';
 import { formatHeure, jourMois } from '../../lib/format';
 import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
@@ -7,16 +10,27 @@ import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
 interface Props {
   evenement: Evenement;
   niveauTitre?: 2 | 3;
+  couverture?: boolean;
 }
 
-const { evenement: e, niveauTitre = 3 } = Astro.props;
+const { evenement: e, niveauTitre = 3, couverture = false } = Astro.props;
 const Titre = `h${niveauTitre}`;
 const { jour, mois } = jourMois(e.dateDebut);
 const inscriptionSite = e.inscriptionActive && !e.inscriptionExterneUrl;
+const avecPhoto = couverture && !!e.image;
 ---
 
-<article class="carte carte--evenement" data-type-evenement={e.typeEvenement}>
-  <p class="date-pastille" aria-hidden="true"><span>{jour}</span>{mois}</p>
+<article class:list={['carte', avecPhoto ? 'carte--evenement-photo' : 'carte--evenement']} data-type-evenement={e.typeEvenement}>
+  {
+    avecPhoto ? (
+      <div class="carte__visuel">
+        <ImageStrapi media={e.image!} largeurs={[400, 700]} sizes="(min-width: 960px) 560px, 100vw" decorative />
+        <p class="date-pastille date-pastille--flottante" aria-hidden="true"><span>{jour}</span>{mois}</p>
+      </div>
+    ) : (
+      <p class="date-pastille" aria-hidden="true"><span>{jour}</span>{mois}</p>
+    )
+  }
   <div class="carte__corps">
     <p class="etiquette">{e.typeEvenement}</p>
     <Titre class="carte__titre">
@@ -37,7 +51,6 @@ const inscriptionSite = e.inscriptionActive && !e.inscriptionExterneUrl;
     }
   </div>
 </article>
-
 <script>
   // Places restantes en direct (le site est statique, les inscriptions évoluent en continu).
   for (const mention of document.querySelectorAll<HTMLElement>('[data-places-evenement]')) {

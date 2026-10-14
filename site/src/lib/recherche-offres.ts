@@ -53,7 +53,7 @@ export function distanceKm(a: Position, b: Position): number {
   return 2 * 6371 * Math.asin(Math.sqrt(h));
 }
 
-export const CHAMPS_CARTE = ['titre', 'slug', 'typeContrat', 'lieu', 'nomEntreprise', 'salaire', 'dateActivation', 'logoUrl', 'latitude', 'longitude', 'aLaUne'];
+export const CHAMPS_CARTE = ['titre', 'slug', 'typeContrat', 'lieu', 'nomEntreprise', 'salaire', 'dateActivation', 'logoUrl', 'latitude', 'longitude', 'aLaUne', 'secteur'];
 
 interface OptionsRequete {
   page: number;

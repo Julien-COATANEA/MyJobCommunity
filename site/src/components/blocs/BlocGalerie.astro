@@ -1,0 +1,33 @@
+---
+// Galerie photo (maquette « galerie » de la page Territoire) : mosaïque où certaines photos occupent deux cases.
+// La légende de la médiathèque est affichée sur la photo en permanence (pas seulement au survol : lisible au
+// clavier, au toucher et par tous) ; le texte alternatif reste celui de la médiathèque.
+import TitreSection from '../TitreSection.astro';
+import ImageStrapi from '../ImageStrapi.astro';
+import type { Media } from '../../lib/strapi';
+
+const { bloc } = Astro.props;
+const photos: Media[] = bloc.photos ?? [];
+// Rythme de la maquette : une photo haute, deux simples, une large, puis on recommence.
+const forme = (i: number) => (i % 6 === 0 ? 'galerie__item--haute' : i % 6 === 3 ? 'galerie__item--large' : '');
+---
+
+{
+  photos.length > 0 && (
+    <section class="section">
+      <div class="conteneur">
+        <TitreSection surtitre={bloc.surtitre} titre={bloc.titre} introduction={bloc.introduction} />
+        <ul class="galerie">
+          {photos.map((photo, i) => (
+            <li class:list={['galerie__item', forme(i)]}>
+              <figure>
+                <ImageStrapi media={photo} largeurs={[360, 640, 900]} sizes="(min-width: 980px) 300px, 50vw" />
+                {photo.caption && <figcaption>{photo.caption}</figcaption>}
+              </figure>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}

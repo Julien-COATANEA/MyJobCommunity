@@ -1,0 +1,29 @@
+{
+  "collectionName": "components_blocs_cartes_photo",
+  "info": {
+    "displayName": "Cartes avec photo",
+    "icon": "picture",
+    "description": "Grandes cartes photo avec étiquette (départements, villes, quartiers…)"
+  },
+  "options": {},
+  "attributes": {
+    "surtitre": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "titre": {
+      "type": "string"
+    },
+    "introduction": {
+      "type": "text",
+      "maxLength": 400
+    },
+    "cartes": {
+      "type": "component",
+      "component": "elements.carte-photo",
+      "repeatable": true,
+      "min": 1,
+      "max": 12
+    }
+  }
+}

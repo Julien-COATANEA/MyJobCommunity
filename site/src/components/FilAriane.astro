@@ -6,9 +6,11 @@ export interface Miette {
 
 interface Props {
   miettes: Miette[];
+  /** Affiché dans le bandeau d'un en-tête de page (déjà dans un conteneur, texte blanc). */
+  dansBandeau?: boolean;
 }
 
-const { miettes } = Astro.props;
+const { miettes, dansBandeau = false } = Astro.props;
 const toutes: Miette[] = [{ libelle: 'Accueil', url: '/' }, ...miettes];
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -22,7 +24,7 @@ const jsonLd = {
 };
 ---
 
-<nav class="ariane conteneur" aria-label="Fil d'Ariane">
+<nav class:list={['ariane', dansBandeau ? 'ariane--bandeau' : 'conteneur']} aria-label="Fil d'Ariane">
   <ol>
     {
       toutes.map((m, i) =>

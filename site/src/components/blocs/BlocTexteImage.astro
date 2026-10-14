@@ -1,21 +1,50 @@
 ---
+// Texte et image côte à côte. Avec deux photos complémentaires : mosaïque de trois photos (maquette « Un territoire
+// d'exception ») ; avec des atouts : courtes mentions à icône sous le texte (« Cadre de vie », « Hyper-connectée »…).
+import TitreSection from '../TitreSection.astro';
 import ImageStrapi from '../ImageStrapi.astro';
 import Bouton from '../Bouton.astro';
+import Icone from '../Icone.astro';
 import { rendreBlocks } from '../../lib/blocks';
-import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
+import { PUBLIC_STRAPI_URL, type Media } from '../../lib/strapi';
 
 const { bloc } = Astro.props;
+const images: Media[] = [bloc.image, ...(bloc.imagesComplementaires ?? []).slice(0, 2)].filter(Boolean);
+const atouts: { icone?: string | null; titre: string; texte?: string | null }[] = bloc.atouts ?? [];
 ---
 
 <section class="section">
   <div class:list={['conteneur', 'texte-image', { 'texte-image--inverse': bloc.positionImage === 'gauche' }]}>
     <div class="texte-image__texte">
-      {bloc.titre && <h2 class="section__titre section__titre--gauche">{bloc.titre}</h2>}
+      <TitreSection surtitre={bloc.surtitre} titre={bloc.titre} gauche />
       <div class="prose" set:html={rendreBlocks(bloc.contenu, { baseMedias: PUBLIC_STRAPI_URL })} />
+      {
+        atouts.length > 0 && (
+          <ul class="atouts">
+            {atouts.map((a) => (
+              <li class="atout">
+                <span class="atout__icone" aria-hidden="true"><Icone nom={a.icone ?? 'valide'} taille={22} /></span>
+                <span>
+                  <strong>{a.titre}</strong>
+                  {a.texte && <span class="atout__texte">{a.texte}</span>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
       {bloc.bouton && <p><Bouton bouton={bloc.bouton} /></p>}
     </div>
-    <div class="texte-image__image">
-      <ImageStrapi media={bloc.image} largeurs={[480, 800, 1100]} sizes="(min-width: 960px) 560px, 100vw" />
+    <div class:list={['texte-image__image', { [`texte-image__mosaique texte-image__mosaique--${images.length}`]: images.length > 1 }]}>
+      {
+        images.map((media, i) => (
+          <ImageStrapi
+            media={media}
+            largeurs={i === 0 ? [480, 800, 1100] : [320, 560]}
+            sizes={images.length > 1 ? '(min-width: 960px) 280px, 50vw' : '(min-width: 960px) 560px, 100vw'}
+          />
+        ))
+      }
     </div>
   </div>
 </section>

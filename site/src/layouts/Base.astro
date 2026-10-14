@@ -1,4 +1,5 @@
 ---
+import '../styles/jetons.css';
 import '../styles/global.css';
 import '../styles/shell.css';
 import Seo from '../components/Seo.astro';
@@ -30,6 +31,13 @@ const [parametres, navigation] = await Promise.all([lireParametres(), lireNaviga
 const favicon = urlMedia(parametres.favicon, true);
 const suivi = sansSuivi ? { head: [], body: [] } : codesSuivi(parametres);
 const bandeau = !sansSuivi && !!parametres.bandeauCookies;
+
+// Fil d'Ariane : un en-tête de page immersif l'affiche dans son bandeau (voir EnTetePage) ; sinon il est placé en haut
+// du contenu. La page est donc rendue avant la mise en page, pour savoir lequel des deux s'en charge.
+Astro.locals.ariane = ariane;
+Astro.locals.arianeAffichee = false;
+const contenu = await Astro.slots.render('default');
+const arianeEnHaut = ariane && !Astro.locals.arianeAffichee;
 ---
 
 <!doctype html>
@@ -48,8 +56,8 @@ const bandeau = !sansSuivi && !!parametres.bandeauCookies;
     {bandeau && <BandeauCookies texte={parametres.texteBandeauCookies} lien={parametres.lienPolitiqueCookies} gestmaxUrlFront={parametres.gestmaxUrlFront} />}
     <Entete parametres={parametres} navigation={navigation} />
     <main id="contenu" tabindex="-1">
-      {ariane && <FilAriane miettes={ariane} />}
-      <slot />
+      {arianeEnHaut && <FilAriane miettes={ariane} />}
+      <Fragment set:html={contenu} />
     </main>
     <PiedDePage parametres={parametres} navigation={navigation} gestionCookies={bandeau} />
     {suivi.body.map((s) => (s.differe ? <template data-mjc-suivi="body" set:html={s.code} /> : <Fragment set:html={s.code} />))}

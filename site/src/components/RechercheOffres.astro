@@ -5,33 +5,31 @@ import Icone from './Icone.astro';
 import { lireOffres } from '../lib/contenus';
 
 interface Props {
-  /** Variante sur fond coloré (hero). */
-  surFond?: boolean;
   /** Préfixe des identifiants (unique si plusieurs formulaires sur la page). */
   id?: string;
 }
 
-const { surFond = false, id = 'recherche' } = Astro.props;
+const { id = 'recherche' } = Astro.props;
 const offres = await lireOffres();
 const contrats = [...new Set(offres.map((o) => o.typeContrat).filter(Boolean))].sort() as string[];
 ---
 
-<form action="/offres" method="get" role="search" aria-label="Rechercher une offre" class:list={['recherche', { 'recherche--sur-fond': surFond }]} data-recherche>
+<form action="/offres" method="get" role="search" aria-label="Rechercher une offre" class="recherche" data-recherche>
   <div class="recherche__champ recherche__champ--principal">
     <label for={`${id}-q`}>Métier, mot-clé</label>
-    <input id={`${id}-q`} name="q" type="search" autocomplete="off" placeholder="Ex. : infirmier, soudeur…" />
+    <span class="saisie"><Icone nom="emploi" taille={18} /><input id={`${id}-q`} name="q" type="search" autocomplete="off" placeholder="Ex. : infirmier, soudeur…" /></span>
   </div>
   <div class="recherche__plus" id={`${id}-plus`}>
     <div class="recherche__champ">
       <label for={`${id}-lieu`}>Ville</label>
-      <input id={`${id}-lieu`} name="lieu" type="text" autocomplete="address-level2" />
+      <span class="saisie"><Icone nom="lieu" taille={18} /><input id={`${id}-lieu`} name="lieu" type="text" autocomplete="address-level2" placeholder="Ex. : Lyon" /></span>
     </div>
     <div class="recherche__champ">
       <label for={`${id}-contrat`}>Type de contrat</label>
-      <select id={`${id}-contrat`} name="contrat">
+      <span class="saisie"><Icone nom="contrat" taille={18} /><select id={`${id}-contrat`} name="contrat">
         <option value="">Tous les contrats</option>
         {contrats.map((c) => <option value={c}>{c}</option>)}
-      </select>
+      </select></span>
     </div>
   </div>
   <button type="button" class="recherche__deplier" aria-expanded="false" aria-controls={`${id}-plus`} hidden data-deplier>

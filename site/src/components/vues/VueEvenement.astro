@@ -4,6 +4,8 @@ import EnTetePage from '../EnTetePage.astro';
 import FormulaireInscription from '../FormulaireInscription.astro';
 import Icone from '../Icone.astro';
 import ImageStrapi from '../ImageStrapi.astro';
+import Partage from '../Partage.astro';
+import CarteLieu from '../CarteLieu.astro';
 import type { Evenement } from '../../lib/contenus';
 import { rendreBlocks } from '../../lib/blocks';
 import { formatDateLongue, formatHeure, horaireEvenement } from '../../lib/format';
@@ -17,6 +19,7 @@ interface Props {
 
 const { evenement: e, apercu = false } = Astro.props;
 const termine = new Date(e.dateFin ?? e.dateDebut).getTime() < Date.now();
+const adresseLieu = e.enLigne ? null : [e.lieu, e.adresse].filter(Boolean).join(', ') || null;
 ---
 
 <EnTetePage titre={e.titre} chapo={e.extrait} surtitre={e.typeEvenement} />
@@ -65,6 +68,8 @@ const termine = new Date(e.dateFin ?? e.dateDebut).getTime() < Date.now();
         </p>
       )
     }
+    {adresseLieu && !apercu && <CarteLieu adresse={adresseLieu} />}
+    {!apercu && <Partage titre={e.titre} chemin={`/evenements/${e.slug}/`} />}
   </aside>
 </div>
 

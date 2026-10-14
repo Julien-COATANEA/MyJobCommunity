@@ -1,0 +1,40 @@
+{
+  "collectionName": "components_elements_atout",
+  "info": {
+    "displayName": "Atout",
+    "icon": "check"
+  },
+  "options": {},
+  "attributes": {
+    "icone": {
+      "type": "enumeration",
+      "enum": [
+        "emploi",
+        "entreprise",
+        "formation",
+        "territoire",
+        "logement",
+        "transport",
+        "sante",
+        "famille",
+        "loisirs",
+        "accompagnement",
+        "evenement",
+        "actualite",
+        "info",
+        "utilisateur",
+        "valide"
+      ],
+      "default": "valide"
+    },
+    "titre": {
+      "type": "string",
+      "required": true,
+      "maxLength": 60
+    },
+    "texte": {
+      "type": "string",
+      "maxLength": 120
+    }
+  }
+}

@@ -190,10 +190,16 @@ export async function lireEvenementsAVenir(): Promise<Evenement[]> {
 /** Chiffres réels du site, pour l'accroche de l'accueil et les jetons {offres}, {entreprises}, {evenements}. */
 export async function lireCompteurs() {
   const [offres, entreprises, evenements] = await Promise.all([lireOffres(), lireEntreprises(), lireEvenementsAVenir()]);
-  return { offres: offres.length, entreprises: entreprises.length, evenements: evenements.length };
+  return {
+    offres: offres.length,
+    entreprises: entreprises.length,
+    // Entreprises de l'annuaire qui ont au moins une offre en ligne (même calcul que la page /entreprises).
+    recrutent: entreprises.filter((e) => (e.offres?.length ?? 0) > 0).length,
+    evenements: evenements.length,
+  };
 }
 
-/** Remplace {offres}, {entreprises} et {evenements} par les valeurs réelles. */
+/** Remplace {offres}, {entreprises}, {recrutent} (entreprises ayant des offres) et {evenements} par les valeurs réelles. */
 export function remplacerCompteurs(texte: string, compteurs: Record<string, number>): string {
-  return texte.replace(/\{(offres|entreprises|evenements)\}/g, (_m, cle) => new Intl.NumberFormat('fr-FR').format(compteurs[cle] ?? 0));
+  return texte.replace(/\{(offres|entreprises|recrutent|evenements)\}/g, (_m, cle) => new Intl.NumberFormat('fr-FR').format(compteurs[cle] ?? 0));
 }

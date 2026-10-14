@@ -47,6 +47,9 @@
         "blocs.prochains-evenements",
         "blocs.entreprises",
         "blocs.temoignages",
+        "blocs.espaces",
+        "blocs.cartes-photo",
+        "blocs.galerie",
         "blocs.iframe"
       ]
     },

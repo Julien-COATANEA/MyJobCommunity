@@ -6,8 +6,16 @@
   },
   "options": {},
   "attributes": {
+    "surtitre": {
+      "type": "string",
+      "maxLength": 60
+    },
     "titre": {
       "type": "string"
+    },
+    "introduction": {
+      "type": "text",
+      "maxLength": 400
     },
     "logos": {
       "type": "component",

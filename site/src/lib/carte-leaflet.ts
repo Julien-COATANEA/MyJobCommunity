@@ -6,15 +6,13 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
-  htmlInfobulle, libelleGroupe, libelleRepere, regrouperParLieu, regrouperProches, type Lieu, type OffreSurCarte, type Zone,
+  EPINGLE, htmlInfobulle, libelleGroupe, libelleRepere, regrouperParLieu, regrouperProches, type Lieu, type OffreSurCarte, type Zone,
 } from './carte-offres';
 import type { Position } from './recherche-offres';
 
 const FRANCE: L.LatLngTuple = [46.6, 2.4];
 /** Distance à l'écran sous laquelle deux lieux sont regroupés. */
 const RAYON_GROUPE_PX = 56;
-const EPINGLE =
-  '<svg viewBox="0 0 28 38" width="28" height="38" aria-hidden="true"><path d="M14 1.5C7.1 1.5 1.5 7 1.5 13.8c0 9.3 12.5 22.7 12.5 22.7s12.5-13.4 12.5-22.7C26.5 7 20.9 1.5 14 1.5z" fill="currentColor" stroke="#fff" stroke-width="2"/><circle cx="14" cy="13.8" r="4.8" fill="#fff"/></svg>';
 
 export interface OptionsCarte {
   /** Déplacement ou zoom fait par le visiteur (pas par la page) : zone visible. */

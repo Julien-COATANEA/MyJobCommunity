@@ -1,5 +1,8 @@
 ---
+// En-tête de page. Par défaut, bandeau immersif de la maquette (photo de la page ou dégradé aux couleurs du thème),
+// qui affiche aussi le fil d'Ariane de la page (transmis par Base.astro). Variante « clair » pour les pages de détail.
 import ImageStrapi from './ImageStrapi.astro';
+import FilAriane from './FilAriane.astro';
 import type { Media } from '../lib/strapi';
 
 interface Props {
@@ -7,14 +10,20 @@ interface Props {
   chapo?: string | null;
   image?: Media | null;
   surtitre?: string | null;
+  variante?: 'immersif' | 'clair';
 }
 
-const { titre, chapo, image, surtitre } = Astro.props;
+const { titre, chapo, image, surtitre, variante = 'immersif' } = Astro.props;
+const immersif = variante === 'immersif';
+// Dans le bandeau, le fil d'Ariane est dans le flux : il ne peut pas chevaucher le titre, même sur plusieurs lignes.
+const ariane = immersif ? Astro.locals.ariane : undefined;
+if (ariane) Astro.locals.arianeAffichee = true;
 ---
 
-<header class:list={['en-tete-page', { 'en-tete-page--image': image }]}>
-  {image && <ImageStrapi media={image} class="en-tete-page__image" largeurs={[640, 1024, 1600]} sizes="100vw" prioritaire decorative />}
+<header class:list={['en-tete-page', `en-tete-page--${variante}`, { 'en-tete-page--image': image && immersif }]}>
+  {image && immersif && <ImageStrapi media={image} class="en-tete-page__image" largeurs={[640, 1024, 1600]} sizes="100vw" prioritaire decorative />}
   <div class="conteneur en-tete-page__contenu">
+    {ariane && <FilAriane miettes={ariane} dansBandeau />}
     {surtitre && <p class="en-tete-page__surtitre">{surtitre}</p>}
     <h1>{titre}</h1>
     {chapo && <p class="en-tete-page__chapo">{chapo}</p>}

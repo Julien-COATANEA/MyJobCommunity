@@ -77,7 +77,7 @@ const jsonLd = {
     <a href="/offres" data-retour-resultats><Icone nom="retour" taille={18} />Retour aux offres</a>
   </div>
 
-  <EnTetePage titre={o.titre} surtitre={o.nomEntreprise}>
+  <EnTetePage titre={o.titre} surtitre={o.nomEntreprise} variante="clair">
     <p class="offre__badges offre__badges--entete">
       {o.typeContrat && <span class={`badge-contrat badge-contrat--${classeContrat(o.typeContrat)}`}>{o.typeContrat}</span>}
     </p>

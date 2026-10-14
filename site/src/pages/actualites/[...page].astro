@@ -2,34 +2,76 @@
 import type { GetStaticPaths, Page } from 'astro';
 import Base from '../../layouts/Base.astro';
 import EnTetePage from '../../components/EnTetePage.astro';
+import ALaUne from '../../components/ALaUne.astro';
+import TitreSection from '../../components/TitreSection.astro';
+import Icone from '../../components/Icone.astro';
 import CarteArticle from '../../components/cartes/CarteArticle.astro';
 import Pagination from '../../components/Pagination.astro';
 import { lireArticles, type Article } from '../../lib/contenus';
+import { formatDate } from '../../lib/format';
 
+// L'article « à la une » (mis en avant dans le BO, sinon le plus récent) est présenté en grand en première page :
+// il est retiré de la pagination pour ne pas apparaître deux fois. (Règle écrite dans getStaticPaths, qu'Astro
+// exécute à part : il ne voit pas les déclarations du reste de l'en-tête.)
 export const getStaticPaths = (async ({ paginate }) => {
-  return paginate(await lireArticles(), { pageSize: 12 });
+  const articles = await lireArticles();
+  const vedette = articles.find((a) => a.miseEnAvant) ?? articles[0] ?? null;
+  return paginate(articles.filter((a) => a !== vedette), { pageSize: 12, props: { vedette } });
 }) satisfies GetStaticPaths;
 
-const { page } = Astro.props as { page: Page<Article> };
-const titre = page.currentPage > 1 ? `Actualités, page ${page.currentPage} sur ${page.lastPage}` : 'Actualités';
+const { page, vedette } = Astro.props as { page: Page<Article>; vedette: Article | null };
+const premiere = page.currentPage === 1;
+const titre = premiere ? 'Actualités' : `Actualités, page ${page.currentPage} sur ${page.lastPage}`;
+const categories = [...new Set((await lireArticles()).map((a) => a.categorie?.nom).filter(Boolean))].slice(0, 4) as string[];
 ---
 
 <Base titre={titre} description="Les actualités de l'emploi sur le territoire." ariane={[{ libelle: 'Actualités' }]}>
-  <EnTetePage titre="Actualités" chapo="Recrutements, formations, vie du territoire : toute l'info emploi." />
-  <section class="section">
-    <div class="conteneur">
-      {
-        page.data.length ? (
-          <ul class="grille grille--3">
-            {page.data.map((article) => (
-              <li><CarteArticle article={article} niveauTitre={2} /></li>
-            ))}
-          </ul>
-        ) : (
-          <p>Aucune actualité pour le moment.</p>
-        )
-      }
-      <Pagination page={page} />
-    </div>
-  </section>
+  <EnTetePage titre="Actualités" chapo="Recrutements, formations, vie du territoire : suivez tout ce qui fait bouger l'emploi local.">
+    {
+      categories.length > 0 && (
+        <ul class="en-tete-page__pastilles">
+          {categories.map((c) => <li><Icone nom="actualite" taille={18} />{c}</li>)}
+        </ul>
+      )
+    }
+  </EnTetePage>
+
+  {
+    premiere && vedette && (
+      <section class="section">
+        <div class="conteneur">
+          <TitreSection surtitre="À la une" titre="Le sujet du moment" />
+          <ALaUne
+            titre={vedette.titre}
+            texte={vedette.extrait}
+            image={vedette.image}
+            pastille={vedette.categorie?.nom ?? 'À la une'}
+            surtitre={formatDate(vedette.datePublication)}
+            lien={`/actualites/${vedette.slug}`}
+            libelleLien="Lire l'article"
+          />
+        </div>
+      </section>
+    )
+  }
+
+  {
+    (page.data.length > 0 || !vedette) && (
+      <section class:list={['section', { 'section--teinte': premiere && vedette }]}>
+        <div class="conteneur">
+          {premiere && vedette && <TitreSection surtitre="Toute l'actualité" titre="Les derniers articles" />}
+          {page.data.length ? (
+            <ul class="grille grille--3">
+              {page.data.map((article) => (
+                <li><CarteArticle article={article} niveauTitre={premiere && vedette ? 3 : 2} /></li>
+              ))}
+            </ul>
+          ) : (
+            <p>Aucune actualité pour le moment.</p>
+          )}
+          <Pagination page={page} />
+        </div>
+      </section>
+    )
+  }
 </Base>

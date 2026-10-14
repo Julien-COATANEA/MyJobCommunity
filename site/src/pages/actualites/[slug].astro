@@ -1,7 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
 import VueArticle from '../../components/vues/VueArticle.astro';
-import CarteArticle from '../../components/cartes/CarteArticle.astro';
 import { lireArticles, lireParametres, type Article } from '../../lib/contenus';
 import { urlMedia } from '../../lib/strapi';
 
@@ -9,11 +8,12 @@ export async function getStaticPaths() {
   const articles = await lireArticles();
   return articles.map((article) => ({
     params: { slug: article.slug },
-    props: { article, autres: articles.filter((a) => a.slug !== article.slug).slice(0, 3) },
+    props: { article },
   }));
 }
 
-const { article, autres } = Astro.props as { article: Article; autres: Article[] };
+// « À lire aussi » est dans la colonne de la fiche (VueArticle).
+const { article } = Astro.props as { article: Article };
 const parametres = await lireParametres();
 const image = urlMedia(article.image, true);
 const jsonLd = {
@@ -30,19 +30,4 @@ const jsonLd = {
 
 <Base titre={article.titre} description={article.extrait} seo={article.seo} image={image} type="article" jsonLd={[jsonLd]} ariane={[{ libelle: 'Actualités', url: '/actualites' }, { libelle: article.titre }]}>
   <VueArticle article={article} />
-
-  {
-    autres.length > 0 && (
-      <section class="section section--teinte" aria-labelledby="autres-actualites">
-        <div class="conteneur">
-          <h2 id="autres-actualites" class="section__titre">À lire aussi</h2>
-          <ul class="grille grille--3">
-            {autres.map((a) => (
-              <li><CarteArticle article={a} /></li>
-            ))}
-          </ul>
-        </div>
-      </section>
-    )
-  }
 </Base>

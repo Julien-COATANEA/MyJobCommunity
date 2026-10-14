@@ -1,0 +1,33 @@
+/* ============================================================
+   Jetons de couleur, ombres et rayons dérivés du thème : SOURCE UNIQUE.
+   Chargé par le site (Base.astro) ET par l'habillage du site carrière Gestmax (page /header-footer/).
+   Les trois couleurs du BO (--c-primaire, --c-secondaire, --c-accent) sont injectées en ligne dans le <head>
+   (voir src/lib/theme.ts) ; tout le reste en découle. Correspondance avec la maquette MyJobCommunity :
+   primaire = vert-600, --c-fonce = vert-900, --c-primaire-pale = vert-100, secondaire = bleu-700…
+   Uniquement des propriétés personnalisées : rien ne change l'apparence des pages Gestmax en dehors du shell.
+   ============================================================ */
+
+html:root {
+  --c-fonce: color-mix(in srgb, var(--c-primaire) 46%, #000);
+  --c-primaire-fonce: color-mix(in srgb, var(--c-primaire) 78%, #000);
+  --c-primaire-pale: color-mix(in srgb, var(--c-primaire) 11%, var(--c-fond));
+  --c-primaire-clair: color-mix(in srgb, var(--c-primaire) 50%, var(--c-fond));
+  --c-secondaire-pale: color-mix(in srgb, var(--c-secondaire) 9%, var(--c-fond));
+  --c-secondaire-clair: color-mix(in srgb, var(--c-secondaire) 45%, var(--c-fond));
+  --c-accent-pale: color-mix(in srgb, var(--c-accent) 20%, var(--c-fond));
+  /* Accent assombri : seul usage de l'accent pour du texte sur fond clair (contraste RGAA). */
+  --c-accent-texte: color-mix(in srgb, var(--c-accent) 60%, #000);
+  --c-texte-doux: color-mix(in srgb, var(--c-texte) 72%, var(--c-fond));
+  --c-bordure: color-mix(in srgb, var(--c-primaire) 8%, color-mix(in srgb, var(--c-texte) 8%, var(--c-fond)));
+  --c-surface: color-mix(in srgb, var(--c-primaire) 4%, color-mix(in srgb, var(--c-texte) 2%, var(--c-fond)));
+  --c-erreur: #b3261e;
+  --c-succes: #1e6b3a;
+
+  --largeur: 1200px;
+  --largeur-etroite: 780px;
+  --ombre-douce: 0 4px 14px color-mix(in srgb, var(--c-fonce) 6%, transparent);
+  --ombre: 0 14px 40px color-mix(in srgb, var(--c-fonce) 12%, transparent);
+  --ombre-forte: 0 24px 60px color-mix(in srgb, var(--c-fonce) 18%, transparent);
+  --rayon-grand: calc(var(--rayon) * 1.6);
+  --rayon-moyen: var(--rayon);
+}

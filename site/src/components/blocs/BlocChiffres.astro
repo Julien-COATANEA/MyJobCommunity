@@ -1,14 +1,15 @@
 ---
-// {offres}, {entreprises} et {evenements} sont remplacés par les chiffres réels à chaque mise à jour du site.
+// {offres}, {entreprises}, {recrutent} et {evenements} sont remplacés par les chiffres réels à chaque mise à jour du site.
+import TitreSection from '../TitreSection.astro';
 import { lireCompteurs, remplacerCompteurs } from '../../lib/contenus';
 
 const { bloc } = Astro.props;
 const compteurs = await lireCompteurs();
 ---
 
-<section class="section section--teinte">
+<section class="section section--chiffres">
   <div class="conteneur">
-    {bloc.titre && <h2 class="section__titre">{bloc.titre}</h2>}
+    <TitreSection surtitre={bloc.surtitre} titre={bloc.titre} introduction={bloc.introduction} />
     <ul class="chiffres">
       {
         bloc.chiffres.map((c: { valeur: string; libelle: string }) => (

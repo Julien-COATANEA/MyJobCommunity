@@ -1,0 +1,33 @@
+{
+  "collectionName": "components_elements_carte_photo",
+  "info": {
+    "displayName": "Carte avec photo",
+    "icon": "picture"
+  },
+  "options": {},
+  "attributes": {
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ],
+      "required": true
+    },
+    "etiquette": {
+      "type": "string",
+      "maxLength": 12
+    },
+    "titre": {
+      "type": "string",
+      "required": true
+    },
+    "sousTitre": {
+      "type": "string"
+    },
+    "lien": {
+      "type": "customField",
+      "customField": "global::lien"
+    }
+  }
+}

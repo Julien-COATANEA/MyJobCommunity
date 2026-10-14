@@ -1,0 +1,42 @@
+---
+// Contenu « à la une » des pages de liste (maquette « Le sujet du moment », « L'entreprise à la une ») :
+// grande carte en deux colonnes, photo à gauche (avec une pastille), texte et bouton à droite.
+import ImageStrapi from './ImageStrapi.astro';
+import Icone from './Icone.astro';
+import type { Media } from '../lib/strapi';
+
+interface Props {
+  titre: string;
+  lien: string;
+  libelleLien: string;
+  texte?: string | null;
+  image?: Media | null;
+  /** Pastille posée sur la photo (« À la une », catégorie…). */
+  pastille?: string | null;
+  /** Ligne au-dessus du titre (date, secteur…). */
+  surtitre?: string | null;
+  /** Vignette de logo ou d'initiales (entreprise), au-dessus du titre. */
+  vignette?: string | null;
+}
+
+const { titre, lien, libelleLien, texte, image, pastille, surtitre, vignette } = Astro.props;
+---
+
+<article class:list={['a-la-une', { 'a-la-une--sans-image': !image }]}>
+  {
+    image && (
+      <div class="a-la-une__visuel">
+        <ImageStrapi media={image} largeurs={[560, 900]} sizes="(min-width: 980px) 600px, 100vw" decorative />
+        {pastille && <p class="a-la-une__pastille">{pastille}</p>}
+      </div>
+    )
+  }
+  <div class="a-la-une__corps">
+    {!image && pastille && <p class="a-la-une__pastille">{pastille}</p>}
+    {vignette && <span class="entreprise__vignette entreprise__vignette--initiales a-la-une__vignette" aria-hidden="true">{vignette}</span>}
+    {surtitre && <p class="a-la-une__surtitre">{surtitre}</p>}
+    <h2 class="a-la-une__titre">{titre}</h2>
+    {texte && <p class="a-la-une__texte">{texte}</p>}
+    <p><a href={lien} class="bouton bouton--plein">{libelleLien}<Icone nom="fleche" taille={18} /></a></p>
+  </div>
+</article>

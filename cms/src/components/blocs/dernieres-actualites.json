@@ -6,9 +6,17 @@
   },
   "options": {},
   "attributes": {
+    "surtitre": {
+      "type": "string",
+      "maxLength": 60
+    },
     "titre": {
       "type": "string",
       "default": "Actualités"
+    },
+    "introduction": {
+      "type": "text",
+      "maxLength": 400
     },
     "nombre": {
       "type": "integer",

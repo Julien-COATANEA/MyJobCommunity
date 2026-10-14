@@ -1,0 +1,22 @@
+---
+// En-tête de section de la maquette : surtitre en pastille, titre, introduction. Centré par défaut.
+interface Props {
+  surtitre?: string | null;
+  titre?: string | null;
+  introduction?: string | null;
+  /** Aligné à gauche (bloc texte et image, par exemple). */
+  gauche?: boolean;
+}
+
+const { surtitre, titre, introduction, gauche = false } = Astro.props;
+---
+
+{
+  (surtitre || titre || introduction) && (
+    <div class:list={['section__tete', { 'section__tete--gauche': gauche }]}>
+      {surtitre && <p class="surtitre">{surtitre}</p>}
+      {titre && <h2 class:list={['section__titre', { 'section__titre--gauche': gauche }]}>{titre}</h2>}
+      {introduction && <p class="section__intro">{introduction}</p>}
+    </div>
+  )
+}

@@ -1,0 +1,52 @@
+{
+  "collectionName": "components_elements_espace",
+  "info": {
+    "displayName": "Espace (candidat, recruteur…)",
+    "icon": "user"
+  },
+  "options": {},
+  "attributes": {
+    "titre": {
+      "type": "string",
+      "required": true
+    },
+    "texte": {
+      "type": "text",
+      "maxLength": 300
+    },
+    "icone": {
+      "type": "enumeration",
+      "enum": [
+        "emploi",
+        "entreprise",
+        "formation",
+        "territoire",
+        "logement",
+        "transport",
+        "sante",
+        "famille",
+        "loisirs",
+        "accompagnement",
+        "evenement",
+        "actualite",
+        "info",
+        "utilisateur",
+        "valide"
+      ],
+      "default": "utilisateur"
+    },
+    "couleur": {
+      "type": "enumeration",
+      "enum": [
+        "principale",
+        "secondaire"
+      ],
+      "default": "principale"
+    },
+    "bouton": {
+      "type": "component",
+      "component": "elements.bouton",
+      "repeatable": false
+    }
+  }
+}

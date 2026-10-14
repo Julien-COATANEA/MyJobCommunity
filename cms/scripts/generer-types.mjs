@@ -24,7 +24,7 @@ const seo = comp('shared.seo', false);
 const BLOCS = [
   'blocs.texte', 'blocs.texte-image', 'blocs.chiffres-cles', 'blocs.cartes', 'blocs.appel-action',
   'blocs.faq', 'blocs.logos', 'blocs.recherche-offres', 'blocs.dernieres-offres',
-  'blocs.dernieres-actualites', 'blocs.prochains-evenements', 'blocs.entreprises', 'blocs.temoignages', 'blocs.iframe',
+  'blocs.dernieres-actualites', 'blocs.prochains-evenements', 'blocs.entreprises', 'blocs.temoignages', 'blocs.espaces', 'blocs.cartes-photo', 'blocs.galerie', 'blocs.iframe',
 ];
 
 const types = {

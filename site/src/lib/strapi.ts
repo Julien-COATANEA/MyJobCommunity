@@ -102,6 +102,8 @@ export interface Media {
   width: number | null;
   height: number | null;
   mime?: string;
+  /** Légende saisie dans la médiathèque (galerie). */
+  caption?: string | null;
 }
 
 export interface Seo {

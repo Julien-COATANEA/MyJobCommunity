@@ -1,6 +1,6 @@
 // Balisage d'une carte d'offre, partagé par le rendu statique (CarteOffre.astro)
 // et par la recherche dans le navigateur (page /offres) : un seul modèle à maintenir.
-import { classeContrat, estNouveau, ilYA } from './format';
+import { classeContrat, estNouveau, ilYA, initiales } from './format';
 import { svgIcone } from './icones';
 
 export interface OffreCarte {
@@ -12,6 +12,8 @@ export interface OffreCarte {
   salaire: string | null;
   dateActivation: string | null;
   logoUrl: string | null;
+  /** Secteur Gestmax (pastille en haut de la carte). */
+  secteur?: string | null;
   aLaUne?: boolean;
   /** Distance en km (recherche autour d'une ville). */
   distance?: number | null;
@@ -19,14 +21,6 @@ export interface OffreCarte {
 
 export const echapper = (t: string) =>
   t.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-
-const initiales = (nom: string) =>
-  nom
-    .split(/[\s-]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((m) => m[0]!.toUpperCase())
-    .join('');
 
 /** Informations masquables d'une carte (réglage « Ma page d'offres » du BO). */
 export interface Masquer { logo?: boolean; salaire?: boolean; date?: boolean }
@@ -50,22 +44,29 @@ export function htmlCarteOffre(
         : '';
   const badges = [
     o.aLaUne ? '<span class="badge-une">★ À la une</span>' : '',
-    o.typeContrat ? `<span class="badge-contrat badge-contrat--${classeContrat(o.typeContrat)}">${echapper(o.typeContrat)}</span>` : '',
     estNouveau(o.dateActivation, maintenant) ? '<span class="badge-nouveau">Nouveau</span>' : '',
   ].join('');
-  const meta = [
-    o.lieu ? `<li>${svgIcone('lieu')}${echapper(o.lieu)}${o.distance != null && o.distance >= 1 ? ` <span class="offre__distance">(${Math.round(o.distance)} km)</span>` : ''}</li>` : '',
-    o.salaire && !masquer.salaire ? `<li>${svgIcone('euro')}${echapper(o.salaire)}</li>` : '',
-    o.dateActivation && !masquer.date ? `<li>${svgIcone('horloge')}<time datetime="${o.dateActivation}">Publiée ${ilYA(o.dateActivation, maintenant)}</time></li>` : '',
+  // Étiquettes de la maquette : lieu, puis contrat (couleur de la famille de contrat).
+  const etiquettes = [
+    o.lieu
+      ? `<li class="tag">${svgIcone('lieu', 16)}${echapper(o.lieu)}${o.distance != null && o.distance >= 1 ? ` <span class="offre__distance">(${Math.round(o.distance)} km)</span>` : ''}</li>`
+      : '',
+    o.typeContrat ? `<li class="tag tag--contrat badge-contrat badge-contrat--${classeContrat(o.typeContrat)}">${echapper(o.typeContrat)}</li>` : '',
   ].join('');
+  const date = o.dateActivation && !masquer.date
+    ? `<p class="offre__date">${svgIcone('horloge', 16)}<time datetime="${o.dateActivation}">Publiée ${ilYA(o.dateActivation, maintenant)}</time></p>`
+    : '';
+  const salaire = o.salaire && !masquer.salaire ? `<p class="offre__salaire">${svgIcone('euro', 16)}${echapper(o.salaire)}</p>` : '<span></span>';
 
   // data-slug : relie la carte à son repère sur la carte des offres (survol).
   return `<article class="carte carte--offre" data-slug="${echapper(o.slug)}">
   <div class="carte__corps">
-    <div class="offre__haut">${logo}<div class="offre__badges">${badges}</div></div>
+    <div class="offre__haut">${logo}${o.secteur ? `<span class="offre__secteur">${echapper(o.secteur)}</span>` : ''}<div class="offre__badges">${badges}</div></div>
     <${h} class="carte__titre"><a href="/offres/${encodeURIComponent(o.slug)}/" class="carte__lien">${echapper(o.titre)}</a></${h}>
     ${o.nomEntreprise ? `<p class="offre__entreprise">${echapper(o.nomEntreprise)}</p>` : ''}
-    <ul class="meta">${meta}</ul>
+    ${etiquettes ? `<ul class="offre__tags">${etiquettes}</ul>` : ''}
+    ${date}
+    <div class="offre__pied">${salaire}<span class="lien-action" aria-hidden="true">Voir l'offre ${svgIcone('fleche', 16)}</span></div>
   </div>
 </article>`;
 }

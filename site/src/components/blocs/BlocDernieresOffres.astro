@@ -21,7 +21,7 @@ const voirTout = bloc.typeContrat ? `/offres?contrat=${encodeURIComponent(bloc.t
 
 <section class="section">
   <div class="conteneur">
-    <EnteteSection titre={bloc.titre} lien={voirTout} libelleLien="Toutes les offres" />
+    <EnteteSection surtitre={bloc.surtitre} titre={bloc.titre} introduction={bloc.introduction} lien={voirTout} libelleLien="Toutes les offres" />
     {
       iframe ? (
         <GestmaxIframe src={urlIframe} titre={`${bloc.titre ?? 'Dernières offres'} (front Gestmax)`} />

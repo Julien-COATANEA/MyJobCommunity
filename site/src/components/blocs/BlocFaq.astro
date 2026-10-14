@@ -1,5 +1,6 @@
 ---
 // <details>/<summary> : accordéon natif, accessible au clavier et sans JavaScript.
+import TitreSection from '../TitreSection.astro';
 import { rendreBlocks } from '../../lib/blocks';
 import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
 
@@ -8,7 +9,7 @@ const { bloc } = Astro.props;
 
 <section class="section">
   <div class="conteneur conteneur--etroit">
-    {bloc.titre && <h2 class="section__titre section__titre--gauche">{bloc.titre}</h2>}
+    <TitreSection surtitre={bloc.surtitre} titre={bloc.titre} introduction={bloc.introduction} />
     <div class="faq">
       {
         bloc.questions.map((q: any) => (

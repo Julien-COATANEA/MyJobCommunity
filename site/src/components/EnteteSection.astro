@@ -1,21 +1,28 @@
 ---
-// En-tête des blocs de liste : titre à gauche, lien « Tout voir » à droite (rythme différent des blocs centrés).
+// En-tête des blocs de liste (maquette « Les dernières offres ») : surtitre, titre et introduction à gauche,
+// bouton pilule « Tout voir » à droite.
 import Icone from './Icone.astro';
 
 interface Props {
+  surtitre?: string | null;
   titre?: string | null;
+  introduction?: string | null;
   lien?: string;
   libelleLien?: string;
 }
 
-const { titre, lien, libelleLien = 'Tout voir' } = Astro.props;
+const { surtitre, titre, introduction, lien, libelleLien = 'Tout voir' } = Astro.props;
 ---
 
 <div class="section__entete">
-  {titre && <h2 class="section__titre section__titre--gauche">{titre}</h2>}
+  <div>
+    {surtitre && <p class="surtitre">{surtitre}</p>}
+    {titre && <h2 class="section__titre section__titre--gauche">{titre}</h2>}
+    {introduction && <p class="section__entete-intro">{introduction}</p>}
+  </div>
   {
     lien && (
-      <a href={lien} class="section__tout-voir">
+      <a href={lien} class="bouton bouton--contour bouton--petit section__tout-voir">
         {libelleLien}
         <Icone nom="fleche" taille={18} />
       </a>

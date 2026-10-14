@@ -39,12 +39,12 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
   strapi.log.info('[demo] création des données de démonstration…');
 
   const dossierImages = join(strapi.dirs.app.root, 'data', 'seed-images');
-  const televerser = async (fichier: string, alternativeText: string) => {
+  const televerser = async (fichier: string, alternativeText: string, caption?: string) => {
     try {
       const filepath = join(dossierImages, fichier);
       const mimetype = { '.jpg': 'image/jpeg', '.png': 'image/png' }[extname(fichier)] ?? 'application/octet-stream';
       const [media] = await strapi.plugin('upload').service('upload').upload({
-        data: { fileInfo: { alternativeText, name: fichier } },
+        data: { fileInfo: { alternativeText, name: fichier, ...(caption ? { caption } : {}) } },
         files: { filepath, originalFilename: fichier, mimetype, size: statSync(filepath).size },
       });
       return media.id;
@@ -59,11 +59,11 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
   // ---------- Médias ----------
   const img = {
     hero: await televerser('lac-annecy.jpg', ''),
-    ville: await televerser('lyon.jpg', 'Vue sur le centre-ville et la rivière'),
-    montagne: await televerser('grenoble.jpg', 'La ville au pied des montagnes'),
-    lac: await televerser('annecy.jpg', 'Les bords du lac en été'),
-    campagne: await televerser('paysage-volcan.jpg', 'Paysage de collines verdoyantes'),
-    vallee: await televerser('valence.jpg', 'Les toits de la vieille ville'),
+    ville: await televerser('lyon.jpg', 'Vue sur le centre-ville et la rivière', 'Le centre-ville'),
+    montagne: await televerser('grenoble.jpg', 'La ville au pied des montagnes', 'Au pied des montagnes'),
+    lac: await televerser('annecy.jpg', 'Les bords du lac en été', 'Les bords du lac'),
+    campagne: await televerser('paysage-volcan.jpg', 'Paysage de collines verdoyantes', 'Les collines'),
+    vallee: await televerser('valence.jpg', 'Les toits de la vieille ville', 'La vieille ville'),
     logoFranceTravail: await televerser('logo-france-travail.jpg', 'France Travail'),
     logoApec: await televerser('logo-apec.jpg', 'Apec'),
     logoMissionLocale: await televerser('logo-mission-locale.png', 'Mission locale'),
@@ -237,9 +237,9 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
 
   // ---------- Blocs réutilisés ----------
   const blocsOffresActus = [
-    { __component: 'blocs.dernieres-offres', titre: 'Les dernières offres', mode: 'liste', nombre: 6 },
-    { __component: 'blocs.dernieres-actualites', titre: 'Actualités', nombre: 3 },
-    { __component: 'blocs.prochains-evenements', titre: 'Prochains événements', nombre: 3 },
+    { __component: 'blocs.dernieres-offres', surtitre: 'Fraîchement publiées', titre: 'Les dernières offres', introduction: 'Les opportunités à pourvoir dans toute la vallée.', mode: 'liste', nombre: 6 },
+    { __component: 'blocs.dernieres-actualites', surtitre: 'Actualités', titre: 'L’emploi bouge dans la Vallée Verte', nombre: 3 },
+    { __component: 'blocs.prochains-evenements', surtitre: 'Événements à venir', titre: 'Forums, ateliers, job datings', nombre: 3 },
   ];
 
   // ---------- Accueil ----------
@@ -251,15 +251,37 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
     sections: [
       {
         __component: 'blocs.chiffres-cles',
+        surtitre: 'Le territoire en chiffres',
+        titre: 'Une vallée qui recrute',
         chiffres: [
           { valeur: '{offres}', libelle: 'offres en ligne' },
-          { valeur: '{entreprises}', libelle: 'entreprises qui recrutent' },
+          { valeur: '{recrutent}', libelle: 'entreprises qui recrutent' },
           { valeur: '{evenements}', libelle: 'événements à venir' },
+        ],
+      },
+      {
+        __component: 'blocs.espaces',
+        surtitre: 'Votre espace personnel',
+        titre: 'Candidats et recruteurs, votre tableau de bord',
+        introduction: 'Gérez vos candidatures, vos offres et vos alertes en quelques clics.',
+        espaces: [
+          {
+            titre: 'Espace candidat', icone: 'utilisateur', couleur: 'principale',
+            texte: 'Déposez votre CV, créez vos alertes emploi personnalisées et suivez vos candidatures en temps réel.',
+            bouton: { libelle: 'Je me connecte', url: 'gestmax:/account/login', style: 'principal' },
+          },
+          {
+            titre: 'Espace recruteur', icone: 'entreprise', couleur: 'secondaire',
+            texte: 'Publiez vos offres, présentez votre entreprise dans l’annuaire et trouvez les talents du territoire.',
+            // Espace recruteur = back-office (même destination que le bouton de l'en-tête).
+            bouton: { libelle: 'Accéder à mon espace', url: `${(process.env.PUBLIC_STRAPI_URL ?? 'http://localhost:1337').replace(/\/+$/, '')}/admin`, style: 'principal' },
+          },
         ],
       },
       blocsOffresActus[0],
       {
         __component: 'blocs.cartes',
+        surtitre: 'Vivre et travailler ici',
         titre: 'La Vallée Verte vous accompagne',
         cartes: [
           { icone: 'emploi', titre: 'Trouver un emploi', texte: 'Des milliers d’offres et des conseillers à votre écoute.', lien: '/offres', libelleLien: 'Voir les offres' },
@@ -270,15 +292,18 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
       },
       blocsOffresActus[1],
       blocsOffresActus[2],
-      { __component: 'blocs.entreprises', titre: 'Ils recrutent sur le territoire', nombre: 3 },
+      { __component: 'blocs.entreprises', surtitre: 'Les employeurs', titre: 'Ils recrutent sur le territoire', nombre: 3 },
       {
         __component: 'blocs.temoignages',
+        surtitre: 'Témoignages',
         titre: 'Ils ont choisi la Vallée Verte',
         temoignages: TEMOIGNAGES,
       },
       {
         __component: 'blocs.logos',
-        titre: 'Nos partenaires emploi',
+        surtitre: 'Nos partenaires',
+        titre: 'Ils font vivre l’emploi local',
+        introduction: 'Collectivités, institutions et réseaux engagés aux côtés des candidats et des recruteurs.',
         logos: [
           { nom: 'France Travail', image: img.logoFranceTravail, url: 'https://www.francetravail.fr' },
           { nom: 'Apec', image: img.logoApec, url: 'https://www.apec.fr' },
@@ -307,11 +332,30 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
     sections: [
       {
         __component: 'blocs.texte-image',
+        surtitre: 'Vivre et travailler ici',
         titre: 'Un territoire qui bouge',
         contenu: [p('42 communes, 120 000 habitants et un tissu économique diversifié : industrie de précision, santé, agroalimentaire et numérique.'), p('Le territoire investit dans les transports, le logement et la formation pour accueillir les talents de demain.')],
         image: img.vallee,
-        positionImage: 'droite',
+        imagesComplementaires: [img.lac, img.montagne].filter(Boolean),
+        atouts: [
+          { icone: 'loisirs', titre: 'Cadre de vie', texte: 'Lac, montagne et nature à 20 minutes' },
+          { icone: 'transport', titre: 'Bien reliée', texte: 'Gare TGV, autoroute, aéroport à 1 h' },
+          { icone: 'entreprise', titre: 'Pôles d’excellence', texte: 'Industrie de précision, santé, numérique' },
+          { icone: 'logement', titre: 'Coût de la vie', texte: 'Accès à la propriété facilité' },
+        ],
+        positionImage: 'gauche',
         bouton: { libelle: 'Voir les entreprises', url: '/entreprises', style: 'principal' },
+      },
+      {
+        __component: 'blocs.cartes-photo',
+        surtitre: 'Les communes',
+        titre: 'Quatre pôles, une même vallée',
+        cartes: [
+          { image: img.ville, etiquette: 'PÔLE 1', titre: 'Vallée-Verte', sousTitre: 'Ville centre' },
+          { image: img.lac, etiquette: 'PÔLE 2', titre: 'Les Rives', sousTitre: 'Bords du lac' },
+          { image: img.montagne, etiquette: 'PÔLE 3', titre: 'Saint-Martin', sousTitre: 'Porte des montagnes' },
+          { image: img.campagne, etiquette: 'PÔLE 4', titre: 'Les Collines', sousTitre: 'Bourgs et campagne' },
+        ].filter((c) => c.image),
       },
       { __component: 'blocs.chiffres-cles', titre: 'Le territoire en chiffres', chiffres: [{ valeur: '120 000', libelle: 'habitants' }, { valeur: '8 %', libelle: 'de chômage' }, { valeur: '30 min', libelle: 'de la grande ville' }, { valeur: '15', libelle: 'lycées et campus' }] },
       {
@@ -323,6 +367,12 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
           { icone: 'info', titre: 'Numérique', texte: 'Développeurs, techniciens réseau.' },
           { icone: 'transport', titre: 'Logistique', texte: 'Conducteurs, préparateurs.' },
         ],
+      },
+      {
+        __component: 'blocs.galerie',
+        surtitre: 'En images',
+        titre: 'La Vallée Verte comme si vous y étiez',
+        photos: [img.lac, img.ville, img.montagne, img.campagne, img.vallee].filter(Boolean),
       },
       {
         __component: 'blocs.faq',

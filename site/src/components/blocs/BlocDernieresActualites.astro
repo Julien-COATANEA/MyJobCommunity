@@ -11,7 +11,7 @@ const articles = (await lireArticles()).slice(0, bloc.nombre ?? 3);
   articles.length > 0 && (
     <section class="section section--teinte">
       <div class="conteneur">
-        <EnteteSection titre={bloc.titre} lien="/actualites" libelleLien="Toutes les actualités" />
+        <EnteteSection surtitre={bloc.surtitre} titre={bloc.titre} introduction={bloc.introduction} lien="/actualites" libelleLien="Toutes les actualités" />
         <ul class="grille grille--3">
           {articles.map((article) => (
             <li><CarteArticle article={article} /></li>

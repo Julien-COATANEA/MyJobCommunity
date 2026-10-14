@@ -1,0 +1,39 @@
+---
+// Cartes avec photo (maquette « Les départements ») : photo en fond, étiquette (n° de département…), titre et
+// sous-titre sur un dégradé sombre. Lien facultatif sur toute la carte.
+import TitreSection from '../TitreSection.astro';
+import ImageStrapi from '../ImageStrapi.astro';
+import { lireParametres } from '../../lib/contenus';
+import { resoudreLien } from '../../lib/liens';
+import type { Media } from '../../lib/strapi';
+
+interface CartePhoto { image: Media; etiquette?: string | null; titre: string; sousTitre?: string | null; lien?: string | null }
+
+const { bloc } = Astro.props;
+const cartes: CartePhoto[] = (bloc.cartes ?? []).filter((c: CartePhoto) => c.image);
+const { gestmaxUrlFront } = await lireParametres();
+---
+
+{
+  cartes.length > 0 && (
+    <section class="section">
+      <div class="conteneur">
+        <TitreSection surtitre={bloc.surtitre} titre={bloc.titre} introduction={bloc.introduction} />
+        <ul class="cartes-photo">
+          {cartes.map((c) => (
+            <li class="carte-photo">
+              <ImageStrapi media={c.image} class="carte-photo__image" largeurs={[360, 600]} sizes="(min-width: 980px) 280px, 50vw" decorative />
+              <div class="carte-photo__corps">
+                {c.etiquette && <span class="carte-photo__etiquette">{c.etiquette}</span>}
+                <h3 class="carte-photo__titre">
+                  {c.lien ? <a href={resoudreLien(c.lien, gestmaxUrlFront)} class="carte-photo__lien">{c.titre}</a> : c.titre}
+                </h3>
+                {c.sousTitre && <p class="carte-photo__sous-titre">{c.sousTitre}</p>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}

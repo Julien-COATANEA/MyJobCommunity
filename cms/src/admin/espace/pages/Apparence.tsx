@@ -42,6 +42,8 @@ const ARRONDIS: Record<string, { libelle: string; rayon: number }> = {
   prononces: { libelle: 'Très arrondis', rayon: 20 },
 };
 const PALETTES: { nom: string; couleurs: Pick<Theme, 'couleurPrimaire' | 'couleurSecondaire' | 'couleurAccent'> }[] = [
+  // Palette de la maquette MyJobCommunity (vert, bleu, orange).
+  { nom: 'MyJobCommunity', couleurs: { couleurPrimaire: '#1a7460', couleurSecondaire: '#15506e', couleurAccent: '#f08a3c' } },
   { nom: 'Océan', couleurs: { couleurPrimaire: '#1a5f7a', couleurSecondaire: '#0f3d4c', couleurAccent: '#e8833a' } },
   { nom: 'Forêt', couleurs: { couleurPrimaire: '#2d6a4f', couleurSecondaire: '#1b4332', couleurAccent: '#f4a261' } },
   { nom: 'Ardoise', couleurs: { couleurPrimaire: '#3d5a80', couleurSecondaire: '#293241', couleurAccent: '#ee6c4d' } },
@@ -51,7 +53,7 @@ const PALETTES: { nom: string; couleurs: Pick<Theme, 'couleurPrimaire' | 'couleu
 ];
 const COULEURS: { cle: keyof Theme; libelle: string; aide: string }[] = [
   { cle: 'couleurPrimaire', libelle: 'Couleur principale', aide: 'Boutons, liens, éléments actifs' },
-  { cle: 'couleurSecondaire', libelle: 'Couleur secondaire', aide: 'Bandeaux et pied de page' },
+  { cle: 'couleurSecondaire', libelle: 'Couleur secondaire', aide: 'Espace recruteur, dates d’événements, dégradés des bandeaux' },
   { cle: 'couleurAccent', libelle: "Couleur d'accent", aide: 'Soulignés, étiquettes, bouton de recherche' },
   { cle: 'couleurTexte', libelle: 'Couleur du texte', aide: 'Texte courant et titres' },
   { cle: 'couleurFond', libelle: 'Couleur de fond', aide: 'Fond des pages' },

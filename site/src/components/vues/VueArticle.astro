@@ -1,7 +1,9 @@
 ---
-// Contenu d'un article (page publique et aperçu des brouillons).
+// Contenu d'un article (page publique et aperçu des brouillons). Maquette « page détail » : en-tête, image de
+// couverture, puis texte + colonne (partage, « À lire aussi »).
 import ImageStrapi from '../ImageStrapi.astro';
-import type { Article } from '../../lib/contenus';
+import Partage from '../Partage.astro';
+import { lireArticles, type Article } from '../../lib/contenus';
 import { rendreBlocks } from '../../lib/blocks';
 import { formatDate } from '../../lib/format';
 import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
@@ -11,14 +13,17 @@ interface Props {
 }
 
 const { article } = Astro.props;
+// « À lire aussi » : trois autres articles, ceux de la même catégorie d'abord, puis les plus récents.
+const autres = (await lireArticles()).filter((a) => a.slug !== article.slug);
+const memeCategorie = (a: Article) => !!article.categorie && a.categorie?.slug === article.categorie.slug;
+const aLire = [...autres.filter(memeCategorie), ...autres.filter((a) => !memeCategorie(a))].slice(0, 3);
 ---
 
 <article class="article">
-  <header class="conteneur conteneur--etroit article__entete">
+  <header class="conteneur article__entete">
     {article.categorie && <p class="etiquette">{article.categorie.nom}</p>}
     <h1>{article.titre}</h1>
     <p class="article__date">Publié le <time datetime={article.datePublication}>{formatDate(article.datePublication)}</time></p>
-    <p class="article__chapo">{article.extrait}</p>
   </header>
   {
     article.image && (
@@ -27,5 +32,33 @@ const { article } = Astro.props;
       </div>
     )
   }
-  <div class="conteneur conteneur--etroit prose" set:html={rendreBlocks(article.contenu, { baseMedias: PUBLIC_STRAPI_URL })} />
+  <div class="conteneur detail">
+    <div class="detail__contenu">
+      <p class="article__chapo">{article.extrait}</p>
+      <div class="prose" set:html={rendreBlocks(article.contenu, { baseMedias: PUBLIC_STRAPI_URL })} />
+    </div>
+    <aside class="detail__aside" aria-label="Partager et lire aussi">
+      <div class="aside-carte">
+        <Partage titre={article.titre} chemin={`/actualites/${article.slug}/`} />
+      </div>
+      {
+        aLire.length > 0 && (
+          <div class="aside-carte">
+            <h2 class="aside-carte__titre">À lire aussi</h2>
+            <ul class="mini-liste">
+              {aLire.map((a) => (
+                <li class="mini-liste__item">
+                  {a.image && <ImageStrapi media={a.image} class="mini-liste__vignette" largeurs={[128]} sizes="64px" decorative />}
+                  <div>
+                    <p class="mini-liste__date"><time datetime={a.datePublication}>{formatDate(a.datePublication)}</time></p>
+                    <a href={`/actualites/${a.slug}`} class="mini-liste__lien">{a.titre}</a>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      }
+    </aside>
+  </div>
 </article>

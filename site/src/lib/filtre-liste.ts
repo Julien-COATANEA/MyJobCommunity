@@ -36,9 +36,10 @@ export function activerFiltreListe({ formulaire, elements, resultats, unite, cor
     history.replaceState(null, '', url);
   };
 
-  // Valeurs initiales depuis l'URL (liens partagés, retour arrière).
+  // Valeurs initiales depuis l'URL (liens partagés, retour arrière). Pour des boutons radio (filtres en pastilles),
+  // namedItem renvoie un RadioNodeList, dont « value » coche le bon bouton.
   for (const [cle, valeur] of new URLSearchParams(location.search)) {
-    const champ = formulaire.elements.namedItem(cle) as HTMLInputElement | HTMLSelectElement | null;
+    const champ = formulaire.elements.namedItem(cle) as HTMLInputElement | HTMLSelectElement | RadioNodeList | null;
     if (champ) champ.value = valeur;
   }
 

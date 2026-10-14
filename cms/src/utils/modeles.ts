@@ -42,7 +42,7 @@ export const MODELES: Modele[] = [
         __component: 'blocs.texte-image', titre: 'Un territoire qui bouge', positionImage: 'droite',
         contenu: [p('[Présentez en quelques lignes l’identité du territoire : son histoire, ses atouts, son dynamisme économique.]'), p('[Expliquez ce qui rend le territoire attractif pour y travailler et y vivre.]')],
       },
-      { __component: 'blocs.chiffres-cles', titre: 'Le territoire en chiffres', chiffres: [{ valeur: '[120 000]', libelle: 'habitants' }, { valeur: '{entreprises}', libelle: 'entreprises qui recrutent' }, { valeur: '{offres}', libelle: 'offres en ligne' }] },
+      { __component: 'blocs.chiffres-cles', titre: 'Le territoire en chiffres', chiffres: [{ valeur: '[120 000]', libelle: 'habitants' }, { valeur: '{recrutent}', libelle: 'entreprises qui recrutent' }, { valeur: '{offres}', libelle: 'offres en ligne' }] },
       {
         __component: 'blocs.cartes', titre: 'Les filières qui recrutent',
         cartes: [

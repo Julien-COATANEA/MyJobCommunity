@@ -1,5 +1,7 @@
 ---
+// Carte d'actualité (maquette) : image avec la catégorie posée dessus, date, titre, résumé, « Lire l'article ».
 import ImageStrapi from '../ImageStrapi.astro';
+import Icone from '../Icone.astro';
 import type { Article } from '../../lib/contenus';
 import { formatDate } from '../../lib/format';
 
@@ -17,15 +19,17 @@ const Titre = `h${niveauTitre}`;
     article.image && (
       <div class="carte__visuel">
         <ImageStrapi media={article.image} largeurs={[400, 700]} sizes="(min-width: 960px) 380px, 100vw" decorative />
+        {article.categorie && <p class="etiquette">{article.categorie.nom}</p>}
       </div>
     )
   }
   <div class="carte__corps">
-    {article.categorie && <p class="etiquette">{article.categorie.nom}</p>}
+    {!article.image && article.categorie && <p class="etiquette">{article.categorie.nom}</p>}
+    <p class="carte__date"><time datetime={article.datePublication}>{formatDate(article.datePublication)}</time></p>
     <Titre class="carte__titre">
       <a href={`/actualites/${article.slug}`} class="carte__lien">{article.titre}</a>
     </Titre>
     <p class="carte__texte">{article.extrait}</p>
-    <p class="carte__date"><time datetime={article.datePublication}>{formatDate(article.datePublication)}</time></p>
+    <p class="carte__pied"><span class="lien-action" aria-hidden="true">Lire l'article<Icone nom="fleche" taille={16} /></span></p>
   </div>
 </article>

@@ -2,10 +2,15 @@
   "collectionName": "components_blocs_texte_image",
   "info": {
     "displayName": "Texte et image côte à côte",
-    "icon": "layout"
+    "icon": "layout",
+    "description": "Une photo, ou trois en mosaïque ; liste d’atouts facultative sous le texte"
   },
   "options": {},
   "attributes": {
+    "surtitre": {
+      "type": "string",
+      "maxLength": 60
+    },
     "titre": {
       "type": "string"
     },
@@ -20,6 +25,19 @@
         "images"
       ],
       "required": true
+    },
+    "imagesComplementaires": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "atouts": {
+      "type": "component",
+      "component": "elements.atout",
+      "repeatable": true,
+      "max": 6
     },
     "positionImage": {
       "type": "enumeration",

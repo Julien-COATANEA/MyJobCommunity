@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classeContrat, estNouveau, ilYA } from './format';
+import { classeContrat, estNouveau, ilYA, initiales } from './format';
 
 const JOUR = 86_400_000;
 const maintenant = new Date('2026-10-13T12:00:00Z').getTime();
@@ -26,5 +26,13 @@ describe('classeContrat', () => {
     expect(classeContrat("Contrat d'apprentissage")).toBe('alternance');
     expect(classeContrat('Stage')).toBe('stage');
     expect(classeContrat('Mandataire')).toBe('autre');
+  });
+
+  it('donne les initiales d’un nom sans les petits mots ni espace', () => {
+    expect(initiales('My Job Community', 3)).toBe('MJC');
+    expect(initiales('Clinique des Tilleuls')).toBe('CT');
+    expect(initiales("Communauté d'agglomération de la Vallée", 3)).toBe('CAV');
+    expect(initiales('Le Havre')).toBe('H');
+    expect(initiales('De La')).toBe('DL');
   });
 });

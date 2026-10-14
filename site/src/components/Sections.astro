@@ -15,6 +15,9 @@ import BlocProchainsEvenements from './blocs/BlocProchainsEvenements.astro';
 import BlocEntreprises from './blocs/BlocEntreprises.astro';
 import BlocIframe from './blocs/BlocIframe.astro';
 import BlocTemoignages from './blocs/BlocTemoignages.astro';
+import BlocEspaces from './blocs/BlocEspaces.astro';
+import BlocCartesPhoto from './blocs/BlocCartesPhoto.astro';
+import BlocGalerie from './blocs/BlocGalerie.astro';
 
 interface Props {
   sections: Section[] | null | undefined;
@@ -34,6 +37,9 @@ const COMPOSANTS: Record<string, any> = {
   'blocs.prochains-evenements': BlocProchainsEvenements,
   'blocs.entreprises': BlocEntreprises,
   'blocs.temoignages': BlocTemoignages,
+  'blocs.espaces': BlocEspaces,
+  'blocs.cartes-photo': BlocCartesPhoto,
+  'blocs.galerie': BlocGalerie,
   'blocs.iframe': BlocIframe,
 };
 

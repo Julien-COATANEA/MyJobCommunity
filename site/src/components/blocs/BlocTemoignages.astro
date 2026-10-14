@@ -1,5 +1,6 @@
 ---
 // Témoignages : <figure> + <blockquote> + <figcaption>, la structure sémantique attendue pour une citation.
+import TitreSection from '../TitreSection.astro';
 import ImageStrapi from '../ImageStrapi.astro';
 import Icone from '../Icone.astro';
 import type { Temoignage } from '../../lib/contenus';
@@ -11,7 +12,7 @@ const initiale = (nom: string) => nom.trim().charAt(0).toUpperCase();
 
 <section class="section section--temoignages">
   <div class="conteneur">
-    {bloc.titre && <h2 class="section__titre">{bloc.titre}</h2>}
+    <TitreSection surtitre={bloc.surtitre} titre={bloc.titre} introduction={bloc.introduction} />
     <ul class="temoignages">
       {
         temoignages.map((t) => (

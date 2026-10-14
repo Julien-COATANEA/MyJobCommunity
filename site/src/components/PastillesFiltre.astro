@@ -1,0 +1,28 @@
+---
+// Filtre en pastilles (maquette « Tous les secteurs · Industrie · Santé… ») : boutons radio stylés en pilules.
+// À placer dans un formulaire géré par lib/filtre-liste.ts (valeur lue comme celle d'un menu déroulant).
+interface Props {
+  nom: string;
+  legende: string;
+  tous: string;
+  options: { valeur: string; libelle: string }[];
+}
+
+const { nom, legende, tous, options } = Astro.props;
+---
+
+<fieldset class="pastilles-filtre">
+  <legend class="sr-only">{legende}</legend>
+  <label class="pastille-choix">
+    <input type="radio" name={nom} value="" checked />
+    <span>{tous}</span>
+  </label>
+  {
+    options.map((o) => (
+      <label class="pastille-choix">
+        <input type="radio" name={nom} value={o.valeur} />
+        <span>{o.libelle}</span>
+      </label>
+    ))
+  }
+</fieldset>

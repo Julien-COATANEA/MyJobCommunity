@@ -1,9 +1,13 @@
 ---
 import Base from '../../layouts/Base.astro';
 import EnTetePage from '../../components/EnTetePage.astro';
+import ALaUne from '../../components/ALaUne.astro';
+import TitreSection from '../../components/TitreSection.astro';
+import PastillesFiltre from '../../components/PastillesFiltre.astro';
+import Icone from '../../components/Icone.astro';
 import CarteEvenement from '../../components/cartes/CarteEvenement.astro';
 import { lireEvenements } from '../../lib/contenus';
-import { formatDate } from '../../lib/format';
+import { formatDate, formatDateLongue, formatHeure } from '../../lib/format';
 
 const tous = await lireEvenements();
 const maintenant = Date.now();
@@ -11,33 +15,59 @@ const estPasse = (e: (typeof tous)[number]) => new Date(e.dateFin ?? e.dateDebut
 const aVenir = tous.filter((e) => !estPasse(e));
 const types = [...new Set(aVenir.map((e) => e.typeEvenement))].sort((a, b) => a.localeCompare(b, 'fr'));
 const passes = tous.filter(estPasse).reverse().slice(0, 12);
+const avecInscription = aVenir.filter((e) => e.inscriptionActive || e.inscriptionExterneUrl).length;
+// Événement phare : le prochain, de préférence avec une photo parmi les trois prochains.
+const phare = aVenir.slice(0, 3).find((e) => e.image) ?? aVenir[0] ?? null;
+const s = (n: number) => (n > 1 ? 's' : '');
 ---
 
 <Base titre="Événements" description="Forums, job datings, ateliers : les événements emploi du territoire." ariane={[{ libelle: 'Événements' }]}>
-  <EnTetePage titre="Événements" chapo="Forums, job datings, ateliers, webinaires : rencontrez les recruteurs du territoire." />
+  <EnTetePage titre="Événements" chapo="Forums, job datings, ateliers, webinaires : rencontrez les recruteurs du territoire.">
+    <ul class="en-tete-page__pastilles">
+      <li><Icone nom="evenement" taille={18} />{aVenir.length} événement{s(aVenir.length)} à venir</li>
+      {avecInscription > 0 && <li><Icone nom="valide" taille={18} />{avecInscription} avec inscription en ligne</li>}
+      {types.length > 0 && <li><Icone nom="filtre" taille={18} />{types.slice(0, 3).join(' · ')}</li>}
+    </ul>
+  </EnTetePage>
 
-  <section class="section" aria-labelledby="a-venir">
+  {
+    phare && (
+      <section class="section">
+        <div class="conteneur">
+          <TitreSection surtitre="Prochain rendez-vous" titre="Ne le manquez pas" />
+          <ALaUne
+            titre={phare.titre}
+            texte={phare.extrait}
+            image={phare.image}
+            pastille={phare.typeEvenement}
+            surtitre={`${formatDateLongue(phare.dateDebut)}, ${formatHeure(phare.dateDebut)} · ${phare.enLigne ? 'En ligne' : phare.lieu ?? ''}`}
+            lien={`/evenements/${phare.slug}`}
+            libelleLien="Voir l'événement"
+          />
+        </div>
+      </section>
+    )
+  }
+
+  <section class:list={['section', { 'section--teinte': phare }]} aria-labelledby="a-venir">
     <div class="conteneur">
-      <h2 id="a-venir" class="section__titre section__titre--gauche">À venir</h2>
+      <div class="section__tete">
+        <p class="surtitre">Agenda</p>
+        <h2 id="a-venir" class="section__titre">Tous les événements à venir</h2>
+      </div>
       {
         types.length > 1 && (
-          <form class="filtres-liste" role="search" aria-label="Filtrer les événements" data-filtre-evenements hidden>
-            <div class="recherche__champ">
-              <label for="filtre-type">Type d'événement</label>
-              <select id="filtre-type" name="type">
-                <option value="">Tous les types</option>
-                {types.map((t) => <option value={t}>{t}</option>)}
-              </select>
-            </div>
+          <form class="filtres-pastilles" role="search" aria-label="Filtrer les événements" data-filtre-evenements hidden>
+            <PastillesFiltre nom="type" legende="Type d'événement" tous="Tous les événements" options={types.map((t) => ({ valeur: t, libelle: t }))} />
           </form>
         )
       }
       <p class="resultats" aria-live="polite" data-resultats-evenements hidden></p>
       {
         aVenir.length ? (
-          <ul class="grille grille--3" data-liste-evenements>
+          <ul class="grille grille--evenements" data-liste-evenements>
             {aVenir.map((e) => (
-              <li data-type={e.typeEvenement}><CarteEvenement evenement={e} /></li>
+              <li data-type={e.typeEvenement}><CarteEvenement evenement={e} couverture /></li>
             ))}
           </ul>
         ) : (
@@ -49,7 +79,7 @@ const passes = tous.filter(estPasse).reverse().slice(0, 12);
 
   {
     passes.length > 0 && (
-      <section class="section section--teinte" aria-labelledby="passes">
+      <section class="section" aria-labelledby="passes">
         <div class="conteneur">
           <h2 id="passes" class="section__titre section__titre--gauche">Événements passés</h2>
           <ul class="liste-simple">

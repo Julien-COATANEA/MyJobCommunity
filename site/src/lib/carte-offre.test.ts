@@ -26,7 +26,7 @@ describe('htmlCarteOffre', () => {
   it('échappe le titre et remplace le logo absent par des initiales décoratives', () => {
     const html = htmlCarteOffre(offre, { maintenant });
     expect(html).toContain('Technicien &lt;maintenance&gt;');
-    expect(html).toContain('aria-hidden="true">AD</span>');
+    expect(html).toContain('aria-hidden="true">AV</span>');
   });
 
   it('indique la distance lors d’une recherche autour d’une ville', () => {

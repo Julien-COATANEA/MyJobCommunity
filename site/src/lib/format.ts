@@ -49,3 +49,18 @@ export function classeContrat(contrat: string | null): string {
   if (c.includes('stage')) return 'stage';
   return 'autre';
 }
+
+const MOTS_IGNORES = new Set(['de', 'du', 'des', 'la', 'le', 'les', 'l', 'd', 'et', 'en', 'à', 'au', 'aux']);
+
+/**
+ * Initiales d'un nom (vignettes d'entreprise, logo de secours du site) : première lettre des mots, sans les petits
+ * mots (« de », « la »…) ni espace. « My Job Community » → « MJC », « Clinique des Tilleuls » → « CT ».
+ */
+export function initiales(nom: string, max = 2): string {
+  const mots = nom.split(/[\s'’-]+/).filter(Boolean);
+  const utiles = mots.filter((m) => !MOTS_IGNORES.has(m.toLowerCase()));
+  return (utiles.length ? utiles : mots)
+    .slice(0, max)
+    .map((m) => m[0]!.toLocaleUpperCase('fr'))
+    .join('');
+}

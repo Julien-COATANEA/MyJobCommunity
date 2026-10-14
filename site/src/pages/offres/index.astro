@@ -30,10 +30,18 @@ const compterContrat = (c: string) => offres.filter((o) => o.typeContrat === c).
 const premieres = offres.slice(0, PAR_PAGE);
 const lienAlerte = parametres.gestmaxUrlFront ? resoudreLien('gestmax:/alert', parametres.gestmaxUrlFront) : null;
 const lienSpontanee = parametres.lienCandidatureSpontanee ? resoudreLien(parametres.lienCandidatureSpontanee, parametres.gestmaxUrlFront) : null;
+const employeurs = new Set(offres.map((o) => o.nomEntreprise).filter(Boolean)).size;
+const pl = (n: number) => (n > 1 ? 's' : '');
 ---
 
 <Base titre={titre} seo={page?.seo} description={`${offres.length} offres d'emploi sur le territoire.`} ariane={[{ libelle: titre }]}>
-  <EnTetePage titre={titre} chapo={chapo} />
+  <EnTetePage titre={titre} chapo={chapo}>
+    <ul class="en-tete-page__pastilles">
+      <li><Icone nom="emploi" taille={18} />{offres.length} offre{pl(offres.length)} à pourvoir</li>
+      {employeurs > 0 && <li><Icone nom="entreprise" taille={18} />{employeurs} employeur{pl(employeurs)}</li>}
+      {contrats.length > 0 && <li><Icone nom="contrat" taille={18} />{contrats.slice(0, 3).join(" · ")}</li>}
+    </ul>
+  </EnTetePage>
 
   <section class="section section--serree">
     <div class:list={['conteneur', page?.carte && 'conteneur--large']}>

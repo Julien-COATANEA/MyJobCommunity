@@ -1,4 +1,5 @@
 ---
+import TitreSection from '../TitreSection.astro';
 import Icone from '../Icone.astro';
 import { lireParametres } from '../../lib/contenus';
 import { resoudreLien } from '../../lib/liens';
@@ -10,8 +11,7 @@ const Titre = bloc.titre ? 'h3' : 'h2';
 
 <section class="section">
   <div class="conteneur">
-    {bloc.titre && <h2 class="section__titre">{bloc.titre}</h2>}
-    {bloc.introduction && <p class="section__intro">{bloc.introduction}</p>}
+    <TitreSection surtitre={bloc.surtitre} titre={bloc.titre} introduction={bloc.introduction} />
     <ul class="grille grille--4">
       {
         bloc.cartes.map((c: any) => (
