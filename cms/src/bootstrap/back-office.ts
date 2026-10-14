@@ -95,6 +95,7 @@ const PAR_TYPE: Record<string, Record<string, Libelle>> = {
     afficherLogo: 'Afficher le logo de l’entreprise',
     afficherSalaire: 'Afficher le salaire',
     afficherDate: 'Afficher la date de publication',
+    imageBandeauOffre: ['Bannière des fiches d’offre', 'Image affichée en haut de chaque page de détail d’une offre, au format paysage très large (ex. 1600 × 400 px).'],
     sections: ['Blocs sous la liste des offres', 'Facultatif : candidature spontanée, questions fréquentes, entreprises…'],
   },
   'api::page.page': {
@@ -227,6 +228,7 @@ const FORMULAIRES: Record<string, Ligne[]> = {
     [['carte', 4], ['affichage', 4], ['colonnes', 4]],
     [['offresParPage', 4], ['afficherLogo', 4], ['afficherSalaire', 4]],
     [['afficherDate', 4]],
+    [['imageBandeauOffre', 6]],
     [['sections', 12]],
     [['seo', 12]],
   ],

@@ -1,0 +1,23 @@
+---
+// Bannière des fiches d'offre : image pleine largeur, fil d'Ariane en haut, lien de retour (slot) en bas.
+// Le fil d'Ariane est marqué « affiché » ici (pendant le rendu du contenu) pour que Base.astro ne le répète pas.
+import ImageStrapi from './ImageStrapi.astro';
+import FilAriane, { type Miette } from './FilAriane.astro';
+import type { Media } from '../lib/strapi';
+
+interface Props {
+  media: Media;
+  ariane: Miette[];
+}
+
+const { media, ariane } = Astro.props;
+Astro.locals.arianeAffichee = true;
+---
+
+<div class="banniere-offre">
+  <ImageStrapi media={media} class="banniere-offre__image" largeurs={[640, 1024, 1600, 2000]} sizes="100vw" prioritaire decorative />
+  <div class="conteneur banniere-offre__contenu">
+    <FilAriane miettes={ariane} dansBandeau />
+    <slot />
+  </div>
+</div>

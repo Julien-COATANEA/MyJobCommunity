@@ -6,7 +6,8 @@ import Base from '../../layouts/Base.astro';
 import EnTetePage from '../../components/EnTetePage.astro';
 import Icone from '../../components/Icone.astro';
 import CarteOffre from '../../components/cartes/CarteOffre.astro';
-import { lireOffres, lireParametres, type Offre } from '../../lib/contenus';
+import BanniereOffre from '../../components/BanniereOffre.astro';
+import { lireOffres, lirePageOffres, lireParametres, type Offre } from '../../lib/contenus';
 import { classeContrat, formatDate, ilYA } from '../../lib/format';
 
 export async function getStaticPaths() {
@@ -23,7 +24,9 @@ export async function getStaticPaths() {
 }
 
 const { offre: o, similaires, nbOffresEntreprise } = Astro.props as { offre: Offre; similaires: Offre[]; nbOffresEntreprise: number };
-const parametres = await lireParametres();
+const [parametres, pageOffres] = await Promise.all([lireParametres(), lirePageOffres()]);
+const banniere = pageOffres?.imageBandeauOffre ?? null;
+const ariane = [{ libelle: "Offres d'emploi", url: '/offres' }, { libelle: o.titre }];
 
 // Le HTML vient de Gestmax : on ne garde que les balises de mise en forme.
 const nettoyer = (html: string | null) =>
@@ -72,10 +75,18 @@ const jsonLd = {
 };
 ---
 
-<Base titre={`${o.titre}${o.lieu ? ` à ${o.lieu}` : ''}`} description={texteBrut.slice(0, 155)} jsonLd={[jsonLd]} ariane={[{ libelle: "Offres d'emploi", url: '/offres' }, { libelle: o.titre }]}>
-  <div class="conteneur retour-resultats">
-    <a href="/offres" data-retour-resultats><Icone nom="retour" taille={18} />Retour aux offres</a>
-  </div>
+<Base titre={`${o.titre}${o.lieu ? ` à ${o.lieu}` : ''}`} description={texteBrut.slice(0, 155)} jsonLd={[jsonLd]} ariane={ariane}>
+  {
+    banniere ? (
+      <BanniereOffre media={banniere} ariane={ariane}>
+        <a href="/offres" class="banniere-offre__retour" data-retour-resultats><Icone nom="retour" taille={18} />Retour aux offres</a>
+      </BanniereOffre>
+    ) : (
+      <div class="conteneur retour-resultats">
+        <a href="/offres" data-retour-resultats><Icone nom="retour" taille={18} />Retour aux offres</a>
+      </div>
+    )
+  }
 
   <EnTetePage titre={o.titre} surtitre={o.nomEntreprise} variante="clair">
     <p class="offre__badges offre__badges--entete">

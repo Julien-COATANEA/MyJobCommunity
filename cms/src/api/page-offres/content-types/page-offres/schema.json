@@ -60,6 +60,13 @@
       "type": "boolean",
       "default": true
     },
+    "imageBandeauOffre": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
     "sections": {
       "type": "dynamiczone",
       "components": [

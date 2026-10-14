@@ -19,7 +19,7 @@ function parcourir(valeur: unknown, visiteur: (v: any, chemin: string) => void, 
 
 const estImage = (v: any) => v && typeof v === 'object' && typeof v.url === 'string' && typeof v.mime === 'string' && v.mime.startsWith('image/');
 // Images décoratives ou nommées par le site : pas de texte alternatif à exiger.
-const DECORATIVE = /(^|\.)(logo|favicon|metaImage|logos\[\d+\]\.image|heroImage|imageBandeau)$/;
+const DECORATIVE = /(^|\.)(logo|favicon|metaImage|logos\[\d+\]\.image|heroImage|imageBandeau|imageBandeauOffre)$/;
 
 export function imagesSansAlt(valeurs: unknown): string[] {
   const noms: string[] = [];

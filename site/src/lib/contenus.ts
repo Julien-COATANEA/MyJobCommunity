@@ -66,6 +66,7 @@ export interface PageOffres {
   afficherLogo: boolean | null;
   afficherSalaire: boolean | null;
   afficherDate: boolean | null;
+  imageBandeauOffre: Media | null;
   sections: Section[];
   seo: Seo | null;
 }

@@ -148,7 +148,7 @@ main:focus { outline: none; }
 }
 
 /* ---------- Carte de recherche (chevauche le hero) ---------- */
-.carte-recherche-wrap { position: relative; z-index: 5; margin-top: -2rem; }
+.carte-recherche-wrap { position: relative; z-index: 5; margin-top: -2rem; padding-bottom: clamp(2rem, 5vw, 3.5rem); }
 .carte-recherche { padding: clamp(1.25rem, 3vw, 1.65rem); background: var(--c-fond); border: 1px solid var(--c-bordure); border-radius: var(--rayon-grand); box-shadow: var(--ombre-forte); }
 .carte-recherche__titre { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.1rem; font-weight: 700; font-size: 1.05rem; color: var(--c-fonce); }
 .carte-recherche__titre .icone { color: var(--c-accent-texte); }
@@ -434,6 +434,20 @@ main:focus { outline: none; }
   background: rgb(255 255 255 / 0.15); backdrop-filter: blur(6px); border: 1px solid rgb(255 255 255 / 0.3); font-size: 0.92rem; font-weight: 600;
 }
 /* Clair (détail) : titre sombre sur fond blanc, comme les pages article et événement de la maquette. */
+/* Bannière des fiches d'offre : fil d'Ariane en haut, lien de retour en bas, dégradés pour la lisibilité du texte blanc. */
+.banniere-offre { position: relative; isolation: isolate; display: flex; min-height: clamp(200px, 24vw, 320px); background: linear-gradient(120deg, var(--c-primaire-fonce), var(--c-secondaire)); }
+.banniere-offre::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgb(0 0 0 / 0.5), rgb(0 0 0 / 0) 40%, rgb(0 0 0 / 0) 60%, rgb(0 0 0 / 0.45)); }
+.banniere-offre__image { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.banniere-offre__contenu { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 1.5rem; padding-block: 1.5rem; }
+.banniere-offre .ariane--bandeau { padding: 0; }
+.banniere-offre__retour {
+  display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.5rem 1rem; border-radius: 999px;
+  background: rgb(255 255 255 / 0.18); border: 1px solid rgb(255 255 255 / 0.35); backdrop-filter: blur(8px);
+  color: #fff; font-weight: 650; font-size: 0.92rem; text-decoration: none; transition: background-color 0.2s;
+}
+.banniere-offre__retour:hover { background: rgb(255 255 255 / 0.3); color: #fff; }
+.banniere-offre__retour:focus-visible { outline-color: #fff; }
+.banniere-offre + .en-tete-page--clair { padding-top: clamp(1.75rem, 4vw, 2.5rem); }
 .en-tete-page--clair { padding-block: 1.75rem 0.5rem; }
 .en-tete-page--clair h1 { max-width: 860px; font-size: clamp(1.9rem, 1.3rem + 2.4vw, 2.9rem); line-height: 1.12; }
 .en-tete-page--clair .en-tete-page__surtitre { margin-bottom: 0.6rem; font-weight: 700; color: var(--c-primaire-fonce); }
