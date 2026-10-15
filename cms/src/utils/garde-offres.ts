@@ -11,6 +11,23 @@ export const REGLAGES_EDITORIAUX = ['aLaUne', 'masquee'] as const;
 // Le code qui s'exécute dans cette portée est la synchronisation Gestmax : elle a tous les droits.
 const synchronisation = new AsyncLocalStorage<boolean>();
 export const executerSynchro = <T>(travail: () => Promise<T>): Promise<T> => synchronisation.run(true, travail);
+export const synchroEnCours = () => synchronisation.getStore() === true;
+
+/**
+ * Pendant la synchronisation, les offres créées, modifiées ou supprimées n'envoient PAS un webhook chacune (90 000
+ * offres = 90 000 appels au constructeur du site) : un seul message « offres » est envoyé à la fin (voir service offre).
+ */
+export function regrouperEvenementsOffres(strapi: Core.Strapi) {
+  const hub: any = strapi.eventHub;
+  const emettre = hub.emit.bind(hub);
+  hub.emit = (evenement: string, ...args: any[]) => {
+    const charge = args[0];
+    if (synchroEnCours() && typeof evenement === 'string' && evenement.startsWith('entry.') && charge?.uid === UID_OFFRE) return Promise.resolve();
+    return emettre(evenement, ...args);
+  };
+  return (evenement = 'entry.update', entry: Record<string, unknown> = { publishedAt: new Date().toISOString() }) =>
+    emettre(evenement, { model: 'offre', uid: UID_OFFRE, entry });
+}
 
 const ACTIONS_INTERDITES = ['create', 'delete', 'deleteMany', 'publish', 'unpublish', 'discardDraft', 'clone'];
 

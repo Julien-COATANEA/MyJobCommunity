@@ -7,29 +7,37 @@ import EnTetePage from '../../components/EnTetePage.astro';
 import Icone from '../../components/Icone.astro';
 import CarteOffre from '../../components/cartes/CarteOffre.astro';
 import BanniereOffre from '../../components/BanniereOffre.astro';
-import { lireOffres, lirePageOffres, lireParametres, type Offre } from '../../lib/contenus';
+import { lireComptesParEntreprise, lireOffreComplete, lireOffres, lirePageOffres, lireParametres, lireSimilaires, type Offre, type OffreLegere } from '../../lib/contenus';
 import { classeContrat, formatDate, ilYA } from '../../lib/format';
 import { lienSur } from '../../lib/liens';
 
+// 90 000 offres : chaque page ne reçoit que des données légères (trois offres similaires, un compteur, le rang qui
+// indique où lire sa fiche complète) ; calculs en O(1) par offre, fiche complète lue par pages d'API au moment du rendu.
 export async function getStaticPaths() {
-  const offres = await lireOffres();
-  return offres.map((offre) => {
-    // Offres similaires : même secteur d'abord, puis même contrat.
-    const autres = offres.filter((o) => o.slug !== offre.slug);
-    const similaires = [
-      ...autres.filter((o) => offre.secteur && o.secteur === offre.secteur),
-      ...autres.filter((o) => offre.typeContrat && o.typeContrat === offre.typeContrat),
-    ].filter((o, i, t) => t.findIndex((x) => x.slug === o.slug) === i).slice(0, 3);
-    return { params: { slug: offre.slug }, props: { offre, similaires, nbOffresEntreprise: offres.filter((x) => x.nomEntreprise && x.nomEntreprise === offre.nomEntreprise).length } };
-  });
+  const [offres, similaires, comptes] = await Promise.all([lireOffres(), lireSimilaires(), lireComptesParEntreprise()]);
+  // Ordre de `rang` (celui des pages d'API des fiches complètes) : chaque page d'API n'est lue qu'une fois, et la lecture
+  // en avance de la suivante sert vraiment. L'ordre d'affichage (à la une, date) ne compte pas ici.
+  return [...offres].sort((a, b) => a.rang - b.rang).map((offre) => ({
+    params: { slug: offre.slug },
+    props: {
+      offreLegere: offre,
+      rang: offre.rang,
+      similaires: similaires(offre),
+      nbOffresEntreprise: offre.nomEntreprise ? (comptes.get(offre.nomEntreprise) ?? 0) : 0,
+    },
+  }));
 }
 
-const { offre: o, similaires, nbOffresEntreprise } = Astro.props as { offre: Offre; similaires: Offre[]; nbOffresEntreprise: number };
+const { offreLegere, rang, similaires, nbOffresEntreprise } = Astro.props as { offreLegere: OffreLegere; rang: number; similaires: OffreLegere[]; nbOffresEntreprise: number };
+// Offre retirée de Strapi pendant le build : la page est générée avec les données légères plutôt que de faire échouer
+// tout le build (elle disparaîtra au build suivant).
+const o: Offre = (await lireOffreComplete(Astro.params.slug!, rang)) ?? ({ ...offreLegere, descriptionHtml: null, profilHtml: null } as unknown as Offre);
 const [parametres, pageOffres] = await Promise.all([lireParametres(), lirePageOffres()]);
 const banniere = pageOffres?.imageBandeauOffre ?? null;
 // Adresses venues de Gestmax (application_link, logo) : protocoles autorisés seulement.
 const urlCandidature = lienSur(o.urlCandidature);
 const logoUrl = lienSur(o.logoUrl);
+const urlDetailGestmax = lienSur(o.urlDetailGestmax);
 const ariane = [{ libelle: "Offres d'emploi", url: '/offres/' }, { libelle: o.titre }];
 
 // Le HTML vient de Gestmax : on ne garde que les balises de mise en forme.
@@ -44,6 +52,8 @@ const nettoyer = (html: string | null) =>
 const description = nettoyer(o.descriptionHtml);
 const profil = nettoyer(o.profilHtml);
 const texteBrut = sanitizeHtml(o.descriptionHtml ?? '', { allowedTags: [], allowedAttributes: {} }).replace(/\s+/g, ' ').trim();
+// Sans description (champ non renseigné dans Gestmax), la méta-description reprend les informations de l'offre.
+const resume = [o.titre, o.nomEntreprise && `chez ${o.nomEntreprise}`, o.lieu && `à ${o.lieu}`, o.typeContrat && `(${o.typeContrat})`].filter(Boolean).join(' ');
 const avertissement = `Vous allez postuler sur l'espace candidat de ${parametres.nomSite} : votre candidature sera transmise directement au recruteur.`;
 
 const TYPES_EMPLOI: Record<string, string> = {
@@ -79,7 +89,7 @@ const jsonLd = {
 };
 ---
 
-<Base titre={`${o.titre}${o.lieu ? ` à ${o.lieu}` : ''}`} description={texteBrut.slice(0, 155)} jsonLd={[jsonLd]} ariane={ariane}>
+<Base titre={`${o.titre}${o.lieu ? ` à ${o.lieu}` : ''}`} description={texteBrut.slice(0, 155) || resume} jsonLd={[jsonLd]} ariane={ariane}>
   {
     banniere ? (
       <BanniereOffre media={banniere} ariane={ariane}>
@@ -107,6 +117,13 @@ const jsonLd = {
     <div class="evenement__contenu prose">
       {description && <><h2>Le poste</h2><Fragment set:html={description} /></>}
       {profil && <><h2>Le profil recherché</h2><Fragment set:html={profil} /></>}
+      {
+        !description && !profil && (
+          <p>
+            Cette offre n'a pas de descriptif détaillé.{urlDetailGestmax ? <> <a href={urlDetailGestmax}>Consulter l'annonce d'origine</a>.</> : ' Les modalités de candidature sont indiquées avec le bouton « Postuler ».'}
+          </p>
+        )
+      }
     </div>
     <aside class="evenement__infos" aria-labelledby="postuler">
       <h2 id="postuler">Postuler</h2>

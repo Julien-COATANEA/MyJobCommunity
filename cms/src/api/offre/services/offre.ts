@@ -2,13 +2,25 @@ import { join } from 'node:path';
 import { factories, type Core } from '@strapi/strapi';
 import { executerSynchro } from '../../../utils/garde-offres';
 import { convertirOffre, estCandidatureSpontanee, recupererOffresGestmax, type ConfigGestmax } from '../../../utils/gestmax';
-import { enregistrerSynchro } from '../../../utils/synchro';
+import { enregistrerSynchro, memoriserSource } from '../../../utils/synchro';
 import { creerGeocodeur } from '../../../utils/geocodage';
 import { indexEntreprises, normaliserNom } from '../../../utils/rattachement';
 
 const UID = 'api::offre.offre';
 // Baisse au-delà de laquelle la synchronisation s'arrête (mauvais paramétrage, droits retirés, panne de Gestmax…).
 const BAISSE_MAX = 0.5;
+// Écritures simultanées pendant la synchronisation.
+const SIMULTANES = 8;
+
+/** Exécute `travail` sur chaque élément, `n` à la fois. */
+async function enParallele<T>(elements: T[], n: number, travail: (e: T) => Promise<void>) {
+  let prochain = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(n, elements.length) }, async () => {
+      while (prochain < elements.length) await travail(elements[prochain++]);
+    }),
+  );
+}
 
 // Synchronisation et couplage manuel passent l'un après l'autre (cron, démarrage, bouton du BO, API) : deux
 // synchronisations simultanées créeraient des doublons, et une synchronisation lancée pendant un couplage réécrirait
@@ -82,13 +94,17 @@ async function synchroniser(strapi: Core.Strapi, forcer: boolean) {
     }
 
     const geocodeur = await creerGeocodeur(strapi);
+    const villes = await geocodeur.preparer(offres);
+    if (villes) strapi.log.info(`[gestmax] ${villes} ville(s) géocodée(s)`);
     const parSourceId = new Map(existantes.map((o: any) => [o.sourceId, o]));
 
     const bilan = { statut: 'ok', total: offres.length, creees: 0, modifiees: 0, supprimees: 0, dureeMs: 0 };
     const vues = new Set<string>();
     const echecs: string[] = [];
 
-    for (const offre of offres) {
+    // Écritures en parallèle (la base de Strapi n'est pas le goulot) ; l'avancement est écrit dans les logs.
+    let traitees = 0;
+    await enParallele(offres, SIMULTANES, async (offre) => {
       vues.add(offre.sourceId);
       try {
         const entreprise = offre.nomEntreprise ? entrepriseParNom.get(normaliserNom(offre.nomEntreprise)) ?? null : null;
@@ -112,25 +128,29 @@ async function synchroniser(strapi: Core.Strapi, forcer: boolean) {
         // Une offre en erreur (champ trop long…) ne bloque pas les autres ; elle est signalée dans le BO.
         echecs.push(`« ${offre.titre} » (${offre.sourceId}) : ${(e as Error).message}`);
       }
-    }
+      if (++traitees % 5000 === 0) strapi.log.info(`[gestmax] ${traitees}/${offres.length} offres traitées`);
+    });
 
-    for (const existante of existantes as any[]) {
-      if (!vues.has(existante.sourceId)) {
-        await strapi.documents(UID).delete({ documentId: existante.documentId });
-        bilan.supprimees++;
-      }
+    // Offres disparues de Gestmax : suppression par lots (une requête par lot, pas une par offre).
+    const disparues = (existantes as any[]).filter((e) => !vues.has(e.sourceId)).map((e) => e.documentId);
+    for (let i = 0; i < disparues.length; i += 500) {
+      await strapi.db.query(UID).deleteMany({ where: { documentId: { $in: disparues.slice(i, i + 500) } } });
     }
+    bilan.supprimees = disparues.length;
 
     await geocodeur.enregistrer();
     bilan.dureeMs = Date.now() - debut;
+    // Un seul message de reconstruction pour toute la synchronisation (voir regrouperEvenementsOffres).
+    if (bilan.creees || bilan.modifiees || bilan.supprimees) await (strapi as any).notifierOffres?.();
     if (echecs.length) {
       bilan.statut = 'erreur';
-      strapi.log.error(`[gestmax] ${echecs.length} offre(s) non importée(s) : ${echecs.join(' ; ')}`);
+      strapi.log.error(`[gestmax] ${echecs.length} offre(s) non importée(s), dont : ${echecs.slice(0, 20).join(' ; ')}`);
       await enregistrerSynchro(strapi, { statut: 'erreur', bilan, erreur: `${echecs.length} offre(s) non importée(s) : ${echecs.slice(0, 3).join(' ; ')}` });
       return bilan;
     }
     strapi.log.info(`[gestmax] synchronisation : ${JSON.stringify(bilan)}`);
     await enregistrerSynchro(strapi, { statut: 'ok', bilan });
+    await memoriserSource(strapi);
     return bilan;
   }
 }

@@ -1,7 +1,7 @@
 import type { Core } from '@strapi/strapi';
 import { lireDerniereSynchro } from '../../../utils/synchro';
 import { OFFRES_VISIBLES } from '../../../utils/garde-offres';
-import { normaliserNom, rattacher } from '../../../utils/rattachement';
+import { rattacher } from '../../../utils/rattachement';
 import { PAGES_LEGALES } from '../../../utils/infos-legales';
 
 const UID = {
@@ -22,6 +22,11 @@ const CHAMPS_APPARENCE = [
 ] as const;
 
 const urlSite = () => (process.env.SITE_URL ?? '').replace(/\/+$/, '');
+const entierRequete = (v: unknown, defaut: number, min: number, max: number) => {
+  const n = Number.parseInt(String(v), 10);
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : defaut;
+};
+const texteRequete = (v: unknown) => (typeof v === 'string' ? v.trim().slice(0, 100) : '');
 const urlBuilder = () => (process.env.BUILDER_WEBHOOK_URL ?? '').replace(/\/build$/, '');
 
 async function etatBuilder() {
@@ -56,6 +61,132 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       { cle: 'articles', libelle: 'Publier vos 3 premiers articles', fait: c.articles >= 3, lien: cm(UID.article) },
       { cle: 'evenement', libelle: 'Annoncer un événement', fait: c.evenementsAVenir >= 1, lien: cm(UID.evenement) },
     ];
+  };
+
+  // ---------- Écran « Mes offres d'emploi » : agrégats SQL et listes paginées ----------
+
+  // Métadonnées lues à l'appel : la base n'est pas encore initialisée quand le contrôleur est créé.
+  type Lien = { name: string; joinColumn: { name: string }; inverseJoinColumn: { name: string } };
+  const meta = () => strapi.db.metadata.get(UID.offre) as any;
+  const colonne = (attribut: string): string => meta().attributes[attribut].columnName;
+  // Même normalisation que normaliserNom (rattachement.ts), comparée à l'octet près comme le fait le JS.
+  const CLE_NOM = "LOWER(REGEXP_REPLACE(TRIM(??), '[[:space:]]+', ' ')) COLLATE utf8mb4_bin";
+  const nomRenseigne = (q: any, col: string) => q.whereNotNull(col).whereRaw('TRIM(??) <> ?', [col, '']);
+  const visibles = (q: any, col = colonne('masquee')) => q.where((w: any) => w.whereNull(col).orWhere(col, false));
+  const comme = (terme: string) => `%${terme.replace(/[\\%_]/g, '\\$&')}%`;
+
+  const syntheseOffres = async () => {
+    const knex = strapi.db.connection;
+    const metaOffre = meta();
+    const lien: Lien = metaOffre.attributes.entreprise.joinTable;
+    const cMasquee = `o.${colonne('masquee')}`;
+    const cNom = `o.${colonne('nomEntreprise')}`;
+    const nombre = knex.raw('COUNT(*) as nombre');
+    const [[totaux], parContrat, parEntreprise, [sansFiche], parametres, annuaire, synchro] = await Promise.all([
+      knex(`${metaOffre.tableName} as o`).select(
+        knex.raw('COUNT(*) as total'),
+        knex.raw('COALESCE(SUM(?? = 1), 0) as masquees', [cMasquee]),
+        knex.raw('COALESCE(SUM((?? IS NULL OR ?? = 0) AND ?? = 1), 0) as a_la_une', [cMasquee, cMasquee, `o.${colonne('aLaUne')}`]),
+      ),
+      visibles(knex(`${metaOffre.tableName} as o`), cMasquee)
+        .select(knex.raw('COALESCE(??, ?) as libelle', [`o.${colonne('typeContrat')}`, 'Non renseigné']), nombre)
+        .groupBy('libelle').orderBy('nombre', 'desc').orderBy('libelle').limit(50),
+      nomRenseigne(visibles(knex(`${metaOffre.tableName} as o`), cMasquee), cNom)
+        .select(knex.raw('MIN(TRIM(??)) as libelle', [cNom]), nombre)
+        .groupByRaw(CLE_NOM, [cNom]).orderBy('nombre', 'desc').orderBy('libelle').limit(8),
+      visibles(knex(`${metaOffre.tableName} as o`), cMasquee)
+        .whereNotExists(knex(lien.name).select(knex.raw('1')).whereRaw('?? = ??', [`${lien.name}.${lien.joinColumn.name}`, 'o.id']))
+        .count({ n: '*' }),
+      db(UID.parametres).findOne({ select: ['gestmaxUrlFront'] }),
+      db(UID.entreprise).findMany({ select: ['documentId', 'nom'], orderBy: { nom: 'asc' }, limit: 5000 }),
+      lireDerniereSynchro(strapi),
+    ]);
+    const masquees = Number(totaux.masquees);
+    return {
+      total: Number(totaux.total) - masquees,
+      masquees,
+      alaUne: Number(totaux.a_la_une),
+      parContrat: parContrat.map((l: any) => ({ libelle: l.libelle, nombre: Number(l.nombre) })),
+      parEntreprise: parEntreprise.map((l: any) => ({ libelle: l.libelle, nombre: Number(l.nombre) })),
+      nonRattachees: Number((sansFiche as any).n),
+      annuaire,
+      synchro,
+      mock: strapi.config.get('gestmax.mock'),
+      frequence: process.env.GESTMAX_SYNC_CRON ?? '*/30 * * * *',
+      urlFront: (parametres as any)?.gestmaxUrlFront ?? null,
+      urlSite: urlSite(),
+    };
+  };
+
+  const listeOffres = async (query: any) => {
+    const taille = entierRequete(query.pageSize, 25, 1, 100);
+    const terme = texteRequete(query.q);
+    const where = terme
+      ? { $or: [{ titre: { $containsi: terme } }, { nomEntreprise: { $containsi: terme } }, { lieu: { $containsi: terme } }] }
+      : {};
+    const tri = texteRequete(query.tri);
+    const orderBy =
+      tri === 'anciennes' ? [{ dateActivation: 'asc' }, { id: 'asc' }]
+      : tri === 'titre' ? [{ titre: 'asc' }, { id: 'asc' }]
+      : [{ aLaUne: 'desc' }, { dateActivation: 'desc' }, { id: 'desc' }];
+    const pageDemandee = entierRequete(query.page, 1, 1, 1e9);
+    const pageDe = (n: number) =>
+      db(UID.offre).findMany({
+        where,
+        select: ['documentId', 'titre', 'slug', 'typeContrat', 'lieu', 'nomEntreprise', 'dateActivation', 'dateFinPublication', 'urlDetailGestmax', 'aLaUne', 'masquee'],
+        populate: { entreprise: { select: ['documentId', 'nom'] } },
+        orderBy: orderBy as any,
+        limit: taille,
+        offset: (n - 1) * taille,
+      });
+    // Total et page en parallèle : la page n'est redemandée que si elle dépasse la dernière.
+    const [total, premiere] = await Promise.all([db(UID.offre).count({ where }), pageDe(pageDemandee)]);
+    const pageCount = Math.max(1, Math.ceil(total / taille));
+    const page = Math.min(pageDemandee, pageCount);
+    const liste = page === pageDemandee ? premiere : await pageDe(page);
+    return { liste, total, page, pageCount };
+  };
+
+  /** Noms d'entreprise Gestmax (regroupés par nom normalisé) et fiche de l'annuaire couplée : non couplés d'abord, puis par nombre d'offres. */
+  const listeEntreprisesOffres = async (query: any) => {
+    const knex = strapi.db.connection;
+    const metaOffre = meta();
+    const lien: Lien = metaOffre.attributes.entreprise.joinTable;
+    const taille = entierRequete(query.pageSizeEntreprises, 25, 1, 100);
+    const terme = texteRequete(query.qEntreprise);
+    const cNom = `o.${colonne('nomEntreprise')}`;
+    const cLien = `l.${lien.inverseJoinColumn.name}`;
+    const groupes = () => {
+      const q = nomRenseigne(knex(`${metaOffre.tableName} as o`).leftJoin(`${lien.name} as l`, `l.${lien.joinColumn.name}`, 'o.id'), cNom);
+      if (terme) q.whereRaw('?? LIKE ?', [cNom, comme(terme)]);
+      q.groupByRaw(CLE_NOM, [cNom]);
+      if (query.seulementNonCouplees === 'true') q.havingRaw('MAX(??) IS NULL', [cLien]);
+      return q;
+    };
+    const pageDemandee = entierRequete(query.pageEntreprises, 1, 1, 1e9);
+    const pageDe = (n: number) =>
+      groupes()
+        .select(knex.raw('MIN(TRIM(??)) as nom', [cNom]), knex.raw('COUNT(*) as nombre'), knex.raw('MAX(??) as entreprise_id', [cLien]))
+        .orderByRaw('(MAX(??) IS NOT NULL) ASC, COUNT(*) DESC, MIN(TRIM(??)) ASC', [cLien, cNom])
+        .limit(taille).offset((n - 1) * taille) as Promise<any[]>;
+    // Total et page en parallèle : la page n'est redemandée que si elle dépasse la dernière.
+    const [comptage, premiere] = await Promise.all([
+      knex.count({ total: '*' }).from(groupes().select(knex.raw('1 as un')).as('g')) as Promise<any[]>,
+      pageDe(pageDemandee),
+    ]);
+    const total = Number(comptage[0].total);
+    const pageCount = Math.max(1, Math.ceil(total / taille));
+    const page = Math.min(pageDemandee, pageCount);
+    const lignes: any[] = page === pageDemandee ? premiere : await pageDe(page);
+    const ids = [...new Set(lignes.map((l) => l.entreprise_id).filter((id) => id != null))];
+    const fiches: any[] = ids.length ? await db(UID.entreprise).findMany({ where: { id: { $in: ids } }, select: ['id', 'documentId', 'nom'] }) : [];
+    const parId = new Map(fiches.map((f) => [f.id, { documentId: f.documentId, nom: f.nom }]));
+    return {
+      liste: lignes.map((l) => ({ nom: l.nom, nombre: Number(l.nombre), entreprise: parId.get(l.entreprise_id) ?? null })),
+      total,
+      page,
+      pageCount,
+    };
   };
 
   return {
@@ -113,54 +244,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       };
     },
 
+    /**
+     * Écran « Mes offres d'emploi » : tout est calculé en SQL (90 000 offres) et paginé côté serveur.
+     * Query : sections (synthese,offres,entreprises ; toutes par défaut), page/pageSize + q + tri (offres),
+     * pageEntreprises/pageSizeEntreprises + qEntreprise + seulementNonCouplees (entreprises).
+     */
     async offres(ctx: any) {
-      const toutes = await db(UID.offre).findMany({
-        select: ['documentId', 'titre', 'slug', 'typeContrat', 'lieu', 'nomEntreprise', 'dateActivation', 'dateFinPublication', 'urlDetailGestmax', 'aLaUne', 'masquee'],
-        populate: { entreprise: { select: ['documentId', 'nom'] } },
-        orderBy: { dateActivation: 'desc' },
-      });
-      const visibles = toutes.filter((o: any) => !o.masquee);
-      const compter = (cle: (o: any) => string | null) =>
-        Object.entries(
-          visibles.reduce((acc: Record<string, number>, o: any) => {
-            const k = cle(o) ?? 'Non renseigné';
-            acc[k] = (acc[k] ?? 0) + 1;
-            return acc;
-          }, {}),
-        )
-          .map(([libelle, nombre]) => ({ libelle, nombre }))
-          .sort((a, b) => b.nombre - a.nombre);
-      const parametres = await db(UID.parametres).findOne({ select: ['gestmaxUrlFront'] });
-
-      // Entreprises des offres (nom Gestmax) et fiche de l'annuaire à laquelle elles sont couplées.
-      const parNom = new Map<string, { nom: string; nombre: number; entreprise: { documentId: string; nom: string } | null }>();
-      for (const o of toutes as any[]) {
-        if (!o.nomEntreprise) continue;
-        const cle = normaliserNom(o.nomEntreprise);
-        const ligne = parNom.get(cle) ?? { nom: o.nomEntreprise.trim(), nombre: 0, entreprise: null };
-        ligne.nombre++;
-        ligne.entreprise ??= o.entreprise ? { documentId: o.entreprise.documentId, nom: o.entreprise.nom } : null;
-        parNom.set(cle, ligne);
-      }
-      const annuaire = await db(UID.entreprise).findMany({ select: ['documentId', 'nom'], orderBy: { nom: 'asc' } });
-
-      ctx.body = {
-        total: visibles.length,
-        masquees: toutes.length - visibles.length,
-        alaUne: visibles.filter((o: any) => o.aLaUne).length,
-        parContrat: compter((o) => o.typeContrat),
-        parEntreprise: compter((o) => o.nomEntreprise).slice(0, 8),
-        nonRattachees: visibles.filter((o: any) => !o.entreprise).length,
-        // Non couplées d'abord, puis par nombre d'offres.
-        entreprisesOffres: [...parNom.values()].sort((a, b) => Number(!!a.entreprise) - Number(!!b.entreprise) || b.nombre - a.nombre),
-        annuaire,
-        dernieres: [...toutes].sort((a: any, b: any) => Number(!!b.aLaUne) - Number(!!a.aLaUne)).slice(0, 100),
-        synchro: await lireDerniereSynchro(strapi),
-        mock: strapi.config.get('gestmax.mock'),
-        frequence: process.env.GESTMAX_SYNC_CRON ?? '*/30 * * * *',
-        urlFront: parametres?.gestmaxUrlFront ?? null,
-        urlSite: urlSite(),
-      };
+      const demandees = new Set(texteRequete(ctx.query.sections).split(',').map((s) => s.trim()).filter(Boolean));
+      const veut = (section: string) => !demandees.size || demandees.has(section);
+      // Sections indépendantes : calculées en parallèle.
+      const [synthese, offres, entreprisesOffres] = await Promise.all([
+        veut('synthese') ? syntheseOffres() : null,
+        veut('offres') ? listeOffres(ctx.query) : null,
+        veut('entreprises') ? listeEntreprisesOffres(ctx.query) : null,
+      ]);
+      ctx.body = { ...(synthese ?? {}), ...(offres ? { offres } : {}), ...(entreprisesOffres ? { entreprisesOffres } : {}) };
     },
 
     /** « À la une » et « masquée » : les deux seuls réglages éditoriaux d'une offre (le reste vient de Gestmax). */
@@ -199,8 +297,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         // « Forcer » : passe outre le garde-fou d'une forte baisse du nombre d'offres.
         ctx.body = await strapi.service('api::offre.offre').synchroniserDepuisGestmax({ forcer: ctx.request.body?.forcer === true });
       } catch (e) {
+        // Format d'erreur de Strapi : l'interface n'affiche sinon qu'« Unknown Server Error ».
         ctx.status = 502;
-        ctx.body = { statut: 'erreur', message: (e as Error).message };
+        ctx.body = { data: null, statut: 'erreur', message: (e as Error).message, error: { status: 502, name: 'GestmaxError', message: (e as Error).message, details: {} } };
       }
     },
 

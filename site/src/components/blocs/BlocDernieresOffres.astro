@@ -5,15 +5,14 @@
 import CarteOffre from '../cartes/CarteOffre.astro';
 import GestmaxIframe from '../GestmaxIframe.astro';
 import EnteteSection from '../EnteteSection.astro';
-import { lireOffres, lireParametres } from '../../lib/contenus';
+import { lireDernieresOffres, lireParametres } from '../../lib/contenus';
 
 const { bloc } = Astro.props;
 const parametres = await lireParametres();
 const iframe = bloc.mode === 'iframe-gestmax' && parametres.gestmaxUrlFront;
 
-let offres = iframe ? [] : await lireOffres();
-if (bloc.typeContrat) offres = offres.filter((o) => o.typeContrat === bloc.typeContrat);
-offres = offres.slice(0, bloc.nombre ?? 6);
+// Une requête pour les plus récentes (pas la liste entière).
+const offres = iframe ? [] : await lireDernieresOffres(bloc.nombre ?? 6, bloc.typeContrat);
 
 const urlIframe = iframe ? `${parametres.gestmaxUrlFront!.replace(/\/+$/, '')}${bloc.cheminIframe ?? '/search/last'}` : '';
 const voirTout = bloc.typeContrat ? `/offres/?contrat=${encodeURIComponent(bloc.typeContrat)}` : '/offres/';

@@ -13,8 +13,8 @@ const entreprises = await lireEntreprises();
 const secteurs = [...new Map(entreprises.filter((e) => e.secteur).map((e) => [e.secteur!.slug, e.secteur!.nom])).entries()].sort((a, b) =>
   a[1].localeCompare(b[1], 'fr'),
 );
-const recrutent = entreprises.filter((e) => (e.offres?.length ?? 0) > 0).length;
-const nbOffres = entreprises.reduce((total, e) => total + (e.offres?.length ?? 0), 0);
+const recrutent = entreprises.filter((e) => e.nbOffres > 0).length;
+const nbOffres = entreprises.reduce((total, e) => total + e.nbOffres, 0);
 // « L'entreprise à la une » : une entreprise « mise en avant » dans le BO, de préférence avec une photo.
 const misesEnAvant = entreprises.filter((e) => e.miseEnAvant);
 const aLaUne = misesEnAvant.find((e) => e.image) ?? misesEnAvant[0] ?? null;
@@ -77,7 +77,7 @@ const s = (n: number) => (n > 1 ? 's' : '');
       <ul class="grille grille--3" data-liste-entreprises>
         {
           entreprises.map((e) => (
-            <li data-secteur={e.secteur?.slug ?? ''} data-nom={e.nom} data-offres={e.offres?.length ?? 0}>
+            <li data-secteur={e.secteur?.slug ?? ''} data-nom={e.nom} data-offres={e.nbOffres}>
               <CarteEntreprise entreprise={e} niveauTitre={3} />
             </li>
           ))

@@ -2,7 +2,7 @@
 // Formulaire de recherche (accueil, bloc « Recherche d'offres », 404). Mène à /offres avec les filtres en paramètres.
 // Sur mobile, seul le mot-clé est affiché ; « Plus de critères » déplie la ville et le contrat.
 import Icone from './Icone.astro';
-import { lireOffres } from '../lib/contenus';
+import { lireFacettesOffres } from '../lib/contenus';
 
 interface Props {
   /** Préfixe des identifiants (unique si plusieurs formulaires sur la page). */
@@ -10,8 +10,7 @@ interface Props {
 }
 
 const { id = 'recherche' } = Astro.props;
-const offres = await lireOffres();
-const contrats = [...new Set(offres.map((o) => o.typeContrat).filter(Boolean))].sort() as string[];
+const { contrats } = await lireFacettesOffres();
 ---
 
 <form action="/offres/" method="get" role="search" aria-label="Rechercher une offre" class="recherche" data-recherche>

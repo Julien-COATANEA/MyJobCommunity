@@ -15,6 +15,8 @@ const codeDepartement = (departement: string | null) => departement?.match(/\((\
 async function interroger(ville: string, departement: string | null): Promise<Position | null> {
   const parametres = new URLSearchParams({ q: ville, type: 'municipality', limit: '5' });
   const reponse = await fetch(`${URL_GEOCODAGE}?${parametres}`, { signal: AbortSignal.timeout(8000) });
+  // Limite de débit (429) ou panne : erreur passagère, la ville n'est pas mémorisée comme introuvable.
+  if (reponse.status === 429 || reponse.status >= 500) throw new Error(`géocodeur IGN : ${reponse.status}`);
   if (!reponse.ok) return null;
   const { features = [] } = (await reponse.json()) as { features?: any[] };
   const dep = codeDepartement(departement);
@@ -43,6 +45,28 @@ export async function creerGeocodeur(strapi: Core.Strapi) {
         modifie = true;
       }
       return cache[cle];
+    },
+    /**
+     * Géocode d'avance les villes encore inconnues, quelques-unes à la fois (le service IGN limite à 50 appels par
+     * seconde) : la boucle d'import n'attend alors plus le réseau offre par offre.
+     */
+    async preparer(lieux: { lieu: string | null; departement: string | null }[], simultanes = 5) {
+      const aFaire = new Map<string, { lieu: string; departement: string | null }>();
+      for (const { lieu, departement } of lieux) {
+        if (!lieu) continue;
+        const cle = `${lieu.toLowerCase()}|${codeDepartement(departement) ?? ''}`;
+        if (!(cle in cache) && !aFaire.has(cle)) aFaire.set(cle, { lieu, departement });
+      }
+      const file = [...aFaire.values()];
+      await Promise.all(
+        Array.from({ length: Math.min(simultanes, file.length) }, async () => {
+          for (let l = file.pop(); l; l = file.pop()) {
+            // ~40 appels par seconde au plus avec 5 appels simultanés (limite IGN : 50 par seconde).
+            await Promise.all([this.positionner(l.lieu, l.departement), new Promise((r) => setTimeout(r, 125))]);
+          }
+        }),
+      );
+      return aFaire.size;
     },
     async enregistrer() {
       if (modifie) await magasin(strapi).set({ value: cache });

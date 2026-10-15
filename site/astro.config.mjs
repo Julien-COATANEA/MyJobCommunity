@@ -7,10 +7,10 @@ const strapi = new URL(STRAPI_URL);
 
 // Pages exclues du plan de site XML (techniques ou marquées « noIndex » dans le BO).
 const EXCLUSIONS = ['/header-footer', '/evenements/inscription-', '/evenements/annuler', '/message-envoye', '/message-impossible', '/404', '/apercu'];
-let pagesNoIndex = [];
+let pagesNoIndex = new Set();
 try {
   const reponse = await fetch(`${STRAPI_URL}/api/pages?fields[0]=slug&filters[seo][noIndex][$eq]=true&pagination[pageSize]=100`);
-  pagesNoIndex = (await reponse.json()).data?.map((p) => `/${p.slug}`) ?? [];
+  pagesNoIndex = new Set((await reponse.json()).data?.map((p) => `/${p.slug}`) ?? []);
 } catch {
   // Strapi indisponible : le build échouera plus loin avec un message explicite.
 }
@@ -33,9 +33,12 @@ export default defineConfig({
   },
   integrations: [
     sitemap({
+      // Le plan est découpé en fichiers de 45 000 adresses au plus (sitemap-0.xml, sitemap-1.xml…) listés dans
+      // sitemap-index.xml. Le filtre s'exécute pour chaque adresse (90 000 offres) : aucun appel réseau ici.
+      entryLimit: 45_000,
       filter: (page) => {
         const chemin = new URL(page).pathname.replace(/\/$/, '');
-        return !EXCLUSIONS.some((e) => chemin.startsWith(e)) && !pagesNoIndex.includes(chemin);
+        return !EXCLUSIONS.some((e) => chemin.startsWith(e)) && !pagesNoIndex.has(chemin);
       },
     }),
   ],

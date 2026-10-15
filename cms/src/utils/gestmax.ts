@@ -11,6 +11,8 @@ export interface ConfigGestmax {
   frontOffice: string;
   mock: boolean;
   pageItems: number;
+  maxPages?: number;
+  maxOffres?: number;
   champs: Record<'contrat' | 'lieu' | 'departement' | 'secteur' | 'description' | 'avantages' | 'profil' | 'salaire', string>;
 }
 
@@ -78,13 +80,17 @@ export function nettoyerLocalisation(valeur: string | null): string | null {
     .split(',')
     .map((v) => v.replace(/^[\s-]+/, '').trim())
     .map((v) => v.replace(/^\((\w+)\)\s*(.+)$/, '$2 ($1)'))
+    // « 95 - Val d'Oise » → « Val d'Oise (95) »
+    .map((v) => v.replace(/^(\d{2,3}|2[AB])\s*-\s*(.+)$/i, '$2 ($1)'))
     .filter(Boolean)
     .join(', ');
   return propre || null;
 }
 
 /** « LYON » → « Lyon », « RILLIEUX-LA-PAPE » → « Rillieux-La-Pape » ; une saisie en casse mixte est conservée. */
-export function normaliserVille(valeur: string | null): string | null {
+export function normaliserVille(brute: string | null): string | null {
+  // « 95 - Cergy » (code du département en préfixe, selon l'instance) → « Cergy »
+  const valeur = brute?.replace(/^\s*(\d{2,3}|2[AB])\s*-\s*/i, '').trim() || null;
   if (!valeur || valeur !== valeur.toUpperCase()) return valeur;
   return valeur.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (_m, sep, l) => sep + l.toUpperCase());
 }
@@ -137,16 +143,19 @@ function description(v: OffreGestmax, conf: ConfigGestmax): string | null {
   return `${mission ?? ''}\n<h3>Nous vous proposons</h3>\n${avantages}`;
 }
 
+// Pages lues en même temps (l'API Gestmax répond en 1 à 2 s pour 500 offres).
+const PAGES_SIMULTANEES = 4;
+
 export async function recupererOffresGestmax(conf: ConfigGestmax, dossierDonnees: string): Promise<OffreGestmax[]> {
   if (conf.mock) {
     return JSON.parse(readFileSync(join(dossierDonnees, 'gestmax-mock.json'), 'utf8')).data;
   }
 
-  const offres = new Map<string, OffreGestmax>();
-  let total: number | null = null;
   const auth = Buffer.from(`${conf.user}:${conf.password}`).toString('base64');
-  for (let page = 1; ; page++) {
-    if (page > 100) throw new Error('Gestmax : plus de 100 pages d’offres, lecture interrompue (liste incomplète).');
+  const maxPages = conf.maxPages ?? 2000;
+  const limite = conf.maxOffres && conf.maxOffres > 0 ? conf.maxOffres : Infinity;
+
+  const lirePage = async (page: number): Promise<{ lot: OffreGestmax[]; total: number | null }> => {
     const params = new URLSearchParams({
       fields: champsDemandes(conf).join(','),
       page: String(page),
@@ -156,27 +165,64 @@ export async function recupererOffresGestmax(conf: ConfigGestmax, dossierDonnees
       orderDir: 'desc',
     });
     if (conf.frontOffice) params.set('frontOffice', conf.frontOffice);
-
     const reponse = await fetch(`${conf.url}/rest/v2/onlinevacancy?${params}`, {
       headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(60_000),
     });
     if (!reponse.ok) throw new Error(`Gestmax a répondu ${reponse.status} ${reponse.statusText}`);
-
     const json = (await reponse.json()) as { data?: unknown; count?: unknown };
     // Une réponse d'une autre forme ne doit pas passer pour « aucune offre » (toutes seraient supprimées).
     if (!Array.isArray(json?.data)) throw new Error('Gestmax : réponse inattendue (pas de liste « data »).');
-    const lot = json.data as OffreGestmax[];
     const compte = Number(json.count);
-    if (json.count != null && json.count !== '' && Number.isFinite(compte) && compte > 0) total = compte;
-    // Le tri par date n'est pas stable : une offre lue deux fois n'est gardée qu'une fois.
-    for (const o of lot) offres.set(String(o.vacancy_id), o);
-    // Page incomplète : fin de liste, sauf si le total annoncé n'est pas atteint (instance qui plafonne la taille
-    // des pages). Une page vide arrête toujours la lecture.
-    if (!lot.length || offres.size >= (total ?? Infinity) || (lot.length < conf.pageItems && (total === null || offres.size >= total))) break;
+    return { lot: json.data as OffreGestmax[], total: json.count != null && json.count !== '' && Number.isFinite(compte) && compte > 0 ? compte : null };
+  };
+  const trop = () => new Error(`Gestmax : plus de ${maxPages} pages d’offres, lecture interrompue (liste incomplète). Augmentez GESTMAX_MAX_PAGES ou GESTMAX_PAGE_ITEMS.`);
+
+  const premiere = await lirePage(1);
+  const total = premiere.total;
+  const lots: OffreGestmax[][] = [premiere.lot];
+
+  if (total !== null && premiere.lot.length) {
+    // Total connu : les pages suivantes sont lues quelques-unes à la fois (une centaine de pages pour 50 000 offres).
+    const utiles = Math.min(Math.ceil(total / conf.pageItems), Number.isFinite(limite) ? Math.ceil(limite / conf.pageItems) : Infinity);
+    if (utiles > maxPages) throw trop();
+    let prochaine = 2;
+    await Promise.all(
+      Array.from({ length: Math.min(PAGES_SIMULTANEES, Math.max(0, utiles - 1)) }, async () => {
+        while (prochaine <= utiles) {
+          const page = prochaine++;
+          lots[page - 1] = (await lirePage(page)).lot;
+        }
+      }),
+    );
+  } else if (premiere.lot.length >= conf.pageItems) {
+    // Total inconnu : lecture page après page jusqu'à une page incomplète.
+    for (let page = 2; ; page++) {
+      if (page > maxPages) throw trop();
+      const { lot } = await lirePage(page);
+      lots.push(lot);
+      if (lot.length < conf.pageItems) break;
+    }
   }
+
+  // Le tri par date n'est pas stable : une offre lue deux fois n'est gardée qu'une fois.
+  const offres = new Map<string, OffreGestmax>();
+  for (const lot of lots) for (const o of lot ?? []) offres.set(String(o.vacancy_id), o);
+  // Instance qui plafonne la taille des pages (moins d'offres par page que demandé) : le nombre de pages calculé était
+  // trop petit. On lit les pages suivantes tant que le total annoncé (ou la limite) n'est pas atteint.
+  if (total !== null) {
+    const attendu = Math.min(total, limite);
+    for (let page = lots.length + 1; offres.size < attendu; page++) {
+      if (page > maxPages) throw trop();
+      const { lot } = await lirePage(page);
+      if (!lot.length) break;
+      for (const o of lot) offres.set(String(o.vacancy_id), o);
+    }
+  }
+  // Limite volontaire : on garde les plus récentes.
+  if (offres.size > limite) for (const id of [...offres.keys()].slice(limite)) offres.delete(id);
   // Total annoncé non atteint (doublons du tri, offres filtrées par frontOffice…) : simple signalement, le garde-fou
   // de la synchronisation (forte baisse du nombre d'offres) protège le site.
-  if (total !== null && offres.size < total) console.warn(`[gestmax] ${offres.size} offres lues sur ${total} annoncées`);
+  if (!Number.isFinite(limite) && total !== null && offres.size < total) console.warn(`[gestmax] ${offres.size} offres lues sur ${total} annoncées`);
   return [...offres.values()];
 }

@@ -5,17 +5,20 @@ import CarteOffre from '../cartes/CarteOffre.astro';
 import Icone from '../Icone.astro';
 import ImageStrapi from '../ImageStrapi.astro';
 import Partage from '../Partage.astro';
-import type { Entreprise, Offre } from '../../lib/contenus';
+import type { Entreprise, OffreLegere } from '../../lib/contenus';
 import { rendreBlocks } from '../../lib/blocks';
 import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
 import { lienSur } from '../../lib/liens';
 
 interface Props {
   entreprise: Entreprise;
-  offres: Offre[];
+  /** Les plus récentes offres de l'entreprise (quelques-unes suffisent : un lien mène aux autres). */
+  offres: OffreLegere[];
+  /** Nombre total d'offres de l'entreprise. */
+  nbOffres: number;
 }
 
-const { entreprise: e, offres } = Astro.props;
+const { entreprise: e, offres, nbOffres } = Astro.props;
 const AFFICHEES = 6;
 const siteWeb = lienSur(e.siteWeb);
 const lienOffres = e.nomEntiteGestmax ? `/offres/?entreprise=${encodeURIComponent(e.nomEntiteGestmax)}` : null;
@@ -35,7 +38,7 @@ const lienOffres = e.nomEntiteGestmax ? `/offres/?entreprise=${encodeURIComponen
       <div><dt><Icone nom="lieu" taille={20} />Localisation</dt><dd>{[e.adresse, e.ville].filter(Boolean).join(', ')}</dd></div>
       {e.effectif && <div><dt><Icone nom="famille" taille={20} />Effectif</dt><dd>{e.effectif}</dd></div>}
       {e.secteur && <div><dt><Icone nom="entreprise" taille={20} />Secteur</dt><dd>{e.secteur.nom}</dd></div>}
-      <div><dt><Icone nom="emploi" taille={20} />Offres en ligne</dt><dd>{offres.length || 'Aucune pour le moment'}</dd></div>
+      <div><dt><Icone nom="emploi" taille={20} />Offres en ligne</dt><dd>{nbOffres || 'Aucune pour le moment'}</dd></div>
     </dl>
     {siteWeb && <p><a href={siteWeb} class="bouton bouton--contour bouton--large">Site de l'entreprise <Icone nom="externe" taille={18} /></a></p>}
     <Partage titre={e.nom} chemin={`/entreprises/${e.slug}/`} />
@@ -47,8 +50,8 @@ const lienOffres = e.nomEntiteGestmax ? `/offres/?entreprise=${encodeURIComponen
     <div class="section__entete">
       <h2 id="offres-entreprise" class="section__titre section__titre--gauche">Les offres de {e.nom}</h2>
       {
-        lienOffres && offres.length > AFFICHEES && (
-          <a href={lienOffres} class="bouton bouton--contour bouton--petit section__tout-voir">Voir ses {offres.length} offres <Icone nom="fleche" taille={18} /></a>
+        lienOffres && nbOffres > AFFICHEES && (
+          <a href={lienOffres} class="bouton bouton--contour bouton--petit section__tout-voir">Voir ses {nbOffres} offres <Icone nom="fleche" taille={18} /></a>
         )
       }
     </div>

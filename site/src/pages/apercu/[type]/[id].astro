@@ -9,7 +9,7 @@ import VuePage from '../../../components/vues/VuePage.astro';
 import VueArticle from '../../../components/vues/VueArticle.astro';
 import VueEvenement from '../../../components/vues/VueEvenement.astro';
 import VueEntreprise from '../../../components/vues/VueEntreprise.astro';
-import { lireOffres } from '../../../lib/contenus';
+import { lireOffresEntreprise } from '../../../lib/contenus';
 import { PUBLIC_STRAPI_URL, lireBrouillon } from '../../../lib/strapi';
 
 const TYPES: Record<string, { api: string; unique: boolean }> = {
@@ -34,7 +34,7 @@ const edition = Astro.url.searchParams.get('visuel') !== '0';
 const doc: any = await lireBrouillon(definition.api, id, statut, definition.unique, edition);
 if (!doc) return new Response('Contenu introuvable.', { status: 404 });
 
-const offresEntreprise = type === 'entreprise' ? (await lireOffres()).filter((o) => o.entreprise?.slug === doc.slug) : [];
+const offresEntreprise = type === 'entreprise' ? await lireOffresEntreprise(doc.slug) : { offres: [], total: 0 };
 const titre = doc.titre ?? doc.nom ?? doc.heroTitre ?? 'Aperçu';
 Astro.response.headers.set('Cache-Control', 'no-store');
 Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
@@ -49,7 +49,7 @@ const originesBO = [PUBLIC_STRAPI_URL];
   {type === 'page' && <VuePage page={doc} />}
   {type === 'article' && <VueArticle article={doc} />}
   {type === 'evenement' && <VueEvenement evenement={doc} apercu />}
-  {type === 'entreprise' && <VueEntreprise entreprise={doc} offres={offresEntreprise} />}
+  {type === 'entreprise' && <VueEntreprise entreprise={doc} offres={offresEntreprise.offres} nbOffres={offresEntreprise.total} />}
 </Base>
 
 <script is:inline define:vars={{ originesBO }}>

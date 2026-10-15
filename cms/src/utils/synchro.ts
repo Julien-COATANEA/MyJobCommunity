@@ -36,3 +36,20 @@ export async function enregistrerSynchro(strapi: Core.Strapi, valeur: Omit<Derni
 export async function lireDerniereSynchro(strapi: Core.Strapi): Promise<DerniereSynchro> {
   return ((await magasin(strapi).get({})) as DerniereSynchro | null) ?? { date: null, statut: null };
 }
+
+/** Identifie la source des offres (instance, section, mode démo) : un changement dans .env impose de resynchroniser. */
+const cleSource = (strapi: Core.Strapi) => {
+  const c: any = strapi.config.get('gestmax');
+  return [c.mock ? 'demo' : 'api', c.url, c.frontOffice, c.user].join('|');
+};
+const magasinSource = (strapi: Core.Strapi) => strapi.store({ type: 'core', name: 'mjc', key: 'source-gestmax' });
+export const memoriserSource = (strapi: Core.Strapi) => magasinSource(strapi).set({ value: cleSource(strapi) });
+export const sourceInchangee = async (strapi: Core.Strapi) => {
+  const memorisee = await magasinSource(strapi).get({});
+  // Installation d'avant cette mémorisation : la dernière synchronisation réussie fait foi.
+  if (memorisee == null) {
+    await memoriserSource(strapi);
+    return true;
+  }
+  return memorisee === cleSource(strapi);
+};

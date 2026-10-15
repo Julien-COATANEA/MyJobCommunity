@@ -54,28 +54,34 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       ajouter({ cle: 'synchro', libelle: 'Synchronisation Gestmax', statut: 'ok', detail: mock ? 'Données de démonstration (pas de connexion à Gestmax).' : 'Les offres sont à jour.' });
     }
 
-    // 2. Offres non rattachées à l'annuaire
-    const visibles: any[] = await db('api::offre.offre').findMany({
-      where: OFFRES_VISIBLES,
-      select: ['titre', 'nomEntreprise', 'dateFinPublication'],
-      populate: { entreprise: { select: ['documentId'] } },
-    });
-    const sansFiche = [...new Set(visibles.filter((o) => !o.entreprise && o.nomEntreprise).map((o) => o.nomEntreprise as string))];
+    // 2. Offres non rattachées à l'annuaire (requêtes agrégées : des dizaines de milliers d'offres ne se chargent pas en mémoire)
+    const connexion = strapi.db.connection;
+    const visibleSql = (q: any) => q.where((w: any) => w.whereNull('o.masquee').orWhere('o.masquee', false));
+    const sansFicheLignes: any[] = await visibleSql(connexion('offre as o').leftJoin('offre_entreprise_lnk as l', 'l.offre_id', 'o.id'))
+      .whereNull('l.offre_id').whereNotNull('o.nom_entreprise').where('o.nom_entreprise', '<>', '')
+      // Même regroupement que « Mes offres d'emploi » (casse et espaces ignorés, comparaison binaire).
+      .groupByRaw("LOWER(REGEXP_REPLACE(TRIM(o.nom_entreprise), '[[:space:]]+', ' ')) COLLATE utf8mb4_bin")
+      .select(connexion.raw('MIN(o.nom_entreprise) as nom')).count('* as offres').orderBy('offres', 'desc').limit(1001);
+    const sansFiche = sansFicheLignes.map((l) => l.nom as string);
     ajouter(
       sansFiche.length
         ? {
             cle: 'offres-sans-fiche', libelle: "Entreprises sans fiche dans l'annuaire", statut: 'attention',
-            detail: `${sansFiche.length} entreprise${sansFiche.length > 1 ? 's ont' : ' a'} des offres en ligne mais pas de fiche : les candidats ne peuvent pas la découvrir. Créez la fiche, puis couplez-la depuis « Mes offres d'emploi ».`,
-            elements: sansFiche.slice(0, 10).map((nom) => ({ titre: nom, lien: '/content-manager/collection-types/api::entreprise.entreprise/create' })),
+            detail: `${sansFiche.length > 1000 ? 'Plus de 1 000' : sansFiche.length} entreprise${sansFiche.length > 1 ? 's ont' : ' a'} des offres en ligne mais pas de fiche : les candidats ne peuvent pas la découvrir. Créez les fiches des plus gros recruteurs, puis couplez-les depuis « Mes offres d'emploi ».`,
+            elements: sansFicheLignes.slice(0, 10).map((l) => ({ titre: l.nom, precision: `${l.offres} offre${Number(l.offres) > 1 ? 's' : ''}`, lien: '/content-manager/collection-types/api::entreprise.entreprise/create' })),
             lien: '/mes-offres', libelleLien: 'Coupler les entreprises',
           }
         : { cle: 'offres-sans-fiche', libelle: "Entreprises sans fiche dans l'annuaire", statut: 'ok', detail: 'Toutes les entreprises qui recrutent ont leur fiche.' },
     );
 
     // 3. Offres qui expirent bientôt
-    const bientot = visibles.filter((o) => o.dateFinPublication && new Date(o.dateFinPublication).getTime() - Date.now() < 7 * JOUR && new Date(o.dateFinPublication).getTime() > Date.now());
-    if (bientot.length) {
-      ajouter({ cle: 'offres-expirent', libelle: 'Offres bientôt expirées', statut: 'attention', detail: `${bientot.length} offre${bientot.length > 1 ? 's' : ''} se termine${bientot.length > 1 ? 'nt' : ''} dans moins de 7 jours (à renouveler dans Gestmax si besoin).`, elements: bientot.slice(0, 10).map((o) => ({ titre: o.titre, precision: o.nomEntreprise })) });
+    const maintenant = new Date();
+    const dans7j = new Date(Date.now() + 7 * JOUR);
+    const bientotBase = () => visibleSql(connexion('offre as o')).whereBetween('o.date_fin_publication', [maintenant, dans7j]);
+    const nbBientot = Number((await bientotBase().count('* as n').first())?.n ?? 0);
+    if (nbBientot) {
+      const echeances: any[] = await bientotBase().select('o.titre', 'o.nom_entreprise').orderBy('o.date_fin_publication', 'asc').limit(10);
+      ajouter({ cle: 'offres-expirent', libelle: 'Offres bientôt expirées', statut: 'attention', detail: `${nbBientot} offre${nbBientot > 1 ? 's' : ''} se termine${nbBientot > 1 ? 'nt' : ''} dans moins de 7 jours (à renouveler dans Gestmax si besoin).`, elements: echeances.map((o) => ({ titre: o.titre, precision: o.nom_entreprise })) });
     }
 
     // 4. Événements proches avec peu d'inscrits

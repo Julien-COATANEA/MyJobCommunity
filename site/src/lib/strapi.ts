@@ -1,4 +1,4 @@
-// Client Strapi utilisé au build (SSG). Les réponses sont mémorisées pour toute la durée du build.
+// Client Strapi utilisé au build (SSG). Les réponses sont mémorisées pour toute la durée du build (voir DUREE_CACHE_MS).
 
 /** URL de Strapi vue depuis le build (réseau Docker interne en local). */
 export const STRAPI_URL = (process.env.STRAPI_URL ?? import.meta.env.STRAPI_URL ?? 'http://localhost:1337').replace(/\/+$/, '');
@@ -7,27 +7,75 @@ export const PUBLIC_STRAPI_URL = (process.env.PUBLIC_STRAPI_URL ?? import.meta.e
 
 type Params = Record<string, string | number | boolean>;
 
-// Cache court : pendant un build, une même requête (paramètres, menus…) n'est faite qu'une fois ; un serveur qui reste
-// lancé (développement, aperçu des brouillons) relit Strapi au bout de quelques secondes.
-const DUREE_CACHE_MS = 10_000;
+// Pendant un build (PROD), les réponses sont gardées pour toute la durée du processus : une même liste (90 000 offres,
+// soit près de 900 requêtes) n'est lue qu'une fois, quel que soit le nombre de pages qui la demandent.
+// Un serveur qui reste lancé (développement, aperçu des brouillons) relit Strapi au bout de quelques secondes.
+// Cache permanent seulement pendant un build statique (variable posée par le builder) : le serveur d'aperçu des
+// brouillons, lui aussi construit en production, doit relire Strapi.
+const BUILD_STATIQUE = typeof process !== 'undefined' && process.env?.MJC_BUILD_STATIQUE === '1';
+export const DUREE_CACHE_MS = BUILD_STATIQUE ? Infinity : 10_000;
 const cache = new Map<string, { instant: number; promesse: Promise<any> }>();
 
-async function requete(chemin: string, params: Params = {}): Promise<any> {
+const DELAI_REQUETE_MS = 60_000;
+// Sept essais, 0,5 s puis 1 s, 2 s, 4 s, 8 s, 16 s : de quoi laisser à Strapi le temps de redémarrer (rechargement à chaud).
+const ESSAIS = 7;
+const attendre = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** GET JSON avec nouvelles tentatives sur les erreurs passagères (réseau, 5xx, 429) : Strapi est parfois très sollicité. */
+async function lireJson(url: string): Promise<any> {
+  for (let essai = 1; ; essai++) {
+    try {
+      const reponse = await fetch(url, { signal: AbortSignal.timeout(DELAI_REQUETE_MS) });
+      if (reponse.status === 404) return { data: null };
+      if (!reponse.ok) {
+        const erreur: any = new Error(`Strapi ${reponse.status} sur ${url} : ${(await reponse.text()).slice(0, 300)}`);
+        erreur.passagere = reponse.status >= 500 || reponse.status === 429;
+        throw erreur;
+      }
+      return await reponse.json();
+    } catch (e: any) {
+      const passagere = e.passagere ?? true; // erreur réseau ou délai dépassé
+      if (!passagere || essai >= ESSAIS) throw e;
+      await attendre(500 * 2 ** (essai - 1));
+    }
+  }
+}
+
+function urlApi(chemin: string, params: Params): string {
   const url = new URL(`/api/${chemin}`, STRAPI_URL);
   for (const [cle, valeur] of Object.entries(params)) url.searchParams.set(cle, String(valeur));
-  const cle = url.toString();
-  const enCache = cache.get(cle);
-  if (!enCache || Date.now() - enCache.instant > DUREE_CACHE_MS) {
-    cache.set(cle, {
-      instant: Date.now(),
-      promesse: fetch(cle).then(async (reponse) => {
-        if (reponse.status === 404) return { data: null };
-        if (!reponse.ok) throw new Error(`Strapi ${reponse.status} sur ${cle} : ${await reponse.text()}`);
-        return reponse.json();
-      }),
-    });
+  return url.toString();
+}
+
+async function requete(chemin: string, params: Params = {}, enCache = true): Promise<any> {
+  const cle = urlApi(chemin, params);
+  if (!enCache) return lireJson(cle);
+  const existante = cache.get(cle);
+  if (!existante || Date.now() - existante.instant > DUREE_CACHE_MS) {
+    const promesse = lireJson(cle);
+    cache.set(cle, { instant: Date.now(), promesse });
+    // Un échec ne doit pas rester en mémoire : la requête suivante réessaie.
+    promesse.catch(() => cache.get(cle)?.promesse === promesse && cache.delete(cle));
   }
   return cache.get(cle)!.promesse;
+}
+
+/**
+ * Mémorise le résultat d'un calcul lourd (liste d'offres, comptages) comme les requêtes : pour tout le build en
+ * production, `dureeDev` ms sinon. Évite de refaire le même travail à chaque page.
+ */
+export function memoiser<T>(fn: () => Promise<T>, dureeDev = DUREE_CACHE_MS): () => Promise<T> {
+  let valeur: { instant: number; promesse: Promise<T> } | null = null;
+  const duree = BUILD_STATIQUE ? Infinity : dureeDev;
+  return () => {
+    if (!valeur || Date.now() - valeur.instant > duree) {
+      const promesse = fn();
+      const entree = { instant: Date.now(), promesse };
+      valeur = entree;
+      promesse.catch(() => valeur === entree && (valeur = null));
+    }
+    return valeur.promesse;
+  };
 }
 
 /** Single type (paramètres, menus, accueil…) avec population complète. */
@@ -36,20 +84,43 @@ export async function lireUnique<T>(type: string): Promise<T | null> {
   return json.data ?? null;
 }
 
-/** Tous les documents publiés d'une collection (toutes pages confondues). */
-export async function lireTous<T>(type: string, params: Params = {}): Promise<T[]> {
-  const resultats: T[] = [];
-  for (let page = 1; ; page++) {
-    const json = await requete(type, {
-      populate: 'deep',
-      'pagination[page]': page,
-      'pagination[pageSize]': 100,
-      ...params,
-    });
-    resultats.push(...(json.data ?? []));
-    const { pageCount = 1 } = json.meta?.pagination ?? {};
-    if (page >= pageCount) return resultats;
+/** Une page de résultats telle que Strapi la renvoie (`data` et `meta.pagination`). */
+export const lirePage = (type: string, params: Params = {}, enCache = true) => requete(type, params, enCache);
+
+/** Taille de page maximale de Strapi (`maxLimit` de config/api.ts). */
+export const TAILLE_PAGE = 100;
+/** Pages lues en même temps pour les grosses collections. */
+const PAGES_EN_PARALLELE = 8;
+
+interface OptionsTous {
+  /** Garder les pages en cache (défaut). À désactiver pour une liste lourde déjà mémorisée ailleurs. */
+  enCache?: boolean;
+}
+
+/**
+ * Tous les documents d'une collection (toutes pages confondues). La première page donne le nombre de pages, les
+ * suivantes sont lues par groupes en parallèle (90 000 offres : environ 900 pages). Ordre de Strapi conservé.
+ * `populate=deep` par défaut, sauf si `params` contient ses propres clés `populate…` (projection légère).
+ */
+export async function lireTous<T>(type: string, params: Params = {}, { enCache = true }: OptionsTous = {}): Promise<T[]> {
+  const base: Params = { 'pagination[pageSize]': TAILLE_PAGE, ...params };
+  if (!Object.keys(base).some((cle) => cle.startsWith('populate'))) base.populate = 'deep';
+  const lire = (page: number) => requete(type, { ...base, 'pagination[page]': page }, enCache);
+
+  const premiere = await lire(1);
+  const { pageCount = 1 } = premiere.meta?.pagination ?? {};
+  const pages: any[][] = [premiere.data ?? []];
+  for (let debut = 2; debut <= pageCount; debut += PAGES_EN_PARALLELE) {
+    const numeros = Array.from({ length: Math.min(PAGES_EN_PARALLELE, pageCount - debut + 1) }, (_, i) => debut + i);
+    for (const json of await Promise.all(numeros.map(lire))) pages.push(json.data ?? []);
   }
+  return pages.flat();
+}
+
+/** Nombre de documents d'une collection (avec les mêmes filtres), sans les lire. */
+export async function compter(type: string, filtres: Params = {}): Promise<number> {
+  const json = await requete(type, { 'pagination[pageSize]': 1, 'pagination[withCount]': true, 'fields[0]': 'documentId', ...filtres });
+  return json.meta?.pagination?.total ?? 0;
 }
 
 /**

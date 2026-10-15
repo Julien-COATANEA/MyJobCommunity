@@ -8,13 +8,15 @@ import EnTetePage from '../../components/EnTetePage.astro';
 import CarteOffre from '../../components/cartes/CarteOffre.astro';
 import Icone from '../../components/Icone.astro';
 import Sections from '../../components/Sections.astro';
-import { lireOffres, lirePageOffres, lireParametres } from '../../lib/contenus';
+import { lireFacettesOffres, lireOffres, lirePageOffres, lireParametres } from '../../lib/contenus';
 import { resoudreLien } from '../../lib/liens';
 import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
 
-const [offres, parametres, page] = await Promise.all([lireOffres(), lireParametres(), lirePageOffres()]);
+// Liste légère et facettes calculées une seule fois par build (voir lib/offres.ts) : 90 000 offres, aucun parcours par contrat.
+const [offres, facettes, parametres, page] = await Promise.all([lireOffres(), lireFacettesOffres(), lireParametres(), lirePageOffres()]);
+const nbOffres = facettes.total;
 const titre = page?.titre?.trim() || "Offres d'emploi";
-const chapo = page?.chapo?.trim() || `${offres.length} offres à pourvoir chez les employeurs du territoire.`;
+const chapo = page?.chapo?.trim() || `${nbOffres} offres à pourvoir chez les employeurs du territoire.`;
 // Présentation de la liste (« Ma page d'offres » du BO) : colonnes ou lignes, nombre de colonnes, offres par page.
 const borner = (v: number | null | undefined, min: number, max: number, defaut: number) => Math.min(max, Math.max(min, Math.round(v ?? defaut)));
 const PAR_PAGE = borner(page?.offresParPage, 6, 60, 24);
@@ -22,22 +24,18 @@ const colonnes = borner(page?.colonnes, 1, 4, 3);
 const enLignes = page?.affichage === 'lignes';
 const masquer = { logo: page?.afficherLogo === false, salaire: page?.afficherSalaire === false, date: page?.afficherDate === false };
 const masquerAttr = Object.entries(masquer).filter(([, v]) => v).map(([c]) => c).join(',');
-const distincts = (cle: 'typeContrat' | 'secteur') =>
-  [...new Set(offres.map((o) => o[cle]).filter(Boolean))].sort((a, b) => a!.localeCompare(b!, 'fr')) as string[];
-const contrats = distincts('typeContrat');
-const secteurs = distincts('secteur');
-const compterContrat = (c: string) => offres.filter((o) => o.typeContrat === c).length;
+const { contrats, secteurs, employeurs } = facettes;
+const compterContrat = (c: string) => facettes.parContrat.get(c) ?? 0;
 const premieres = offres.slice(0, PAR_PAGE);
 const lienAlerte = parametres.gestmaxUrlFront ? resoudreLien('gestmax:/alert', parametres.gestmaxUrlFront) : null;
 const lienSpontanee = parametres.lienCandidatureSpontanee ? resoudreLien(parametres.lienCandidatureSpontanee, parametres.gestmaxUrlFront) : null;
-const employeurs = new Set(offres.map((o) => o.nomEntreprise).filter(Boolean)).size;
 const pl = (n: number) => (n > 1 ? 's' : '');
 ---
 
-<Base titre={titre} seo={page?.seo} description={`${offres.length} offres d'emploi sur le territoire.`} ariane={[{ libelle: titre }]}>
+<Base titre={titre} seo={page?.seo} description={`${nbOffres} offres d'emploi sur le territoire.`} ariane={[{ libelle: titre }]}>
   <EnTetePage titre={titre} chapo={chapo}>
     <ul class="en-tete-page__pastilles">
-      <li><Icone nom="emploi" taille={18} />{offres.length} offre{pl(offres.length)} à pourvoir</li>
+      <li><Icone nom="emploi" taille={18} />{nbOffres} offre{pl(nbOffres)} à pourvoir</li>
       {employeurs > 0 && <li><Icone nom="entreprise" taille={18} />{employeurs} employeur{pl(employeurs)}</li>}
       {contrats.length > 0 && <li><Icone nom="contrat" taille={18} />{contrats.slice(0, 3).join(" · ")}</li>}
     </ul>
@@ -104,7 +102,7 @@ const pl = (n: number) => (n > 1 ? 's' : '');
       <div class="offres-resultats" data-resultats-offres>
         <div class="offres-resultats__liste">
           <div class="offres-resultats__barre">
-            <p class="resultats" aria-live="polite" data-resultats>{offres.length} offre{offres.length > 1 ? 's' : ''}</p>
+            <p class="resultats" aria-live="polite" data-resultats>{nbOffres} offre{nbOffres > 1 ? 's' : ''}</p>
             <button type="button" class="lien-bouton" data-zone-toute hidden>Voir toutes les offres de la recherche</button>
             {
               page?.carte && (
@@ -121,6 +119,7 @@ const pl = (n: number) => (n > 1 ? 's' : '');
             data-liste-offres
             data-api={PUBLIC_STRAPI_URL}
             data-par-page={PAR_PAGE}
+            data-total={nbOffres}
             data-masquer={masquerAttr}
           >
             {premieres.map((o) => <li><CarteOffre offre={o} niveauTitre={2} masquer={masquer} /></li>)}
@@ -138,7 +137,7 @@ const pl = (n: number) => (n > 1 ? 's' : '');
 
           <p class="section__suite">
             {/* Révélé par le script : sans JavaScript, il ne pourrait rien afficher de plus. */}
-            <button type="button" class="bouton bouton--contour" data-plus data-plus-initial={offres.length > PAR_PAGE ? '' : undefined} hidden>Afficher plus d'offres</button>
+            <button type="button" class="bouton bouton--contour" data-plus data-plus-initial={nbOffres > PAR_PAGE ? '' : undefined} hidden>Afficher plus d'offres</button>
           </p>
         </div>
 
@@ -196,7 +195,10 @@ const pl = (n: number) => (n > 1 ? 's' : '');
   const blocCarte = document.querySelector<HTMLElement>('[data-carte-offres]');
   const bascule = document.querySelector<HTMLButtonElement>('[data-basculer-carte]');
   const modeCarte = !!blocCarte;
-  const MAX_PAGES = 10; // 1 000 offres
+  const MAX_PAGES = 10; // 1 000 offres : au-delà, la carte et la liste ne montrent que les plus récentes
+  // Au-delà de ce nombre d'offres, la carte n'est chargée que si le visiteur la demande (sauf préférence enregistrée).
+  const SEUIL_CARTE_AUTO = MAX_PAGES * 100;
+  const totalOffres = Number(liste.dataset.total);
   const CLE_CARTE = 'mjc-carte-offres';
 
   // Formulaire filtré en direct : le bouton ne sert plus qu'en l'absence de JavaScript.
@@ -213,6 +215,7 @@ const pl = (n: number) => (n > 1 ? 's' : '');
   // Liste courante : « ensemble » (toutes les offres chargées, paginées ici) ou « api » (page par page via Strapi).
   let modeListe: 'ensemble' | 'api' = 'api';
   let tronque = false; // plus de MAX_PAGES pages : l'ensemble chargé est incomplet, on l'indique
+  let totalServeur = 0; // nombre d'offres de la recherche côté Strapi (supérieur à l'ensemble chargé si tronqué)
 
   /** Toutes les offres sont chargées d'un coup seulement si la carte est affichée ou la recherche autour d'une ville. */
   const chargerTout = (f: Filtres) => (modeCarte && carteVisible) || rechercheAutour(f);
@@ -302,8 +305,9 @@ const pl = (n: number) => (n > 1 ? 's' : '');
       const v = localStorage.getItem(CLE_CARTE);
       if (v) return v === '1';
     } catch {}
-    // Par défaut : visible sur grand écran, repliée sur mobile.
-    return matchMedia('(min-width: 960px)').matches;
+    // Par défaut : visible sur grand écran, repliée sur mobile, et à la demande quand les offres sont trop nombreuses
+    // pour que tout charger à chaque visite soit raisonnable.
+    return totalOffres <= SEUIL_CARTE_AUTO && matchMedia('(min-width: 960px)').matches;
   }
 
   // ---------- Liste ----------
@@ -335,15 +339,18 @@ const pl = (n: number) => (n > 1 ? 's' : '');
     if (ajouter) liste.insertAdjacentHTML('beforeend', html);
     else liste.innerHTML = html;
     const filtre = filtresActifs(f).length > 0;
+    const limite = modeListe === 'ensemble' && tronque
+      ? ` — carte et liste limitées aux ${MAX_PAGES * 100} offres les plus récentes sur ${totalServeur} : précisez votre recherche pour voir les autres`
+      : '';
     if (zoneCarte) {
       resultats.textContent = total
-        ? `${total} offre${s(total)} ${zoneCarte.libelle ? `à ${zoneCarte.libelle}` : 'dans la zone de la carte'}`
+        ? `${total} offre${s(total)} ${zoneCarte.libelle ? `à ${zoneCarte.libelle}` : 'dans la zone de la carte'}${limite}`
         : 'Aucune offre dans cette zone : dézoomez ou déplacez la carte.';
     } else {
       resultats.textContent = total
         ? `${total} offre${s(total)}${filtre ? ` correspond${total > 1 ? 'ent' : ''} à votre recherche` : ''}`
         : 'Aucune offre ne correspond à votre recherche.';
-      if (modeListe === 'ensemble' && tronque) resultats.textContent += ` (les ${MAX_PAGES * 100} plus récentes : précisez votre recherche pour voir les autres)`;
+      resultats.textContent += limite;
     }
     boutonToutesZones.hidden = !zoneCarte;
     aucun.hidden = total > 0 || !!zoneCarte;
@@ -378,6 +385,7 @@ const pl = (n: number) => (n > 1 ? 's' : '');
     if (moi !== jeton) return null;
     let offres: any[] = [page1, ...suivantes].flatMap((j) => j.data);
     tronque = pages > MAX_PAGES;
+    totalServeur = page1.meta.pagination.total;
     // Autour d'une ville : distance exacte (le serveur n'a filtré que sur un rectangle).
     if (centre) {
       const c = centre;

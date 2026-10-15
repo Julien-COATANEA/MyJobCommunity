@@ -5,8 +5,10 @@ import { initialiserDonneesDemo } from './bootstrap/demo';
 import { creerComptesDemo } from './bootstrap/comptes-demo';
 import { configurerBackOffice } from './bootstrap/back-office';
 import { assurerPagesLegales } from './bootstrap/pages-legales';
+import { assurerIndexOffres } from './utils/index-offres';
+import { lireDerniereSynchro, sourceInchangee } from './utils/synchro';
 import { routesEspace } from './api/espace/routes-admin';
-import { protegerOffres, UID_OFFRE } from './utils/garde-offres';
+import { protegerOffres, regrouperEvenementsOffres, UID_OFFRE } from './utils/garde-offres';
 import { protegerParametres } from './utils/garde-parametres';
 import { protegerLiens } from './utils/garde-liens';
 import { declarerCapacites } from './utils/droits';
@@ -47,6 +49,8 @@ export default {
 
     // Les offres viennent de Gestmax : jamais créées ni modifiées depuis le BO.
     protegerOffres(strapi);
+    // Un seul webhook de reconstruction par synchronisation, pas un par offre.
+    (strapi as any).notifierOffres = regrouperEvenementsOffres(strapi);
     // Scripts de suivi et bandeau de cookies : écrits seulement par l'écran « Cookies et suivi ».
     protegerParametres(strapi);
     // Liens « javascript: » et assimilés refusés dans tous les contenus.
@@ -86,6 +90,7 @@ export default {
     await strapi.db.query(UID_OFFRE).updateMany({ where: { masquee: { $null: true } }, data: { masquee: false } });
     await strapi.db.query(UID_OFFRE).updateMany({ where: { aLaUne: { $null: true } }, data: { aLaUne: false } });
     await assurerWebhookRebuild(strapi);
+    await assurerIndexOffres(strapi);
     await configurerBackOffice(strapi).catch((e) => strapi.log.error(`[back-office] ${e.stack ?? e}`));
     await assurerPagesLegales(strapi).catch((e) => strapi.log.error(`[pages-legales] ${e.stack ?? e}`));
 
@@ -94,11 +99,19 @@ export default {
       await creerComptesDemo(strapi).catch((e) => strapi.log.error(`[demo] comptes : ${e.message}`));
     }
 
-    // Première synchronisation sans attendre le cron (ne bloque pas le démarrage).
-    strapi
-      .service('api::offre.offre')
-      .synchroniserDepuisGestmax()
-      .catch((e: Error) => strapi.log.error(`[gestmax] ${e.message}`));
+    // Première synchronisation sans attendre le cron (ne bloque pas le démarrage). Pas à chaque redémarrage : avec des
+    // dizaines de milliers d'offres, la lecture de Gestmax dure plusieurs minutes. On la lance si elle n'a jamais eu lieu,
+    // si la dernière a échoué, si elle date de plus d'une demi-heure, si la source (.env) a changé ou si la base d'offres est vide.
+    const derniere = await lireDerniereSynchro(strapi).catch(() => null);
+    // Base d'offres vide (réinitialisation, restauration) : on resynchronise même si la dernière synchronisation est récente.
+    const vide = (await strapi.db.query('api::offre.offre').count()) === 0;
+    const recente = !vide && derniere?.date && derniere.statut === 'ok' && Date.now() - new Date(derniere.date).getTime() < 30 * 60 * 1000 && (await sourceInchangee(strapi));
+    if (!recente) {
+      strapi
+        .service('api::offre.offre')
+        .synchroniserDepuisGestmax()
+        .catch((e: Error) => strapi.log.error(`[gestmax] ${e.message}`));
+    }
   },
 };
 

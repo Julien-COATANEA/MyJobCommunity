@@ -11,7 +11,7 @@ interface Props {
 
 const { entreprise: e, niveauTitre = 3 } = Astro.props;
 const Titre = `h${niveauTitre}`;
-const nbOffres = e.offres?.length ?? 0;
+const nbOffres = e.nbOffres ?? 0;
 const lettres = initiales(e.nom);
 const lienOffres = e.nomEntiteGestmax ? `/offres/?entreprise=${encodeURIComponent(e.nomEntiteGestmax)}` : null;
 ---

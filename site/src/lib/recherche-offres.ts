@@ -67,8 +67,9 @@ interface OptionsRequete {
 /** Requête REST Strapi (/api/offres) correspondant aux filtres. */
 export function requeteStrapi(f: Filtres, { page, parPage, boite, sansContrat = false }: OptionsRequete): URLSearchParams {
   const p = new URLSearchParams({
-    // « À la une » d'abord, sauf tri chronologique inverse.
-    sort: f.tri === 'ancien' ? 'dateActivation:asc' : 'aLaUne:desc,dateActivation:desc',
+    // « À la une » d'abord, sauf tri chronologique inverse. L'id départage les offres de même date : sans lui,
+    // « Afficher plus » pourrait répéter ou sauter des offres.
+    sort: f.tri === 'ancien' ? 'dateActivation:asc,id:asc' : 'aLaUne:desc,dateActivation:desc,id:desc',
     'pagination[page]': String(page),
     'pagination[pageSize]': String(parPage),
   });

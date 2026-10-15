@@ -38,7 +38,8 @@ export async function listerLiens(strapi: Core.Strapi, avecGestmax: boolean): Pr
     if (docs.length) groupes.push({ libelle: d.groupe, options: docs.map((x) => ({ libelle: x[d.champ], valeur: d.chemin(x.slug) })) });
   }
 
-  const contrats: any[] = await strapi.db.query('api::offre.offre').findMany({ select: ['typeContrat'] });
+  // Valeurs distinctes en SQL : charger toutes les offres pour cela ne tient pas avec des dizaines de milliers d'offres.
+  const contrats: any[] = await strapi.db.connection('offre').distinct('type_contrat as typeContrat').whereNotNull('type_contrat').where('type_contrat', '<>', '').limit(200);
   const distincts = [...new Set(contrats.map((c) => c.typeContrat).filter(Boolean))].sort() as string[];
   if (distincts.length) {
     groupes.push({

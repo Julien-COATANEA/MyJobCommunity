@@ -78,6 +78,8 @@ services:
       SITE_DIR: /app
       RELEASES_DIR: /srv/site
       ASTRO_TELEMETRY_DISABLED: "1"
+      # Gros volumes d'offres (dizaines de milliers de pages) : plus de mémoire pour la génération du site.
+      NODE_OPTIONS: --max-old-space-size=4096
     volumes:
       - ./site:/app
       - /app/node_modules

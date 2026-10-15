@@ -1,10 +1,9 @@
 ---
 // Le balisage vient de src/lib/carte-offre.ts : identique au rendu des résultats de recherche dans le navigateur.
-import type { Offre } from '../../lib/contenus';
-import { htmlCarteOffre, type Masquer } from '../../lib/carte-offre';
+import { htmlCarteOffre, type OffreCarte, type Masquer } from '../../lib/carte-offre';
 
 interface Props {
-  offre: Offre;
+  offre: OffreCarte;
   niveauTitre?: 2 | 3;
   masquer?: Masquer;
 }

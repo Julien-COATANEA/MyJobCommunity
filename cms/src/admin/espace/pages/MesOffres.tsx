@@ -1,12 +1,13 @@
 // Page « Mes offres d'emploi » : suivi des offres importées de Gestmax.
 import * as React from 'react';
 import {
-  Alert, Badge, Box, Button, Checkbox, Combobox, ComboboxOption, Dialog, Flex, Grid, LinkButton, Table, Tbody, Td, Th, Thead, Tr, Typography,
+  Alert, Badge, Box, Button, Checkbox, Combobox, ComboboxOption, Dialog, Field, Flex, Grid, LinkButton, SingleSelect, SingleSelectOption, Table, Tbody, Td, Th, Thead, Tr, Typography,
 } from '@strapi/design-system';
 import { ArrowClockwise, Eye, Pencil } from '@strapi/icons';
 import { Layouts, Page, useAuth, useFetchClient, useNotification, useRBAC } from '@strapi/strapi/admin';
 import { Link } from 'react-router-dom';
 import { StylesEspace, fiche, formatDate, ilYA, messageErreur, pluriel, useDonnees } from '../outils';
+import { BarrePagination, ChampRecherche, useListe } from './ListePaginee';
 
 const ENTREPRISE = 'api::entreprise.entreprise';
 const PERMISSIONS_COUPLAGE = [{ action: 'plugin::content-manager.explorer.update', subject: ENTREPRISE }] as any;
@@ -28,6 +29,13 @@ interface Offre {
   entreprise: { documentId: string; nom: string } | null;
 }
 
+interface EntrepriseOffres {
+  nom: string;
+  nombre: number;
+  entreprise: { documentId: string; nom: string } | null;
+}
+
+// Synthèse (section « synthese » de /espace/offres) : les listes paginées se chargent à part (voir ListePaginee).
 interface Donnees {
   total: number;
   masquees: number;
@@ -35,9 +43,7 @@ interface Donnees {
   parContrat: { libelle: string; nombre: number }[];
   parEntreprise: { libelle: string; nombre: number }[];
   nonRattachees: number;
-  entreprisesOffres: { nom: string; nombre: number; entreprise: { documentId: string; nom: string } | null }[];
   annuaire: { documentId: string; nom: string }[];
-  dernieres: Offre[];
   synchro: { date: string | null; statut: string | null; erreur?: string; bilan?: { creees: number; modifiees: number; supprimees: number } };
   mock: boolean;
   frequence: string;
@@ -82,7 +88,21 @@ const frequenceLisible = (cron: string) => {
 };
 
 export default function MesOffres() {
-  const { donnees, chargement, erreur, recharger } = useDonnees<Donnees>('/espace/offres');
+  const { donnees, chargement, erreur, recharger: rechargerSynthese } = useDonnees<Donnees>('/espace/offres?sections=synthese');
+  // Offres importées : recherche, tri, pagination côté serveur.
+  const [recherche, setRecherche] = React.useState('');
+  const [tri, setTri] = React.useState('recentes');
+  const [page, setPage] = React.useState(1);
+  const [taille, setTaille] = React.useState(25);
+  const offres = useListe<Offre>('offres', 'offres', { q: recherche, tri, page, pageSize: taille });
+  // Entreprises des offres et couplage avec l'annuaire.
+  const [rechercheEntreprise, setRechercheEntreprise] = React.useState('');
+  const [seulementNonCouplees, setSeulementNonCouplees] = React.useState(false);
+  const [pageEntreprises, setPageEntreprises] = React.useState(1);
+  const [tailleEntreprises, setTailleEntreprises] = React.useState(25);
+  const entreprises = useListe<EntrepriseOffres>('entreprises', 'entreprisesOffres', {
+    qEntreprise: rechercheEntreprise, seulementNonCouplees, pageEntreprises, pageSizeEntreprises: tailleEntreprises,
+  });
   const { post, put } = useFetchClient();
   const { toggleNotification } = useNotification();
   const [synchro, setSynchro] = React.useState(false);
@@ -93,6 +113,19 @@ export default function MesOffres() {
   // Choix en cours d'enregistrement, par nom d'entreprise Gestmax : la liste affiche toujours ce qui est réellement enregistré.
   const [couplages, setCouplages] = React.useState<Record<string, string | null>>({});
   const oublierCouplage = (nom: string) => setCouplages(({ [nom]: _, ...reste }) => reste);
+  // Une page demandée au-delà de la dernière (liste devenue plus courte) est ramenée à celle que le serveur a servie.
+  React.useEffect(() => {
+    if (offres.donnees && offres.aJour && offres.donnees.page !== page) setPage(offres.donnees.page);
+  }, [offres.donnees, offres.aJour, page]);
+  React.useEffect(() => {
+    if (entreprises.donnees && entreprises.aJour && entreprises.donnees.page !== pageEntreprises) setPageEntreprises(entreprises.donnees.page);
+  }, [entreprises.donnees, entreprises.aJour, pageEntreprises]);
+  // Annuaire : mêmes options pour toutes les lignes (évite de les recréer à chaque rendu).
+  const optionsAnnuaire = React.useMemo(
+    () => (donnees?.annuaire ?? []).map((a) => <ComboboxOption key={a.documentId} value={a.documentId}>{a.nom}</ComboboxOption>),
+    [donnees?.annuaire],
+  );
+  const rechargerTout = () => Promise.all([rechargerSynthese(), offres.recharger(), entreprises.recharger()]);
 
   const synchroniser = async (forcer = false) => {
     setSynchro(true);
@@ -102,7 +135,7 @@ export default function MesOffres() {
         type: 'success',
         message: `Synchronisation terminée : ${data.creees ?? 0} nouvelle(s), ${data.modifiees ?? 0} modifiée(s), ${data.supprimees ?? 0} retirée(s).`,
       });
-      recharger();
+      rechargerTout();
     } catch (e: any) {
       toggleNotification({ type: 'danger', message: `Synchronisation impossible : ${messageErreur(e, e?.response?.data?.message ?? e?.message)}` });
     } finally {
@@ -114,9 +147,12 @@ export default function MesOffres() {
     try {
       await put(`/espace/offres/${o.documentId}`, reglage);
       toggleNotification({ type: 'success', message: 'Enregistré : le site sera à jour dans quelques secondes.' });
-      recharger();
+      // La ligne reste à sa place (et le focus avec elle) : on ne recharge que les compteurs.
+      offres.modifier((l) => l.documentId === o.documentId, (l) => ({ ...l, ...reglage, ...(reglage.masquee ? { aLaUne: false } : {}) }));
+      rechargerSynthese();
     } catch (e) {
       toggleNotification({ type: 'danger', message: messageErreur(e, "Le réglage n'a pas pu être enregistré.") });
+      offres.recharger();
     }
   };
 
@@ -134,11 +170,11 @@ export default function MesOffres() {
           ? `${pluriel(data.offres, 'offre')} de « ${nomEntreprise} » ${data.offres > 1 ? 'sont' : 'est'} maintenant ${data.offres > 1 ? 'liées' : 'liée'} à la fiche. Les prochaines le seront aussi.`
           : `« ${nomEntreprise} » n’est plus lié à l’annuaire.`,
       });
-      await recharger();
+      await rechargerTout();
     } catch (e) {
       toggleNotification({ type: 'danger', message: messageErreur(e, "Le couplage n'a pas pu être enregistré.") });
       // Rien n'a été enregistré : on revient au couplage réel.
-      await recharger();
+      await entreprises.recharger();
     } finally {
       oublierCouplage(nomEntreprise);
     }
@@ -245,7 +281,7 @@ export default function MesOffres() {
             </Grid.Item>
           </Grid.Root>
 
-          {donnees.entreprisesOffres.length > 0 && (
+          {(entreprises.chargement && !entreprises.donnees) || entreprises.erreur || entreprises.donnees?.total || rechercheEntreprise || seulementNonCouplees ? (
             <Box hasRadius background="neutral0" shadow="tableShadow">
               <Box padding={5} paddingBottom={3}>
                 <Typography variant="delta" tag="h2">Coupler les entreprises avec l'annuaire</Typography>
@@ -255,57 +291,109 @@ export default function MesOffres() {
                     : "Vous pouvez consulter les couplages ; votre rôle ne permet pas de les changer (droits réglés dans « Mon équipe »)."}
                 </Typography>
               </Box>
-              <Table colCount={3} rowCount={donnees.entreprisesOffres.length + 1}>
-                <Thead>
-                  <Tr>
-                    <Th><Typography variant="sigma">Entreprise dans Gestmax</Typography></Th>
-                    <Th><Typography variant="sigma">Offres</Typography></Th>
-                    <Th><Typography variant="sigma">Fiche de l'annuaire</Typography></Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {donnees.entreprisesOffres.map((e) => (
-                    <Tr key={e.nom}>
-                      <Td>
-                        <Flex gap={2}>
-                          <Typography fontWeight="bold" textColor="neutral800">{e.nom}</Typography>
-                          {!e.entreprise && <Badge backgroundColor="warning100" textColor="warning700">Non couplée</Badge>}
-                        </Flex>
-                      </Td>
-                      <Td><Typography>{e.nombre}</Typography></Td>
-                      <Td>
-                        {!peutCoupler ? (
-                          <Typography textColor={e.entreprise ? 'neutral800' : 'neutral600'}>{e.entreprise?.nom ?? '-'}</Typography>
-                        ) : e.nom.includes(';') ? (
-                          <Typography variant="pi" textColor="danger600">{NOM_INVALIDE}</Typography>
-                        ) : (
-                          <Box maxWidth="32rem">
-                            <Combobox
-                              aria-label={`Fiche de l'annuaire pour « ${e.nom} »`}
-                              placeholder="Choisir une fiche…"
-                              value={(e.nom in couplages ? couplages[e.nom] : e.entreprise?.documentId) ?? ''}
-                              disabled={e.nom in couplages}
-                              onChange={(v?: string) => { if (v && v !== e.entreprise?.documentId) coupler(e.nom, v); }}
-                              onClear={e.entreprise ? () => coupler(e.nom, null) : undefined}
-                              noOptionsMessage={() => 'Aucune fiche : créez-la dans l’annuaire'}
-                            >
-                              {donnees.annuaire.map((a) => <ComboboxOption key={a.documentId} value={a.documentId}>{a.nom}</ComboboxOption>)}
-                            </Combobox>
-                          </Box>
-                        )}
-                      </Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </Table>
+              <Flex paddingLeft={5} paddingRight={5} paddingBottom={3} gap={4} wrap="wrap" alignItems="center">
+                <ChampRecherche
+                  libelle="Rechercher une entreprise des offres"
+                  placeholder="Rechercher une entreprise"
+                  valeur={rechercheEntreprise}
+                  onChange={(v) => { setRechercheEntreprise(v); setPageEntreprises(1); }}
+                />
+                <Checkbox checked={seulementNonCouplees} onCheckedChange={(v: boolean) => { setSeulementNonCouplees(!!v); setPageEntreprises(1); }}>
+                  Seulement les entreprises non couplées
+                </Checkbox>
+              </Flex>
+              {entreprises.erreur && <Box paddingLeft={5} paddingBottom={3}><Typography textColor="danger600" role="alert">{entreprises.erreur}</Typography></Box>}
+              <div aria-busy={entreprises.chargement} style={{ opacity: entreprises.chargement && entreprises.donnees ? 0.5 : 1, transition: 'opacity 0.15s' }}>
+                {entreprises.donnees && entreprises.donnees.liste.length === 0 ? (
+                  <Box padding={5}>
+                    <Typography textColor="neutral600">
+                      {rechercheEntreprise || seulementNonCouplees ? 'Aucune entreprise ne correspond à ces critères.' : 'Aucune entreprise renseignée dans les offres.'}
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Table colCount={3} rowCount={(entreprises.donnees?.liste.length ?? 0) + 1}>
+                    <Thead>
+                      <Tr>
+                        <Th><Typography variant="sigma">Entreprise dans Gestmax</Typography></Th>
+                        <Th><Typography variant="sigma">Offres</Typography></Th>
+                        <Th><Typography variant="sigma">Fiche de l'annuaire</Typography></Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {(entreprises.donnees?.liste ?? []).map((e) => (
+                        <Tr key={e.nom}>
+                          <Td>
+                            <Flex gap={2}>
+                              <Typography fontWeight="bold" textColor="neutral800">{e.nom}</Typography>
+                              {!e.entreprise && <Badge backgroundColor="warning100" textColor="warning700">Non couplée</Badge>}
+                            </Flex>
+                          </Td>
+                          <Td><Typography>{e.nombre}</Typography></Td>
+                          <Td>
+                            {!peutCoupler ? (
+                              <Typography textColor={e.entreprise ? 'neutral800' : 'neutral600'}>{e.entreprise?.nom ?? '-'}</Typography>
+                            ) : e.nom.includes(';') ? (
+                              <Typography variant="pi" textColor="danger600">{NOM_INVALIDE}</Typography>
+                            ) : (
+                              <Box maxWidth="32rem">
+                                <Combobox
+                                  aria-label={`Fiche de l'annuaire pour « ${e.nom} »`}
+                                  placeholder="Choisir une fiche…"
+                                  value={(e.nom in couplages ? couplages[e.nom] : e.entreprise?.documentId) ?? ''}
+                                  disabled={e.nom in couplages}
+                                  onChange={(v?: string) => { if (v && v !== e.entreprise?.documentId) coupler(e.nom, v); }}
+                                  onClear={e.entreprise ? () => coupler(e.nom, null) : undefined}
+                                  noOptionsMessage={() => 'Aucune fiche : créez-la dans l’annuaire'}
+                                >
+                                  {optionsAnnuaire}
+                                </Combobox>
+                              </Box>
+                            )}
+                          </Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                )}
+              </div>
+              {entreprises.donnees && (
+                <BarrePagination
+                  page={entreprises.donnees.page} pageCount={entreprises.donnees.pageCount} total={entreprises.donnees.total}
+                  taille={tailleEntreprises} chargement={entreprises.chargement} nom="entreprise" noms="entreprises"
+                  onPage={setPageEntreprises} onTaille={(t) => { setTailleEntreprises(t); setPageEntreprises(1); }}
+                />
+              )}
             </Box>
-          )}
+          ) : null}
 
           <Box hasRadius background="neutral0" shadow="tableShadow">
             <Box padding={5} paddingBottom={3}>
               <Typography variant="delta" tag="h2">Offres importées</Typography>
             </Box>
-            <Table colCount={6} rowCount={donnees.dernieres.length + 1}>
+            <Flex paddingLeft={5} paddingRight={5} paddingBottom={3} gap={4} wrap="wrap" alignItems="flex-end">
+              <ChampRecherche
+                libelle="Rechercher une offre"
+                placeholder="Rechercher par titre, entreprise ou lieu"
+                valeur={recherche}
+                onChange={(v) => { setRecherche(v); setPage(1); }}
+              />
+              <Field.Root name="tri-offres">
+                <Field.Label>Trier par</Field.Label>
+                <SingleSelect size="S" value={tri} onChange={(v: string | number) => { setTri(String(v)); setPage(1); }}>
+                  <SingleSelectOption value="recentes">Récentes (à la une d'abord)</SingleSelectOption>
+                  <SingleSelectOption value="anciennes">Plus anciennes</SingleSelectOption>
+                  <SingleSelectOption value="titre">Titre (A à Z)</SingleSelectOption>
+                </SingleSelect>
+              </Field.Root>
+            </Flex>
+            {offres.erreur && <Box paddingLeft={5} paddingBottom={3}><Typography textColor="danger600" role="alert">{offres.erreur}</Typography></Box>}
+            <div aria-busy={offres.chargement} style={{ opacity: offres.chargement && offres.donnees ? 0.5 : 1, transition: 'opacity 0.15s' }}>
+            {offres.donnees && offres.donnees.liste.length === 0 ? (
+              <Box padding={5}>
+                <Typography textColor="neutral600">{recherche ? `Aucune offre ne correspond à « ${recherche} ».` : 'Aucune offre importée pour le moment.'}</Typography>
+              </Box>
+            ) : (
+            <Table colCount={6} rowCount={(offres.donnees?.liste.length ?? 0) + 1}>
               <Thead>
                 <Tr>
                   <Th><Typography variant="sigma">Offre</Typography></Th>
@@ -317,7 +405,7 @@ export default function MesOffres() {
                 </Tr>
               </Thead>
               <Tbody>
-                {donnees.dernieres.map((o) => (
+                {(offres.donnees?.liste ?? []).map((o) => (
                   <Tr key={o.documentId}>
                     <Td>
                       <Flex direction="column" alignItems="flex-start">
@@ -359,6 +447,15 @@ export default function MesOffres() {
                 ))}
               </Tbody>
             </Table>
+            )}
+            </div>
+            {offres.donnees && (
+              <BarrePagination
+                page={offres.donnees.page} pageCount={offres.donnees.pageCount} total={offres.donnees.total}
+                taille={taille} chargement={offres.chargement} nom="offre" noms="offres"
+                onPage={setPage} onTaille={(t) => { setTaille(t); setPage(1); }}
+              />
+            )}
           </Box>
         </Flex>
       </Layouts.Content>

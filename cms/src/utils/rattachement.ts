@@ -2,7 +2,6 @@
 // le ou les noms d'entité Gestmax de ses offres, séparés par « ; ». La synchronisation s'en sert à chaque passage,
 // le couplage fait depuis « Mes offres d'emploi » survit donc aux synchronisations suivantes.
 import type { Core } from '@strapi/strapi';
-import { executerSynchro, UID_OFFRE } from './garde-offres';
 
 export const UID_ENTREPRISE = 'api::entreprise.entreprise';
 const SEPARATEUR = ';';
@@ -53,11 +52,23 @@ export async function rattacher(strapi: Core.Strapi, nomEntreprise: string, docu
     }
   }
 
-  // Offres portant ce nom : même chemin d'écriture que la synchronisation (voir garde-offres).
-  const offres = ((await strapi.db.query(UID_OFFRE).findMany({ select: ['documentId', 'nomEntreprise'], where: { nomEntreprise: { $notNull: true } } })) as any[])
-    .filter((o) => normaliserNom(o.nomEntreprise) === cle);
-  await executerSynchro(async () => {
-    for (const o of offres) await strapi.documents(UID_OFFRE).update({ documentId: o.documentId, data: { entreprise: documentId } } as any);
-  });
+  // Offres portant ce nom : sélection en SQL avec la même normalisation que normaliserNom (casse et espaces), en
+  // comparaison binaire comme « Mes offres d'emploi » (sinon « Société » et « Societe » seraient confondues), puis
+  // mise à jour par lots de la table de liaison, dans une vraie transaction.
+  const offres: any[] = await strapi.db.connection('offre').select('id')
+    .whereRaw("LOWER(REGEXP_REPLACE(TRIM(nom_entreprise), '[[:space:]]+', ' ')) COLLATE utf8mb4_bin = ?", [cle]);
+  if (offres.length) {
+    const cibleId = documentId ? ((await strapi.db.query(UID_ENTREPRISE).findOne({ where: { documentId }, select: ['id'] })) as any).id : null;
+    const ids = offres.map((o) => o.id);
+    await strapi.db.connection.transaction(async (trx: any) => {
+      for (let i = 0; i < ids.length; i += 1000) {
+        const lot = ids.slice(i, i + 1000);
+        await trx('offre_entreprise_lnk').whereIn('offre_id', lot).del();
+        if (cibleId) await trx('offre_entreprise_lnk').insert(lot.map((offre_id: number) => ({ offre_id, entreprise_id: cibleId, offre_ord: 1 })));
+      }
+    });
+  }
+  // Écriture directe : pas de webhook automatique, on prévient le constructeur du site.
+  if (offres.length) await (strapi as any).notifierOffres?.();
   return { offres: offres.length };
 }
