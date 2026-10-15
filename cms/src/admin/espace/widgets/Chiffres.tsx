@@ -16,7 +16,7 @@ interface Compteurs {
 export default function Chiffres() {
   const { donnees, chargement, erreur } = useDonnees<{ compteurs: Compteurs }>('/espace/tableau-de-bord');
   if (chargement && !donnees) return <Widget.Loading />;
-  if (erreur || !donnees) return <Widget.Error />;
+  if (erreur || !donnees) return <Widget.Error>{erreur}</Widget.Error>;
   const c = donnees.compteurs;
 
   const chiffres = [

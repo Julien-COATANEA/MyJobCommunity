@@ -28,6 +28,13 @@ const DELAI_NOUVELLE_TENTATIVE_MS = 20_000;
 
 const log = (...args) => console.log(new Date().toISOString(), ...args);
 
+// Sous Docker Desktop / WSL, le conteneur peut démarrer avant que le dossier du site soit monté : il resterait vide
+// et chaque build échouerait. On s'arrête pour que Docker relance le conteneur (restart: unless-stopped).
+if (!existsSync(join(SITE_DIR, 'package.json'))) {
+  log(`${SITE_DIR}/package.json introuvable (dossier du site pas encore monté ?) : arrêt, Docker relancera le builder`);
+  process.exit(1);
+}
+
 function planifier(raison) {
   etat.declencheur = raison;
   clearTimeout(minuteur);
@@ -39,6 +46,10 @@ async function lancer() {
   if (etat.enCours) {
     etat.enAttente = true;
     return;
+  }
+  if (!existsSync(join(SITE_DIR, 'package.json'))) {
+    log(`${SITE_DIR}/package.json introuvable (montage perdu ?) : arrêt, Docker relancera le builder`);
+    process.exit(1);
   }
   etat.enCours = true;
   const version = new Date().toISOString().replace(/[:.]/g, '-');

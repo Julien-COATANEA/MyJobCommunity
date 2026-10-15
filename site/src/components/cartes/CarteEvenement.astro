@@ -6,6 +6,7 @@ import ImageStrapi from '../ImageStrapi.astro';
 import type { Evenement } from '../../lib/contenus';
 import { formatHeure, jourMois } from '../../lib/format';
 import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
+import { lienSur } from '../../lib/liens';
 
 interface Props {
   evenement: Evenement;
@@ -16,7 +17,8 @@ interface Props {
 const { evenement: e, niveauTitre = 3, couverture = false } = Astro.props;
 const Titre = `h${niveauTitre}`;
 const { jour, mois } = jourMois(e.dateDebut);
-const inscriptionSite = e.inscriptionActive && !e.inscriptionExterneUrl;
+const inscriptionExterne = lienSur(e.inscriptionExterneUrl);
+const inscriptionSite = e.inscriptionActive && !inscriptionExterne;
 const avecPhoto = couverture && !!e.image;
 ---
 
@@ -34,7 +36,7 @@ const avecPhoto = couverture && !!e.image;
   <div class="carte__corps">
     <p class="etiquette">{e.typeEvenement}</p>
     <Titre class="carte__titre">
-      <a href={`/evenements/${e.slug}`} class="carte__lien">{e.titre}</a>
+      <a href={`/evenements/${e.slug}/`} class="carte__lien">{e.titre}</a>
     </Titre>
     <ul class="meta">
       <li><Icone nom="evenement" taille={18} /><time datetime={e.dateDebut}>{jour} {mois}, {formatHeure(e.dateDebut)}</time></li>
@@ -45,7 +47,7 @@ const avecPhoto = couverture && !!e.image;
         <p class="carte__mention" data-places-evenement={e.documentId} data-api={PUBLIC_STRAPI_URL}>
           Inscription en ligne{e.placesMax ? ` · ${e.placesMax} places` : ''}
         </p>
-      ) : e.inscriptionExterneUrl ? (
+      ) : inscriptionExterne ? (
         <p class="carte__mention">Inscription sur le site de l'organisateur</p>
       ) : null
     }

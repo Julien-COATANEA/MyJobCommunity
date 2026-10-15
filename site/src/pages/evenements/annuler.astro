@@ -6,7 +6,7 @@ import EnTetePage from '../../components/EnTetePage.astro';
 import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
 ---
 
-<Base titre="Annuler mon inscription" noIndex ariane={[{ libelle: 'Événements', url: '/evenements' }, { libelle: 'Annuler mon inscription' }]}>
+<Base titre="Annuler mon inscription" noIndex ariane={[{ libelle: 'Événements', url: '/evenements/' }, { libelle: 'Annuler mon inscription' }]}>
   <EnTetePage titre="Annuler mon inscription" />
 
   <div class="conteneur conteneur--etroit section" data-annulation data-api={PUBLIC_STRAPI_URL}>
@@ -20,13 +20,13 @@ import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
       <p>En annulant, votre place sera libérée pour un autre participant.</p>
       <p class="annulation__actions">
         <button type="button" class="bouton bouton--plein" data-confirmer>Oui, annuler mon inscription</button>
-        <a href="/evenements" class="bouton bouton--contour">Non, je garde ma place</a>
+        <a href="/evenements/" class="bouton bouton--contour">Non, je garde ma place</a>
       </p>
     </div>
 
     <div class="alerte alerte--succes" data-fait tabindex="-1" hidden>
       <h2 class="alerte__titre">Votre inscription est annulée</h2>
-      <p>Merci de nous avoir prévenus. <a href="/evenements">Voir les autres événements</a></p>
+      <p>Merci de nous avoir prévenus. <a href="/evenements/">Voir les autres événements</a></p>
     </div>
 
     <div class="alerte alerte--erreur" data-erreur tabindex="-1" hidden>

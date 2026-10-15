@@ -1,4 +1,5 @@
 // Réseaux sociaux : noms et logos (tracés pleins simplifiés, 24 × 24), pour le pied de page et les boutons de partage.
+import { lienSur } from './liens';
 
 export const NOMS_RESEAUX: Record<string, string> = {
   facebook: 'Facebook', linkedin: 'LinkedIn', instagram: 'Instagram', youtube: 'YouTube', x: 'X', tiktok: 'TikTok',
@@ -23,3 +24,10 @@ export function liensPartage(url: string, titre: string) {
     { reseau: 'x', libelle: 'X', href: `https://x.com/intent/post?url=${u}&text=${t}` },
   ];
 }
+
+/** Réseaux du BO dont l'adresse est sûre (http, https…), adresse nettoyée. */
+export const reseauxSurs = (reseaux: { reseau: string; url: string }[] | null | undefined) =>
+  (reseaux ?? []).flatMap((r) => {
+    const url = lienSur(r.url);
+    return url ? [{ ...r, url }] : [];
+  });

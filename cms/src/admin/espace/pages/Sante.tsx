@@ -18,7 +18,7 @@ const MOT = { ok: 'Tout va bien', attention: 'À surveiller', erreur: 'À corrig
 export default function SantePage() {
   const { donnees, chargement, erreur, recharger } = useDonnees<Sante>('/espace/sante');
   if (chargement && !donnees) return <Page.Loading />;
-  if (erreur || !donnees) return <Page.Error />;
+  if (erreur || !donnees) return <Page.Error content={erreur} />;
 
   const tries = [...donnees.controles].sort((a, b) => ['erreur', 'attention', 'ok'].indexOf(a.statut) - ['erreur', 'attention', 'ok'].indexOf(b.statut));
 

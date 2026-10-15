@@ -24,7 +24,7 @@ const seo = comp('shared.seo', false);
 const BLOCS = [
   'blocs.texte', 'blocs.texte-image', 'blocs.chiffres-cles', 'blocs.cartes', 'blocs.appel-action',
   'blocs.faq', 'blocs.logos', 'blocs.recherche-offres', 'blocs.dernieres-offres',
-  'blocs.dernieres-actualites', 'blocs.prochains-evenements', 'blocs.entreprises', 'blocs.temoignages', 'blocs.espaces', 'blocs.cartes-photo', 'blocs.galerie', 'blocs.formulaire-contact', 'blocs.iframe',
+  'blocs.dernieres-actualites', 'blocs.prochains-evenements', 'blocs.entreprises', 'blocs.temoignages', 'blocs.espaces', 'blocs.cartes-photo', 'blocs.galerie', 'blocs.formulaire-contact', 'blocs.cookies-utilises', 'blocs.iframe',
 ];
 
 const types = {
@@ -54,6 +54,15 @@ const types = {
       telephone: str(),
       email: { type: 'email' },
       reseauxSociaux: comp('shared.reseau-social', true),
+      // Informations légales : remplissent automatiquement les mentions légales et la politique de confidentialité
+      editeurNom: str({ maxLength: 160 }),
+      editeurSiret: str({ maxLength: 20, regex: '^[0-9 ]{9,17}$' }),
+      directeurPublication: str({ maxLength: 120 }),
+      hebergeurNom: str({ maxLength: 160 }),
+      hebergeurAdresse: { type: 'text', maxLength: 300 },
+      hebergeurTelephone: str({ maxLength: 30 }),
+      contactDonneesEmail: { type: 'email' },
+      prestataireNom: str({ maxLength: 160 }),
       emailNotificationInscriptions: { type: 'email', private: true },
       // Gestmax
       gestmaxUrlFront: str(),
@@ -110,6 +119,8 @@ const types = {
       afficherLogo: { type: 'boolean', default: true },
       afficherSalaire: { type: 'boolean', default: true },
       afficherDate: { type: 'boolean', default: true },
+      // Bannière en haut de chaque fiche d'offre
+      imageBandeauOffre: image(),
       sections: { type: 'dynamiczone', components: BLOCS },
       seo,
     },

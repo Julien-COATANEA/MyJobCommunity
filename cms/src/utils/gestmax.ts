@@ -110,13 +110,23 @@ export function convertirOffre(v: OffreGestmax, conf: ConfigGestmax): OffreConve
     profilHtml: texte(v[conf.champs.profil]),
     dateActivation: lireDate(v.vacancy_activation_date_full ?? v.vacancy_activation_date),
     dateFinPublication: lireDate(v.publication_end_date_full ?? v.publication_end_date),
-    urlDetailGestmax: texte(v.vacancy_detail_url),
-    urlCandidature: lien && v.application_link_type === 'EMAIL' ? `mailto:${lien}` : lien,
-    logoUrl: texte(v.cust_logo),
+    urlDetailGestmax: urlWeb(texte(v.vacancy_detail_url)),
+    urlCandidature: lien && v.application_link_type === 'EMAIL' ? (/^[^\s:/?#]+@[^\s:/?#]+$/.test(lien) ? `mailto:${lien}` : null) : urlWeb(lien),
+    logoUrl: urlWeb(texte(v.cust_logo)),
   };
   // L'empreinte évite de réécrire (et donc de déclencher un rebuild) une offre inchangée.
   const empreinte = createHash('sha1').update(JSON.stringify(offre)).digest('hex');
   return { ...offre, empreinte };
+}
+
+/** Adresse http(s) uniquement : un « javascript: » venu de Gestmax finirait dans un lien du site. */
+function urlWeb(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    return ['http:', 'https:'].includes(new URL(url).protocol) ? url : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Description du poste, suivie de « Nous vous proposons » si l'instance renseigne ce champ. */
@@ -132,9 +142,11 @@ export async function recupererOffresGestmax(conf: ConfigGestmax, dossierDonnees
     return JSON.parse(readFileSync(join(dossierDonnees, 'gestmax-mock.json'), 'utf8')).data;
   }
 
-  const offres: OffreGestmax[] = [];
+  const offres = new Map<string, OffreGestmax>();
+  let total: number | null = null;
   const auth = Buffer.from(`${conf.user}:${conf.password}`).toString('base64');
-  for (let page = 1; page <= 100; page++) {
+  for (let page = 1; ; page++) {
+    if (page > 100) throw new Error('Gestmax : plus de 100 pages d’offres, lecture interrompue (liste incomplète).');
     const params = new URLSearchParams({
       fields: champsDemandes(conf).join(','),
       page: String(page),
@@ -151,10 +163,20 @@ export async function recupererOffresGestmax(conf: ConfigGestmax, dossierDonnees
     });
     if (!reponse.ok) throw new Error(`Gestmax a répondu ${reponse.status} ${reponse.statusText}`);
 
-    const json = (await reponse.json()) as { data?: OffreGestmax[]; count?: number };
-    const lot: OffreGestmax[] = json.data ?? [];
-    offres.push(...lot);
-    if (lot.length < conf.pageItems || (json.count && offres.length >= json.count)) break;
+    const json = (await reponse.json()) as { data?: unknown; count?: unknown };
+    // Une réponse d'une autre forme ne doit pas passer pour « aucune offre » (toutes seraient supprimées).
+    if (!Array.isArray(json?.data)) throw new Error('Gestmax : réponse inattendue (pas de liste « data »).');
+    const lot = json.data as OffreGestmax[];
+    const compte = Number(json.count);
+    if (json.count != null && json.count !== '' && Number.isFinite(compte) && compte > 0) total = compte;
+    // Le tri par date n'est pas stable : une offre lue deux fois n'est gardée qu'une fois.
+    for (const o of lot) offres.set(String(o.vacancy_id), o);
+    // Page incomplète : fin de liste, sauf si le total annoncé n'est pas atteint (instance qui plafonne la taille
+    // des pages). Une page vide arrête toujours la lecture.
+    if (!lot.length || offres.size >= (total ?? Infinity) || (lot.length < conf.pageItems && (total === null || offres.size >= total))) break;
   }
-  return offres;
+  // Total annoncé non atteint (doublons du tri, offres filtrées par frontOffice…) : simple signalement, le garde-fou
+  // de la synchronisation (forte baisse du nombre d'offres) protège le site.
+  if (total !== null && offres.size < total) console.warn(`[gestmax] ${offres.size} offres lues sur ${total} annoncées`);
+  return [...offres.values()];
 }

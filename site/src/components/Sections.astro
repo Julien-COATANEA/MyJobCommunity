@@ -19,6 +19,7 @@ import BlocEspaces from './blocs/BlocEspaces.astro';
 import BlocCartesPhoto from './blocs/BlocCartesPhoto.astro';
 import BlocGalerie from './blocs/BlocGalerie.astro';
 import BlocFormulaireContact from './blocs/BlocFormulaireContact.astro';
+import BlocCookiesUtilises from './blocs/BlocCookiesUtilises.astro';
 
 interface Props {
   sections: Section[] | null | undefined;
@@ -43,6 +44,7 @@ const COMPOSANTS: Record<string, any> = {
   'blocs.galerie': BlocGalerie,
   'blocs.formulaire-contact': BlocFormulaireContact,
   'blocs.iframe': BlocIframe,
+  'blocs.cookies-utilises': BlocCookiesUtilises,
 };
 
 const { sections = [] } = Astro.props;

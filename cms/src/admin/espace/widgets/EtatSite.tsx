@@ -4,7 +4,7 @@ import { Badge, Button, Divider, Flex, Typography } from '@strapi/design-system'
 import { ArrowClockwise, Briefcase, Earth } from '@strapi/icons';
 import { Widget, useFetchClient, useNotification } from '@strapi/strapi/admin';
 import { Link } from 'react-router-dom';
-import { Pastille, ilYA, pluriel, useDonnees } from '../outils';
+import { Pastille, ilYA, messageErreur, pluriel, useDonnees } from '../outils';
 
 interface Donnees {
   urlSite: string;
@@ -20,7 +20,7 @@ export default function EtatSite() {
   const [envoi, setEnvoi] = React.useState(false);
 
   if (chargement && !donnees) return <Widget.Loading />;
-  if (erreur || !donnees) return <Widget.Error />;
+  if (erreur || !donnees) return <Widget.Error>{erreur}</Widget.Error>;
   const { site, gestmax } = donnees;
 
   const mettreAJour = async () => {
@@ -29,6 +29,8 @@ export default function EtatSite() {
       await post('/espace/site/regenerer', {});
       toggleNotification({ type: 'success', message: 'Mise à jour du site lancée : elle sera en ligne dans quelques instants.' });
       setTimeout(recharger, 4000);
+    } catch (e) {
+      toggleNotification({ type: 'danger', message: messageErreur(e, "La mise à jour du site n'a pas pu être lancée.") });
     } finally {
       setEnvoi(false);
     }

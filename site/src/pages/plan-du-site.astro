@@ -13,20 +13,20 @@ const pagesVisibles = pages.filter((p) => !p.seo?.noIndex);
   <div class="conteneur conteneur--etroit section prose plan">
     <ul>
       <li><a href="/">Accueil</a></li>
-      <li><a href="/offres">Offres d'emploi</a></li>
+      <li><a href="/offres/">Offres d'emploi</a></li>
       <li>
-        <a href="/entreprises">Annuaire des entreprises</a>
-        <ul>{entreprises.map((e) => <li><a href={`/entreprises/${e.slug}`}>{e.nom}</a></li>)}</ul>
+        <a href="/entreprises/">Annuaire des entreprises</a>
+        <ul>{entreprises.map((e) => <li><a href={`/entreprises/${e.slug}/`}>{e.nom}</a></li>)}</ul>
       </li>
       <li>
-        <a href="/actualites">Actualités</a>
-        <ul>{articles.slice(0, 20).map((a) => <li><a href={`/actualites/${a.slug}`}>{a.titre}</a></li>)}</ul>
+        <a href="/actualites/">Actualités</a>
+        <ul>{articles.slice(0, 20).map((a) => <li><a href={`/actualites/${a.slug}/`}>{a.titre}</a></li>)}</ul>
       </li>
       <li>
-        <a href="/evenements">Événements</a>
-        <ul>{evenements.map((e) => <li><a href={`/evenements/${e.slug}`}>{e.titre}</a></li>)}</ul>
+        <a href="/evenements/">Événements</a>
+        <ul>{evenements.map((e) => <li><a href={`/evenements/${e.slug}/`}>{e.titre}</a></li>)}</ul>
       </li>
-      {pagesVisibles.map((p) => <li><a href={`/${p.slug}`}>{p.titre}</a></li>)}
+      {pagesVisibles.map((p) => <li><a href={`/${p.slug}/`}>{p.titre}</a></li>)}
     </ul>
   </div>
 </Base>

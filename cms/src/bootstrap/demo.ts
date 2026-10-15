@@ -4,6 +4,7 @@ import { statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import type { Core } from '@strapi/strapi';
 import { slugifier } from '../utils/gestmax';
+import { MODELES } from '../utils/modeles';
 
 // --- Aides de construction du contenu « blocks » de Strapi ---
 const t = (text: string, extra: Record<string, unknown> = {}) => ({ type: 'text', text, ...extra });
@@ -87,6 +88,14 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
       telephone: '01 23 45 67 89',
       email: 'emploi@vallee-verte.example',
       emailNotificationInscriptions: 'evenements@vallee-verte.example',
+      editeurNom: "Communauté d'agglomération de la Vallée Verte (territoire fictif de démonstration)",
+      editeurSiret: '123 456 789 00012',
+      directeurPublication: 'Mme Claire Martin, Présidente',
+      hebergeurNom: 'Hébergeur de démonstration',
+      hebergeurAdresse: '10 rue du Serveur, 00000 Vallée-Verte',
+      hebergeurTelephone: '01 23 45 00 00',
+      contactDonneesEmail: 'dpo@vallee-verte.example',
+      prestataireNom: 'My Job Community',
       reseauxSociaux: [
         { reseau: 'linkedin', url: 'https://www.linkedin.com/' },
         { reseau: 'facebook', url: 'https://www.facebook.com/' },
@@ -142,6 +151,7 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
       liensLegaux: [
         { libelle: 'Mentions légales', url: '/mentions-legales' },
         { libelle: 'Données personnelles', url: '/donnees-personnelles' },
+        { libelle: 'Politique de cookies', url: '/politique-de-cookies' },
         { libelle: 'Accessibilité : partiellement conforme', url: '/accessibilite' },
       ],
     } as any,
@@ -414,16 +424,11 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
     sections: [{ __component: 'blocs.formulaire-contact', surtitre: 'Nous écrire', titre: 'Écrivez-nous', afficherCoordonnees: true }],
   });
 
-  await pageLegale('Mentions légales', 'mentions-legales', [
-    h(2, 'Éditeur du site'),
-    p("Communauté d'agglomération de la Vallée Verte (territoire fictif de démonstration)."),
-    h(2, 'Hébergement'),
-    p('À compléter.'),
-  ]);
-  await pageLegale('Données personnelles', 'donnees-personnelles', [
-    p('Les données saisies lors de l’inscription à un événement servent uniquement à l’organisation de cet événement.'),
-    p('Elles sont conservées un an au maximum. Vous pouvez exercer vos droits en écrivant à emploi@vallee-verte.example.'),
-  ]);
+  // Pages légales : les modèles complets, remplis par les informations légales ci-dessus.
+  for (const cle of ['mentions-legales', 'donnees-personnelles', 'politique-cookies']) {
+    const m = MODELES.find((x) => x.cle === cle)!;
+    await publier('api::page.page', { titre: m.titrePage, slug: slugifier(m.titrePage), sections: JSON.parse(JSON.stringify(m.sections)) });
+  }
   await pageLegale('Accessibilité', 'accessibilite', [
     p('La Vallée Verte s’engage à rendre ses services numériques accessibles conformément à l’article 47 de la loi n° 2005-102 du 11 février 2005.'),
     h(2, 'État de conformité'),

@@ -62,7 +62,7 @@ const aLire = [...autres.filter(memeCategorie), ...autres.filter((a) => !memeCat
                   {a.image && <ImageStrapi media={a.image} class="mini-liste__vignette" largeurs={[128]} sizes="64px" decorative />}
                   <div>
                     <p class="mini-liste__date"><time datetime={a.datePublication}>{formatDate(a.datePublication)}</time></p>
-                    <a href={`/actualites/${a.slug}`} class="mini-liste__lien">{a.titre}</a>
+                    <a href={`/actualites/${a.slug}/`} class="mini-liste__lien">{a.titre}</a>
                   </div>
                 </li>
               ))}

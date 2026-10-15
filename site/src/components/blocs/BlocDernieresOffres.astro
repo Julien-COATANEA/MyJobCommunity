@@ -16,7 +16,7 @@ if (bloc.typeContrat) offres = offres.filter((o) => o.typeContrat === bloc.typeC
 offres = offres.slice(0, bloc.nombre ?? 6);
 
 const urlIframe = iframe ? `${parametres.gestmaxUrlFront!.replace(/\/+$/, '')}${bloc.cheminIframe ?? '/search/last'}` : '';
-const voirTout = bloc.typeContrat ? `/offres?contrat=${encodeURIComponent(bloc.typeContrat)}` : '/offres';
+const voirTout = bloc.typeContrat ? `/offres/?contrat=${encodeURIComponent(bloc.typeContrat)}` : '/offres/';
 ---
 
 <section class="section">

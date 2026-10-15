@@ -24,6 +24,15 @@ export interface Parametres {
   adresse: string | null;
   telephone: string | null;
   email: string | null;
+  // Pages légales (jetons {editeur}, {siret}… — voir lib/jetons-legaux.ts)
+  editeurNom: string | null;
+  editeurSiret: string | null;
+  directeurPublication: string | null;
+  hebergeurNom: string | null;
+  hebergeurAdresse: string | null;
+  hebergeurTelephone: string | null;
+  contactDonneesEmail: string | null;
+  prestataireNom: string | null;
   reseauxSociaux: { reseau: string; url: string }[];
   gestmaxUrlFront: string | null;
   lienEspaceCandidat: string | null;

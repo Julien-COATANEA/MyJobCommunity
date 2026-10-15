@@ -1,0 +1,78 @@
+---
+// Liste automatique des cookies et traceurs du site (mêmes réglages que lib/suivi.ts : Google Analytics, Tag Manager,
+// scripts personnalisés). Le bouton « Gérer mes choix » n'existe que si le bandeau est affiché, comme dans Base.astro ;
+// il reste masqué sans JavaScript et est révélé par le script du bandeau (BandeauCookies.astro).
+import { lireParametres } from '../../lib/contenus';
+import { bandeauNecessaire, codesSuivi, outilsCookies } from '../../lib/suivi';
+
+const { bloc } = Astro.props;
+const parametres = await lireParametres();
+const outils = outilsCookies(parametres);
+const aucunOutil = outils.length === 1;
+const notes = outils.filter((o) => o.note).map((o) => o.note!);
+const bandeau = bandeauNecessaire(codesSuivi(parametres)) || !!parametres.bandeauCookies;
+---
+
+<section class="section">
+  <div class="conteneur conteneur--etroit">
+    <h2 class="section__titre section__titre--gauche">{bloc.titre?.trim() || 'Cookies et traceurs utilisés'}</h2>
+    <div class="prose">
+      {bloc.introduction?.trim() && <p class="cookies-liste__intro">{bloc.introduction}</p>}
+      {aucunOutil && <p>Ce site ne dépose aucun cookie de mesure d'audience ni de publicité.</p>}
+      <div class="cookies-liste" role="region" aria-label="Tableau des cookies et traceurs utilisés (défilement horizontal possible)" tabindex="0">
+        <table class="cookies-liste__tableau">
+          <caption class="sr-only">Cookies et traceurs utilisés sur ce site</caption>
+          <thead>
+            <tr>
+              <th scope="col">Outil</th>
+              <th scope="col">Finalité</th>
+              <th scope="col">Cookies déposés</th>
+              <th scope="col">Durée</th>
+              <th scope="col">Consentement</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              outils.map((o) => (
+                <tr>
+                  <th scope="row">{o.nom}</th>
+                  <td>{o.finalite}</td>
+                  <td>
+                    {o.cookies.map((c, i) => (
+                      <>
+                        {i > 0 && ', '}
+                        <code>{c}</code>
+                      </>
+                    ))}
+                    {o.precision && <span class="cookies-liste__precision">{o.precision}</span>}
+                  </td>
+                  <td>{o.duree}</td>
+                  <td>{o.consentement}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      {notes.length > 0 && <ul class="cookies-liste__notes">{notes.map((n) => <li>{n}</li>)}</ul>}
+      {
+        bandeau && (
+          <p>
+            <button type="button" class="bouton bouton--plein bouton--petit" data-mjc-cookies-ouvrir hidden>Gérer mes choix</button>
+          </p>
+        )
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .cookies-liste { overflow-x: auto; border: 1px solid var(--c-bordure); border-radius: var(--rayon); }
+  .cookies-liste__tableau { width: 100%; min-width: 44rem; border-collapse: collapse; font-size: 0.95rem; }
+  .cookies-liste__tableau th, .cookies-liste__tableau td { padding: 0.7rem 0.85rem; text-align: left; vertical-align: top; overflow-wrap: anywhere; border-bottom: 1px solid var(--c-bordure); }
+  .cookies-liste__tableau thead th { background: var(--c-surface); color: var(--c-fonce); }
+  .cookies-liste__tableau tbody tr:last-child > * { border-bottom: 0; }
+  .cookies-liste__tableau code { font-size: 0.9em; }
+  .cookies-liste__precision { display: block; color: var(--c-texte-doux); }
+  .cookies-liste__notes { font-size: 0.95rem; color: var(--c-texte-doux); }
+</style>

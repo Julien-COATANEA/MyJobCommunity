@@ -1,6 +1,7 @@
 ---
 import { urlMedia, type Seo } from '../lib/strapi';
 import type { Parametres } from '../lib/contenus';
+import { jsonPourScript } from '../lib/format';
 
 interface Props {
   parametres: Parametres;
@@ -42,4 +43,4 @@ const indexable = process.env.SITE_ENV === 'production' && !noIndex && !seo?.noI
 {imageOg && <meta property="og:image" content={imageOg} />}
 <meta name="twitter:card" content={imageOg ? 'summary_large_image' : 'summary'} />
 
-{jsonLd.map((donnees) => <script type="application/ld+json" set:html={JSON.stringify(donnees)} />)}
+{jsonLd.map((donnees) => <script type="application/ld+json" set:html={jsonPourScript(donnees)} />)}

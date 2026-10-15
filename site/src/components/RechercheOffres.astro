@@ -14,7 +14,7 @@ const offres = await lireOffres();
 const contrats = [...new Set(offres.map((o) => o.typeContrat).filter(Boolean))].sort() as string[];
 ---
 
-<form action="/offres" method="get" role="search" aria-label="Rechercher une offre" class="recherche" data-recherche>
+<form action="/offres/" method="get" role="search" aria-label="Rechercher une offre" class="recherche" data-recherche>
   <div class="recherche__champ recherche__champ--principal">
     <label for={`${id}-q`}>Métier, mot-clé</label>
     <span class="saisie"><Icone nom="emploi" taille={18} /><input id={`${id}-q`} name="q" type="search" autocomplete="off" placeholder="Ex. : infirmier, soudeur…" /></span>

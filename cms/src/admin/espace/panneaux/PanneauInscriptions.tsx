@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Box, Button, Checkbox, Field, Flex, Modal, ProgressBar, TextInput, Textarea, Typography } from '@strapi/design-system';
 import { Download, File as Fichier, Mail } from '@strapi/icons';
 import { useFetchClient, useNotification } from '@strapi/strapi/admin';
+import { messageErreur } from '../outils';
 
 interface Inscrit {
   documentId: string; nom: string; prenom: string; nomFamille: string; email: string; telephone: string | null;
@@ -48,13 +49,24 @@ function Contenu({ documentId }: { documentId: string }) {
   const [corps, setCorps] = React.useState('');
   const [aussiAttente, setAussiAttente] = React.useState(false);
   const [envoi, setEnvoi] = React.useState(false);
+  const [erreur, setErreur] = React.useState<string | null>(null);
 
-  const charger = React.useCallback(
-    () => get<Inscriptions>(`/espace/evenements/${documentId}/inscriptions`).then(({ data }) => setDonnees(data)).catch(() => {}),
-    [get, documentId],
-  );
+  const charger = React.useCallback(() => {
+    setErreur(null);
+    return get<Inscriptions>(`/espace/evenements/${documentId}/inscriptions`)
+      .then(({ data }) => setDonnees(data))
+      .catch((e) => setErreur(messageErreur(e, "Les inscriptions n'ont pas pu être chargées.")));
+  }, [get, documentId]);
   React.useEffect(() => { charger(); }, [charger]);
 
+  if (erreur) {
+    return (
+      <Flex direction="column" alignItems="stretch" gap={2}>
+        <Typography variant="pi" textColor="danger600">{erreur}</Typography>
+        <Button variant="tertiary" onClick={charger} fullWidth>Réessayer</Button>
+      </Flex>
+    );
+  }
   if (!donnees) return null;
   if (!donnees.inscriptionActive || donnees.inscriptionExterneUrl) {
     return (
@@ -78,8 +90,13 @@ function Contenu({ documentId }: { documentId: string }) {
       lien.download = `inscrits-${donnees.titre.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.csv`;
       lien.click();
       URL.revokeObjectURL(lien.href);
-    } catch {
-      toggleNotification({ type: 'danger', message: "L'export n'a pas pu être généré." });
+    } catch (e: any) {
+      // Réponse attendue en fichier : le message d'erreur du serveur arrive lui aussi sous forme de fichier.
+      let message = messageErreur(e, "L'export n'a pas pu être généré.");
+      if (e?.response?.data instanceof Blob) {
+        message = await e.response.data.text().then((t: string) => JSON.parse(t)?.error?.message || message).catch(() => message);
+      }
+      toggleNotification({ type: 'danger', message });
     } finally {
       setExport(false);
     }
@@ -97,7 +114,7 @@ function Contenu({ documentId }: { documentId: string }) {
       setSujet('');
       setCorps('');
     } catch (e: any) {
-      toggleNotification({ type: 'danger', message: e?.response?.data?.error?.message ?? "Le message n'a pas pu être envoyé." });
+      toggleNotification({ type: 'danger', message: messageErreur(e, "Le message n'a pas pu être envoyé.") });
     } finally {
       setEnvoi(false);
     }

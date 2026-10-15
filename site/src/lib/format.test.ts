@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classeContrat, estNouveau, ilYA, initiales } from './format';
+import { classeContrat, estNouveau, ilYA, initiales, jsonPourScript } from './format';
 
 const JOUR = 86_400_000;
 const maintenant = new Date('2026-10-13T12:00:00Z').getTime();
@@ -34,5 +34,15 @@ describe('classeContrat', () => {
     expect(initiales("Communauté d'agglomération de la Vallée", 3)).toBe('CAV');
     expect(initiales('Le Havre')).toBe('H');
     expect(initiales('De La')).toBe('DL');
+  });
+});
+
+describe('jsonPourScript', () => {
+  it('échappe ce qui fermerait la balise <script> sans changer les données', () => {
+    const donnees = { titre: '</script><script>alert(1)</script>', ligne: 'a\u2028b\u2029c' };
+    const json = jsonPourScript(donnees);
+    expect(json).not.toContain('<');
+    expect(json).not.toMatch(/[\u2028\u2029]/);
+    expect(JSON.parse(json)).toEqual(donnees);
   });
 });

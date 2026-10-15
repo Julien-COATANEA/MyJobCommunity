@@ -390,11 +390,11 @@ main:focus { outline: none; }
 .carte--evenement:hover { border-color: var(--c-secondaire-clair); }
 .date-pastille {
   display: flex; flex-direction: column; align-items: center; justify-content: center; flex: none; width: 64px; margin: 1.4rem 0 1.4rem 1.4rem; padding: 0.75rem 0;
-  border-radius: 12px; background: var(--c-secondaire-pale); color: var(--c-secondaire);
+  border-radius: 12px; background: var(--c-secondaire-pale); color: var(--c-secondaire-texte);
   font-family: var(--police-titres); text-transform: uppercase; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.05em; text-align: center;
 }
 .date-pastille span { font-size: 1.6rem; line-height: 1; letter-spacing: 0; }
-.carte--evenement .etiquette { background: var(--c-secondaire-pale); color: var(--c-secondaire); }
+.carte--evenement .etiquette { background: var(--c-secondaire-pale); color: var(--c-secondaire-texte); }
 
 .etiquette {
   align-self: flex-start; width: fit-content; padding: 0.3rem 0.8rem; border-radius: 999px;
@@ -436,16 +436,18 @@ main:focus { outline: none; }
 /* Clair (détail) : titre sombre sur fond blanc, comme les pages article et événement de la maquette. */
 /* Bannière des fiches d'offre : fil d'Ariane en haut, lien de retour en bas, dégradés pour la lisibilité du texte blanc. */
 .banniere-offre { position: relative; isolation: isolate; display: flex; min-height: clamp(200px, 24vw, 320px); background: linear-gradient(120deg, var(--c-primaire-fonce), var(--c-secondaire)); }
-.banniere-offre::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgb(0 0 0 / 0.5), rgb(0 0 0 / 0) 40%, rgb(0 0 0 / 0) 60%, rgb(0 0 0 / 0.45)); }
+/* Voile noir d'au moins 70 % partout (le fil d'Ariane et le lien peuvent passer sur plusieurs lignes) : texte blanc
+   ≥ 4,5:1 même sur une photo très claire. */
+.banniere-offre::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgb(0 0 0 / 0.75), rgb(0 0 0 / 0.7) 50%, rgb(0 0 0 / 0.75)); }
 .banniere-offre__image { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
 .banniere-offre__contenu { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 1.5rem; padding-block: 1.5rem; }
 .banniere-offre .ariane--bandeau { padding: 0; }
 .banniere-offre__retour {
   display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.5rem 1rem; border-radius: 999px;
-  background: rgb(255 255 255 / 0.18); border: 1px solid rgb(255 255 255 / 0.35); backdrop-filter: blur(8px);
+  background: rgb(0 0 0 / 0.55); border: 1px solid rgb(255 255 255 / 0.5); backdrop-filter: blur(8px);
   color: #fff; font-weight: 650; font-size: 0.92rem; text-decoration: none; transition: background-color 0.2s;
 }
-.banniere-offre__retour:hover { background: rgb(255 255 255 / 0.3); color: #fff; }
+.banniere-offre__retour:hover { background: rgb(0 0 0 / 0.8); color: #fff; text-decoration: underline; }
 .banniere-offre__retour:focus-visible { outline-color: #fff; }
 .banniere-offre + .en-tete-page--clair { padding-top: clamp(1.75rem, 4vw, 2.5rem); }
 .en-tete-page--clair { padding-block: 1.75rem 0.5rem; }
@@ -756,7 +758,7 @@ main:focus { outline: none; }
 .grille--evenements { grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
 .carte--evenement-photo .carte__visuel img { height: 180px; }
 .carte--evenement-photo .carte__corps { padding-top: 2.2rem; }
-.carte--evenement-photo .etiquette { background: var(--c-secondaire-pale); color: var(--c-secondaire); }
+.carte--evenement-photo .etiquette { background: var(--c-secondaire-pale); color: var(--c-secondaire-texte); }
 .date-pastille--flottante {
   position: absolute; left: 1.4rem; bottom: -1.5rem; z-index: 1; margin: 0; width: 62px; padding: 0.55rem 0;
   background: var(--c-fond); color: var(--c-primaire-fonce); border: 1px solid var(--c-bordure); box-shadow: var(--ombre-douce);

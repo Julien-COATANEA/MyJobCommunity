@@ -1,7 +1,9 @@
 // Écran « Cookies et suivi » : bandeau de consentement, Google Tag Manager / Analytics et scripts personnalisés.
-// Un script collé ici s'exécute sur toutes les pages du site public : l'enregistrement est réservé aux responsables.
+// Un script collé ici s'exécute sur toutes les pages du site public : l'enregistrement exige la capacité « cookies ».
 import type { Core } from '@strapi/strapi';
-import { ROLES_GESTION_EQUIPE } from '../../../utils/roles';
+import { aCapacite } from '../../../utils/droits';
+import { executerReglagesSuivi } from '../../../utils/garde-parametres';
+import { protocoleDangereux } from '../../../utils/garde-liens';
 
 const PARAMETRES = 'api::parametres.parametres';
 const MAX_SCRIPTS = 10;
@@ -9,7 +11,6 @@ const MAX_CODE = 20000;
 const GTM = /^GTM-[A-Z0-9]{4,12}$/;
 const GA4 = /^G-[A-Z0-9]{4,15}$/;
 
-const codes = (u: any) => (u?.roles ?? []).map((r: any) => r.code);
 const texte = (v: unknown, max: number) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
 
 export default ({ strapi }: { strapi: Core.Strapi }) => {
@@ -19,7 +20,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     async lire(ctx: any) {
       const p = await lireParametres();
       ctx.body = {
-        modifiable: codes(ctx.state.user).some((c: string) => ROLES_GESTION_EQUIPE.includes(c)),
+        modifiable: aCapacite(ctx, 'cookies'),
         bandeauCookies: !!p?.bandeauCookies,
         texteBandeauCookies: p?.texteBandeauCookies ?? '',
         lienPolitiqueCookies: p?.lienPolitiqueCookies ?? '',
@@ -30,8 +31,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     },
 
     async enregistrer(ctx: any) {
-      if (!codes(ctx.state.user).some((c: string) => ROLES_GESTION_EQUIPE.includes(c))) {
-        return ctx.forbidden('Seuls les responsables peuvent modifier les cookies et les scripts du site.');
+      if (!aCapacite(ctx, 'cookies')) {
+        return ctx.forbidden('Votre rôle ne permet pas de modifier les cookies et les scripts du site.');
       }
       const corps = ctx.request.body ?? {};
       const gtm = texte(corps.googleTagManagerId, 20)?.toUpperCase() ?? null;
@@ -39,24 +40,40 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (gtm && !GTM.test(gtm)) return ctx.badRequest('Identifiant Google Tag Manager invalide (format attendu : GTM-ABC1234).');
       if (ga && !GA4.test(ga)) return ctx.badRequest('Identifiant Google Analytics invalide (format attendu : G-ABC123XYZ).');
 
-      const scripts = (Array.isArray(corps.scripts) ? corps.scripts : []).slice(0, MAX_SCRIPTS).map((s: any) => ({
-        nom: texte(s?.nom, 80) ?? 'Script',
-        code: typeof s?.code === 'string' ? s.code.trim().slice(0, MAX_CODE) : '',
+      const recus = Array.isArray(corps.scripts) ? corps.scripts : [];
+      if (recus.length > MAX_SCRIPTS) return ctx.badRequest(`${MAX_SCRIPTS} scripts au maximum.`);
+      const scripts = recus.map((s: any) => ({
+        nom: texte(s?.nom, 80),
+        code: typeof s?.code === 'string' ? s.code.trim() : '',
         emplacement: s?.emplacement === 'body' ? 'body' : 'head',
         actif: s?.actif !== false,
         consentement: s?.consentement !== false,
-      })).filter((s: any) => s.code);
+      }));
+      // Pas de suppression silencieuse : un script incomplet est signalé.
+      const incomplet = scripts.findIndex((s: any) => !s.nom || !s.code);
+      if (incomplet >= 0) return ctx.badRequest(`Script n° ${incomplet + 1} : le nom et le code sont obligatoires.`);
+      if (scripts.some((s: any) => s.code.length > MAX_CODE)) return ctx.badRequest(`Un script dépasse ${MAX_CODE} caractères.`);
+
+      const lien = texte(corps.lienPolitiqueCookies, 300);
+      if (lien && (protocoleDangereux(lien) || !/^(https?:\/\/|\/)/i.test(lien))) {
+        return ctx.badRequest('Lien « En savoir plus » : indiquez une adresse en https://… ou une page du site (/…).');
+      }
 
       const data = {
         bandeauCookies: corps.bandeauCookies === true,
         texteBandeauCookies: texte(corps.texteBandeauCookies, 600),
-        lienPolitiqueCookies: texte(corps.lienPolitiqueCookies, 300),
+        lienPolitiqueCookies: lien,
         googleTagManagerId: gtm,
         googleAnalyticsId: ga,
         scripts,
       };
       const p = await lireParametres();
-      await strapi.documents(PARAMETRES).update({ documentId: p.documentId, data } as any);
+      // Seul chemin d'écriture de ces champs (voir garde-parametres).
+      await executerReglagesSuivi(() =>
+        p
+          ? strapi.documents(PARAMETRES).update({ documentId: p.documentId, data } as any)
+          : strapi.documents(PARAMETRES).create({ data } as any),
+      );
       ctx.body = data;
     },
   };

@@ -2,6 +2,7 @@
 // et par la recherche dans le navigateur (page /offres) : un seul modèle à maintenir.
 import { classeContrat, estNouveau, ilYA, initiales } from './format';
 import { svgIcone } from './icones';
+import { lienSur } from './liens';
 
 export interface OffreCarte {
   titre: string;
@@ -35,10 +36,11 @@ export function htmlCarteOffre(
 ): string {
   const h = `h${niveauTitre}`;
   // Le nom de l'entreprise est écrit en clair juste après : le logo est décoratif (alt vide).
+  const logoUrl = lienSur(o.logoUrl);
   const logo = masquer.logo
     ? ''
-    : o.logoUrl
-      ? `<img class="offre__logo" src="${echapper(o.logoUrl)}" alt="" width="48" height="48" loading="lazy" decoding="async">`
+    : logoUrl
+      ? `<img class="offre__logo" src="${echapper(logoUrl)}" alt="" width="48" height="48" loading="lazy" decoding="async">`
       : o.nomEntreprise
         ? `<span class="offre__logo offre__logo--initiales" aria-hidden="true">${echapper(initiales(o.nomEntreprise))}</span>`
         : '';

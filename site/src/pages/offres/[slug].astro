@@ -9,6 +9,7 @@ import CarteOffre from '../../components/cartes/CarteOffre.astro';
 import BanniereOffre from '../../components/BanniereOffre.astro';
 import { lireOffres, lirePageOffres, lireParametres, type Offre } from '../../lib/contenus';
 import { classeContrat, formatDate, ilYA } from '../../lib/format';
+import { lienSur } from '../../lib/liens';
 
 export async function getStaticPaths() {
   const offres = await lireOffres();
@@ -26,7 +27,10 @@ export async function getStaticPaths() {
 const { offre: o, similaires, nbOffresEntreprise } = Astro.props as { offre: Offre; similaires: Offre[]; nbOffresEntreprise: number };
 const [parametres, pageOffres] = await Promise.all([lireParametres(), lirePageOffres()]);
 const banniere = pageOffres?.imageBandeauOffre ?? null;
-const ariane = [{ libelle: "Offres d'emploi", url: '/offres' }, { libelle: o.titre }];
+// Adresses venues de Gestmax (application_link, logo) : protocoles autorisés seulement.
+const urlCandidature = lienSur(o.urlCandidature);
+const logoUrl = lienSur(o.logoUrl);
+const ariane = [{ libelle: "Offres d'emploi", url: '/offres/' }, { libelle: o.titre }];
 
 // Le HTML vient de Gestmax : on ne garde que les balises de mise en forme.
 const nettoyer = (html: string | null) =>
@@ -58,8 +62,8 @@ const jsonLd = {
   hiringOrganization: {
     '@type': 'Organization',
     name: o.nomEntreprise ?? parametres.nomSite,
-    ...(o.logoUrl ? { logo: o.logoUrl } : {}),
-    ...(o.entreprise ? { sameAs: new URL(`/entreprises/${o.entreprise.slug}`, Astro.site).toString() } : {}),
+    ...(logoUrl ? { logo: logoUrl } : {}),
+    ...(o.entreprise ? { sameAs: new URL(`/entreprises/${o.entreprise.slug}/`, Astro.site).toString() } : {}),
   },
   jobLocation: {
     '@type': 'Place',
@@ -79,11 +83,11 @@ const jsonLd = {
   {
     banniere ? (
       <BanniereOffre media={banniere} ariane={ariane}>
-        <a href="/offres" class="banniere-offre__retour" data-retour-resultats><Icone nom="retour" taille={18} />Retour aux offres</a>
+        <a href="/offres/" class="banniere-offre__retour" data-retour-resultats><Icone nom="retour" taille={18} />Retour aux offres</a>
       </BanniereOffre>
     ) : (
       <div class="conteneur retour-resultats">
-        <a href="/offres" data-retour-resultats><Icone nom="retour" taille={18} />Retour aux offres</a>
+        <a href="/offres/" data-retour-resultats><Icone nom="retour" taille={18} />Retour aux offres</a>
       </div>
     )
   }
@@ -107,10 +111,10 @@ const jsonLd = {
     <aside class="evenement__infos" aria-labelledby="postuler">
       <h2 id="postuler">Postuler</h2>
       {
-        o.urlCandidature ? (
+        urlCandidature ? (
           <>
             <p>
-              <a href={o.urlCandidature} class="bouton bouton--accent bouton--large" aria-describedby="avertissement-candidature">
+              <a href={urlCandidature} class="bouton bouton--accent bouton--large" aria-describedby="avertissement-candidature">
                 Postuler à cette offre
                 <Icone nom="externe" taille={18} />
               </a>
@@ -126,13 +130,13 @@ const jsonLd = {
       {
         o.nomEntreprise && (
           <div class="encart-entreprise">
-            {o.logoUrl ? <img src={o.logoUrl} alt="" width="56" height="56" class="encart-entreprise__logo" loading="lazy" /> : null}
+            {logoUrl ? <img src={logoUrl} alt="" width="56" height="56" class="encart-entreprise__logo" loading="lazy" /> : null}
             <div>
               <p class="encart-entreprise__nom">{o.nomEntreprise}</p>
               <ul class="encart-entreprise__liens">
                 {o.entreprise && <li><a href={`/entreprises/${o.entreprise.slug}/`}>Découvrir l'entreprise</a></li>}
                 {nbOffresEntreprise > 1 && (
-                  <li><a href={`/offres?entreprise=${encodeURIComponent(o.nomEntreprise)}`}>Voir ses {nbOffresEntreprise} offres</a></li>
+                  <li><a href={`/offres/?entreprise=${encodeURIComponent(o.nomEntreprise)}`}>Voir ses {nbOffresEntreprise} offres</a></li>
                 )}
               </ul>
             </div>
@@ -156,10 +160,10 @@ const jsonLd = {
   }
 
   {
-    o.urlCandidature && (
+    urlCandidature && (
       <div class="barre-postuler">
         <span class="barre-postuler__titre">{o.titre}</span>
-        <a href={o.urlCandidature} class="bouton bouton--accent" aria-describedby="avertissement-candidature">Postuler</a>
+        <a href={urlCandidature} class="bouton bouton--accent" aria-describedby="avertissement-candidature">Postuler</a>
       </div>
     )
   }
@@ -171,7 +175,7 @@ const jsonLd = {
     const recherche = sessionStorage.getItem('mjc-derniere-recherche');
     const lien = document.querySelector<HTMLAnchorElement>('[data-retour-resultats]');
     if (lien && recherche !== null) {
-      lien.href = `/offres${recherche ? `?${recherche}` : ''}`;
+      lien.href = `/offres/${recherche ? `?${recherche}` : ''}`;
       lien.lastChild!.textContent = 'Retour aux résultats';
     }
   } catch {}

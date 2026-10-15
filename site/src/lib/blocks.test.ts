@@ -6,7 +6,8 @@ describe('rendreBlocks', () => {
     const blocs: Bloc[] = [
       { type: 'paragraph', children: [{ type: 'text', text: 'Bonjour ' }, { type: 'text', text: 'monde', bold: true }, { type: 'link', url: '/offres', children: [{ type: 'text', text: 'offres' }] }] },
     ];
-    expect(rendreBlocks(blocs)).toBe('<p>Bonjour <strong>monde</strong><a href="/offres">offres</a></p>');
+    // Chemin interne terminé par « / » (évite une redirection).
+    expect(rendreBlocks(blocs)).toBe('<p>Bonjour <strong>monde</strong><a href="/offres/">offres</a></p>');
   });
 
   it('échappe le HTML saisi par les contributeurs', () => {

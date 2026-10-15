@@ -55,6 +55,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     const { donnees, erreurs } = validerContact(corps);
     if (Object.keys(erreurs).length) return repondre('invalide', 422, { erreurs });
+    // Plafond pour tout le site : des envois depuis de nombreuses adresses n'inondent pas la boîte de la collectivité.
+    if (tropDeRequetes('contact', 'tout-le-site', 50, 60 * 60 * 1000, false)) return repondre('trop-de-demandes', 429);
 
     const p: any = await strapi.db.query('api::parametres.parametres').findOne({ select: ['nomSite', 'email', 'emailNotificationInscriptions'] });
     const destinataire = p?.email || p?.emailNotificationInscriptions;

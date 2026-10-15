@@ -4,6 +4,7 @@ import { Box, Flex, Typography } from '@strapi/design-system';
 import { CheckCircle, WarningCircle } from '@strapi/icons';
 import { useFetchClient, useForm } from '@strapi/strapi/admin';
 import { controler, liensInternes, type Niveau } from '../qualite';
+import { messageErreur } from '../outils';
 import { definition } from '../types';
 
 
@@ -19,19 +20,31 @@ function Contenu({ model }: { model: string }) {
   const valeurs = useForm('PanneauQualite', (etat: any) => etat.values) as any;
   const [casses, setCasses] = React.useState<string[]>([]);
   const [site, setSite] = React.useState<{ nomSite: string; urlSite: string }>({ nomSite: '', urlSite: '' });
+  const [erreurSite, setErreurSite] = React.useState<string | null>(null);
+  const [erreurLiens, setErreurLiens] = React.useState<string | null>(null);
   const { get } = useFetchClient();
 
   React.useEffect(() => {
-    get<{ nomSite: string; urlSite: string }>('/espace/liens').then(({ data }) => setSite({ nomSite: data.nomSite, urlSite: data.urlSite })).catch(() => {});
+    get<{ nomSite: string; urlSite: string }>('/espace/liens')
+      .then(({ data }) => setSite({ nomSite: data.nomSite, urlSite: data.urlSite }))
+      .catch((e) => setErreurSite(messageErreur(e, "L'adresse du site n'a pas pu être chargée : l'aperçu est incomplet.")));
   }, [get]);
 
   // Les adresses internes sont vérifiées auprès du serveur, une fois la saisie terminée.
   const internes = React.useMemo(() => JSON.stringify(liensInternes(valeurs)), [valeurs]);
   React.useEffect(() => {
     const urls: string[] = JSON.parse(internes);
-    if (!urls.length) return setCasses([]);
+    if (!urls.length) {
+      setErreurLiens(null);
+      return setCasses([]);
+    }
     const minuteur = setTimeout(() => {
-      post<{ inconnues: string[] }>('/espace/liens/verifier', { urls }).then(({ data }) => setCasses(data.inconnues)).catch(() => {});
+      post<{ inconnues: string[] }>('/espace/liens/verifier', { urls })
+        .then(({ data }) => {
+          setCasses(data.inconnues);
+          setErreurLiens(null);
+        })
+        .catch((e) => setErreurLiens(messageErreur(e, "Les liens internes n'ont pas pu être vérifiés.")));
     }, 800);
     return () => clearTimeout(minuteur);
   }, [internes, post]);
@@ -51,6 +64,12 @@ function Contenu({ model }: { model: string }) {
           {aCorriger === 0 ? 'Prêt à publier' : `${aCorriger} point${aCorriger > 1 ? 's' : ''} à vérifier`}
         </Typography>
       </Flex>
+
+      {[erreurLiens, erreurSite].filter(Boolean).map((texte) => (
+        <Typography key={texte} variant="pi" textColor="danger600" role="status">
+          {texte}
+        </Typography>
+      ))}
 
       {points.map((p, i) => (
         <Box key={i} padding={2} hasRadius style={{ background: COULEURS[p.niveau].fond }}>

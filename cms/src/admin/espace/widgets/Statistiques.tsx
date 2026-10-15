@@ -33,7 +33,7 @@ function Courbe({ serie }: { serie: { date: string; visiteurs: number }[] }) {
 export default function Statistiques() {
   const { donnees, chargement, erreur } = useDonnees<Stats>('/espace/statistiques');
   if (chargement && !donnees) return <Widget.Loading />;
-  if (erreur || !donnees) return <Widget.Error />;
+  if (erreur || !donnees) return <Widget.Error>{erreur}</Widget.Error>;
   if (!donnees.configure) {
     return (
       <Typography variant="omega" textColor="neutral700">

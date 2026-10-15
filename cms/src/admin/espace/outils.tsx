@@ -9,6 +9,9 @@ import { getFetchClient } from '@strapi/strapi/admin';
 const cache = new Map<string, { instant: number; promesse: Promise<any> }>();
 const DUREE_CACHE_MS = 5000;
 
+/** Message d'erreur renvoyé par le serveur (ex. droits insuffisants), sinon le message par défaut. */
+export const messageErreur = (e: any, defaut: string): string => e?.response?.data?.error?.message || defaut;
+
 /** Charge une route admin (/espace/...). Plusieurs widgets peuvent partager le même appel. */
 export function useDonnees<T>(url: string) {
   const [etat, setEtat] = React.useState<{ donnees?: T; erreur?: string; chargement: boolean }>({ chargement: true });
@@ -22,13 +25,22 @@ export function useDonnees<T>(url: string) {
         // widget (remontage du tableau de bord pendant un chargement lent) et ferait échouer tous les autres.
         cache.set(url, { instant: Date.now(), promesse: getFetchClient().get(url).then((r: any) => r.data) });
       }
-      try {
-        setEtat((e) => ({ ...e, chargement: true }));
-        const donnees = await cache.get(url)!.promesse;
-        if (monte.current) setEtat({ donnees, chargement: false });
-      } catch (e) {
-        cache.delete(url);
-        if (monte.current) setEtat({ erreur: (e as Error).message, chargement: false });
+      setEtat((e) => ({ ...e, chargement: true }));
+      let promesse = cache.get(url)!.promesse;
+      for (;;) {
+        try {
+          const donnees = await promesse;
+          // Un rechargement plus récent a remplacé cette requête : on attend la sienne plutôt que d'afficher une réponse périmée.
+          const actuelle = cache.get(url)?.promesse;
+          if (actuelle && actuelle !== promesse) { promesse = actuelle; continue; }
+          if (monte.current) setEtat({ donnees, chargement: false });
+        } catch (e) {
+          const actuelle = cache.get(url)?.promesse;
+          if (actuelle && actuelle !== promesse) { promesse = actuelle; continue; }
+          if (actuelle) cache.delete(url);
+          if (monte.current) setEtat({ erreur: messageErreur(e, 'Les données n’ont pas pu être chargées.'), chargement: false });
+        }
+        return;
       }
     },
     [url],

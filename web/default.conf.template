@@ -25,15 +25,22 @@ server {
     gzip_comp_level 6;
     gzip_types text/plain text/css application/javascript application/json image/svg+xml application/xml;
 
+    # En-têtes de sécurité, répétés dans chaque location qui a ses propres add_header.
+    # CSP minimale qui ne casse rien (scripts de mesure, iframes Gestmax, tuiles IGN restent permis).
     add_header Cache-Control $cache_control always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    add_header Content-Security-Policy "object-src 'none'; base-uri 'self'; frame-ancestors 'self'" always;
 
     # Feuilles de style et polices : chargées aussi par le site Gestmax (autre domaine possible).
     location /_astro/ {
         add_header Cache-Control $cache_control always;
+        add_header Strict-Transport-Security "max-age=31536000" always;
         add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy "object-src 'none'; base-uri 'self'; frame-ancestors 'self'" always;
         add_header Access-Control-Allow-Origin "*" always;
         try_files $uri =404;
     }
@@ -42,9 +49,19 @@ server {
     location ^~ /header-footer/ {
         if ($arg_token != "${HEADER_FOOTER_TOKEN}") { return 404; }
         add_header Cache-Control "no-cache" always;
+        add_header Strict-Transport-Security "max-age=31536000" always;
         add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy "object-src 'none'; base-uri 'self'; frame-ancestors 'self'" always;
         add_header X-Robots-Tag "noindex, nofollow" always;
         try_files $uri $uri/index.html =404;
+    }
+
+    # Fichiers agenda des événements : absents du mime.types de Nginx (servis sinon en application/octet-stream).
+    location ~* \.ics$ {
+        types { }
+        default_type "text/calendar; charset=utf-8";
+        try_files $uri =404;
     }
 
     location / {

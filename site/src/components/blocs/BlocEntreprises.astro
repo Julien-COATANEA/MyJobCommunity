@@ -13,7 +13,7 @@ const entreprises = [...toutes.filter((e) => e.miseEnAvant), ...toutes.filter((e
   entreprises.length > 0 && (
     <section class="section">
       <div class="conteneur">
-        <EnteteSection surtitre={bloc.surtitre} titre={bloc.titre} introduction={bloc.introduction} lien="/entreprises" libelleLien="Tout l'annuaire" />
+        <EnteteSection surtitre={bloc.surtitre} titre={bloc.titre} introduction={bloc.introduction} lien="/entreprises/" libelleLien="Tout l'annuaire" />
         <ul class="grille grille--3">
           {entreprises.map((entreprise) => (
             <li><CarteEntreprise entreprise={entreprise} /></li>

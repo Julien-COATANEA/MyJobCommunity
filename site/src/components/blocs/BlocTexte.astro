@@ -1,13 +1,19 @@
 ---
 import { rendreBlocks } from '../../lib/blocks';
+import { remplacerJetonsLegaux } from '../../lib/jetons-legaux';
+import { lireParametres } from '../../lib/contenus';
 import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
 
+// Jetons des pages légales ({editeur}, {siret}, {site}…) remplacés par les « Paramètres du site ».
 const { bloc } = Astro.props;
+const parametres = await lireParametres();
+const urlSite = Astro.site?.toString();
+const remplacer = (t: string) => remplacerJetonsLegaux(t, parametres, urlSite);
 ---
 
 <section class="section">
   <div class="conteneur conteneur--etroit">
     {bloc.titre && <h2 class="section__titre section__titre--gauche">{bloc.titre}</h2>}
-    <div class="prose" set:html={rendreBlocks(bloc.contenu, { baseMedias: PUBLIC_STRAPI_URL })} />
+    <div class="prose" set:html={rendreBlocks(bloc.contenu, { baseMedias: PUBLIC_STRAPI_URL, texte: remplacer })} />
   </div>
 </section>

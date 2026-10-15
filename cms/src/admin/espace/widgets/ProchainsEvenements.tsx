@@ -22,7 +22,7 @@ const EVENEMENT = 'api::evenement.evenement';
 export default function ProchainsEvenements() {
   const { donnees, chargement, erreur } = useDonnees<Donnees>('/espace/tableau-de-bord');
   if (chargement && !donnees) return <Widget.Loading />;
-  if (erreur || !donnees) return <Widget.Error />;
+  if (erreur || !donnees) return <Widget.Error>{erreur}</Widget.Error>;
 
   if (!donnees.prochainsEvenements.length) {
     return (

@@ -6,7 +6,7 @@ import {
 } from '@strapi/design-system';
 import { ArrowRight, Check, Earth, Eye, File, Mail, Briefcase } from '@strapi/icons';
 import { Layouts, Page, useFetchClient, useNotification } from '@strapi/strapi/admin';
-import { Pastille, formatDate } from '../outils';
+import { Pastille, formatDate, messageErreur } from '../outils';
 
 interface Donnees {
   nomSite: string;
@@ -73,6 +73,7 @@ export default function SiteCarriere() {
   const [enregistrement, setEnregistrement] = React.useState(false);
   const [verification, setVerification] = React.useState<{ date: string; resultats: Verification[] } | null>(null);
   const [verificationEnCours, setVerificationEnCours] = React.useState(false);
+  const [erreurChargement, setErreurChargement] = React.useState<string | null>(null);
 
   const charger = React.useCallback(async () => {
     const { data } = await get<Donnees>('/espace/site-carriere');
@@ -90,15 +91,20 @@ export default function SiteCarriere() {
     try {
       const { data } = await post<{ date: string; resultats: Verification[] }>('/espace/site-carriere/verifier', {});
       setVerification(data);
+    } catch (e) {
+      toggleNotification({ type: 'danger', message: messageErreur(e, "La vérification n'a pas pu être faite.") });
     } finally {
       setVerificationEnCours(false);
     }
   }, [post]);
 
   React.useEffect(() => {
-    charger().then(verifier);
+    charger()
+      .then(verifier)
+      .catch((e) => setErreurChargement(messageErreur(e, 'Les réglages n’ont pas pu être chargés.')));
   }, [charger, verifier]);
 
+  if (erreurChargement) return <Page.Error content={erreurChargement} />;
   if (!donnees || !liens) return <Page.Loading />;
 
   const modifie = (Object.keys(liens) as (keyof Liens)[]).some((k) => (liens[k] ?? '') !== (donnees[k] ?? ''));
@@ -111,7 +117,7 @@ export default function SiteCarriere() {
       await charger();
       verifier();
     } catch (e: any) {
-      toggleNotification({ type: 'danger', message: e?.response?.data?.error?.message ?? "L'enregistrement a échoué." });
+      toggleNotification({ type: 'danger', message: messageErreur(e, "L'enregistrement a échoué.") });
     } finally {
       setEnregistrement(false);
     }

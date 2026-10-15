@@ -15,6 +15,7 @@ const href = resoudreLien(bouton.url, gestmaxUrlFront);
 const secondaire = bouton.style === 'secondaire';
 ---
 
+{href && (
 <a
   href={href}
   class:list={[
@@ -28,3 +29,4 @@ const secondaire = bouton.style === 'secondaire';
   {bouton.nouvelOnglet ? <span class="sr-only"> (nouvelle fenêtre)</span> : null}
   <Icone nom={estExterne(href) ? 'externe' : 'fleche'} taille={18} />
 </a>
+)}

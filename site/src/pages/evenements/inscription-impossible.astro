@@ -4,7 +4,7 @@ import Base from '../../layouts/Base.astro';
 import EnTetePage from '../../components/EnTetePage.astro';
 ---
 
-<Base titre="Inscription impossible" noIndex ariane={[{ libelle: 'Événements', url: '/evenements' }, { libelle: 'Inscription impossible' }]}>
+<Base titre="Inscription impossible" noIndex ariane={[{ libelle: 'Événements', url: '/evenements/' }, { libelle: 'Inscription impossible' }]}>
   <EnTetePage titre="Votre inscription n'a pas pu être enregistrée" />
   <div class="conteneur conteneur--etroit section prose">
     <p>Plusieurs raisons sont possibles :</p>
@@ -14,6 +14,6 @@ import EnTetePage from '../../components/EnTetePage.astro';
       <li>vous êtes déjà inscrit(e) avec cette adresse e-mail.</li>
     </ul>
     <p>Revenez à la page de l'événement pour vérifier vos informations.</p>
-    <p><a href="/evenements" class="bouton bouton--plein">Retour aux événements</a></p>
+    <p><a href="/evenements/" class="bouton bouton--plein">Retour aux événements</a></p>
   </div>
 </Base>

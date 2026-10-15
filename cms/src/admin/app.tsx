@@ -174,7 +174,7 @@ export default {
       to: 'site-carriere',
       icon: Earth,
       intlLabel: { id: 'mjc.menu.site-carriere', defaultMessage: 'Site Gestmax' },
-      permissions: [{ action: 'plugin::content-manager.explorer.update', subject: 'api::parametres.parametres' }],
+      permissions: [{ action: 'api::espace.site-gestmax', subject: null }],
       position: 0.65,
       Component: () => import('./espace/pages/SiteCarriere'),
     } as any);
@@ -182,16 +182,16 @@ export default {
       to: 'apparence',
       icon: PaintBrush,
       intlLabel: { id: 'mjc.menu.apparence', defaultMessage: 'Apparence' },
-      permissions: [{ action: 'plugin::content-manager.explorer.update', subject: 'api::parametres.parametres' }],
+      permissions: [{ action: 'api::espace.apparence', subject: null }],
       position: 0.7,
       Component: () => import('./espace/pages/Apparence'),
     } as any);
-    const responsable = [{ action: 'plugin::content-manager.explorer.publish', subject: 'api::page.page' }];
+    // Capacités de l'espace : réglées par rôle dans « Mon équipe » (voir cms/src/utils/droits.ts).
     app.addMenuLink({
       to: 'cookies',
       icon: Shield,
       intlLabel: { id: 'mjc.menu.cookies', defaultMessage: 'Cookies et suivi' },
-      permissions: [{ action: 'plugin::content-manager.explorer.update', subject: 'api::parametres.parametres' }],
+      permissions: [{ action: 'api::espace.cookies', subject: null }],
       position: 0.71,
       Component: () => import('./espace/pages/Cookies'),
     } as any);
@@ -207,7 +207,7 @@ export default {
       to: 'equipe',
       icon: User,
       intlLabel: { id: 'mjc.menu.equipe', defaultMessage: 'Mon équipe' },
-      permissions: responsable,
+      permissions: [{ action: 'api::espace.equipe', subject: null }],
       position: 0.8,
       Component: () => import('./espace/pages/Equipe'),
     } as any);

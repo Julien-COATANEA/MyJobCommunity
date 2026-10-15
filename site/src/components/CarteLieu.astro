@@ -1,36 +1,40 @@
 ---
-// Plan d'accès d'un lieu (maquette « fiche événement ») : mini-carte OpenStreetMap si l'adresse est trouvée par le
-// géocodeur de l'IGN, et toujours un lien vers OpenStreetMap pour l'itinéraire (même sans JavaScript).
+// Plan d'accès d'un lieu (maquette « fiche événement ») : mini-carte (fond Plan IGN) si l'adresse est trouvée par le
+// géocodeur de l'IGN au build, et toujours un lien vers OpenStreetMap pour l'itinéraire (même sans JavaScript).
+import { geocoder } from '../lib/geocodage';
+
 interface Props {
   adresse: string;
 }
 
 const { adresse } = Astro.props;
+const position = await geocoder(adresse);
 const lienPlan = `https://www.openstreetmap.org/search?query=${encodeURIComponent(adresse)}`;
 ---
 
-<div class="carte-lieu" data-carte-lieu={adresse}>
-  <div class="carte-lieu__carte" role="region" aria-label={`Plan d'accès : ${adresse}`} hidden></div>
+<div class="carte-lieu">
+  {
+    position && (
+      <div
+        class="carte-lieu__carte"
+        role="region"
+        aria-label={`Plan d'accès : ${adresse}`}
+        data-plan-lieu={adresse}
+        data-lat={position.latitude}
+        data-lon={position.longitude}
+      />
+    )
+  }
   <p class="carte-lieu__lien">
     <a href={lienPlan} target="_blank" rel="noopener">Voir le plan et l'itinéraire<span class="sr-only"> (OpenStreetMap, nouvelle fenêtre)</span></a>
   </p>
 </div>
 
 <script>
-  for (const bloc of document.querySelectorAll<HTMLElement>('[data-carte-lieu]')) {
-    const conteneur = bloc.querySelector<HTMLElement>('.carte-lieu__carte')!;
-    const adresse = bloc.dataset.carteLieu!;
-    const p = new URLSearchParams({ q: adresse, limit: '1' });
-    fetch(`https://data.geopf.fr/geocodage/search?${p}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then(async (j) => {
-        const f = j?.features?.[0];
-        // Adresse introuvable ou trop incertaine : seul le lien vers OpenStreetMap reste.
-        if (!f || f.properties.score < 0.5) return;
-        conteneur.hidden = false;
-        const { afficherLieu } = await import('../lib/carte-lieu');
-        afficherLieu(conteneur, f.geometry.coordinates[1], f.geometry.coordinates[0], adresse);
-      })
-      .catch(() => {});
+  const conteneurs = document.querySelectorAll<HTMLElement>('[data-plan-lieu]');
+  if (conteneurs.length) {
+    import('../lib/carte-lieu').then(({ afficherLieu }) => {
+      for (const c of conteneurs) afficherLieu(c, Number(c.dataset.lat), Number(c.dataset.lon), c.dataset.planLieu!);
+    });
   }
 </script>

@@ -1,8 +1,9 @@
-// « Mon équipe » : inviter un collègue, choisir son rôle, le désactiver. Remplace les réglages de Strapi,
-// masqués aux collectivités. Demande de publication d'un rédacteur à un responsable.
+// « Mon équipe » : inviter un collègue, choisir son rôle, le désactiver, régler les droits des rôles. Remplace les
+// réglages de Strapi, masqués aux collectivités. Demande de publication d'un rédacteur à un responsable.
 import type { Core } from '@strapi/strapi';
 import { envoyerEmail, lireIdentite } from '../../../utils/emails';
-import { ROLES_GESTION_EQUIPE, ROLES_PUBLICATION, ROLE_REDACTEUR, ROLE_RESPONSABLE } from '../../../utils/roles';
+import { ROLE_REDACTEUR, ROLE_RESPONSABLE } from '../../../utils/roles';
+import { CAPACITES, CONTENUS, ROLES_REGLABLES, aCapacite, ecrireDroits, lireDroits, optionsContenu, type Capacite, type DroitsRole } from '../../../utils/droits';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ROLES_ATTRIBUABLES = [ROLE_RESPONSABLE, ROLE_REDACTEUR];
@@ -15,9 +16,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   const roleParCode = (code: string) => strapi.db.query('admin::role').findOne({ where: { code } }) as Promise<any>;
 
   const autorise = (ctx: any) => {
-    if (codes(ctx.state.user).some((c: string) => ROLES_GESTION_EQUIPE.includes(c))) return true;
+    // Doublé par la policy des routes : garde-fou si une route est ajoutée sans elle.
+    if (aCapacite(ctx, 'equipe')) return true;
     ctx.status = 403;
-    ctx.body = { error: { message: "Seuls les responsables peuvent gérer l'équipe." } };
+    ctx.body = { error: { message: "Votre rôle ne permet pas de gérer l'équipe." } };
     return false;
   };
 
@@ -145,6 +147,52 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       ctx.body = { ok: true };
     },
 
+    /** Grille des droits des rôles réglables (contenus et capacités de l'espace). */
+    async lireDroits(ctx: any) {
+      if (!autorise(ctx)) return;
+      const roles: any[] = await strapi.db.query('admin::role').findMany({ where: { code: { $in: ROLES_REGLABLES } } });
+      const mesRoles: string[] = codes(ctx.state.user);
+      ctx.body = {
+        contenus: CONTENUS.filter((c) => (strapi.contentTypes as any)[c.uid]).map((c) => ({ ...c, options: optionsContenu(strapi, c.uid) })),
+        capacites: CAPACITES,
+        roles: await Promise.all(
+          ROLES_REGLABLES.map((code) => roles.find((r) => r.code === code)).filter(Boolean).map(async (r: any) => ({
+            code: r.code,
+            nom: r.name,
+            description: r.description,
+            // On ne retire pas la gestion de l'équipe à son propre rôle (on se fermerait la porte).
+            estLeMien: mesRoles.includes(r.code),
+            droits: await lireDroits(strapi, r.id),
+          })),
+        ),
+      };
+    },
+
+    async ecrireDroits(ctx: any) {
+      if (!autorise(ctx)) return;
+      const code = ctx.params.code;
+      if (!ROLES_REGLABLES.includes(code)) return ctx.forbidden('Les droits de ce rôle ne se règlent pas ici.');
+      const role: any = await roleParCode(code);
+      if (!role) return ctx.notFound();
+
+      const corps = ctx.request.body ?? {};
+      const capacites: Capacite[] = (Array.isArray(corps.capacites) ? corps.capacites : []).filter((c: unknown) => CAPACITES.some((x) => x.cle === c));
+      if (codes(ctx.state.user).includes(code) && !capacites.includes('equipe')) {
+        return ctx.badRequest('Vous ne pouvez pas retirer « Gérer l’équipe » à votre propre rôle.');
+      }
+      const contenus: DroitsRole['contenus'] = {};
+      for (const { uid } of CONTENUS) {
+        const d = corps.contenus?.[uid];
+        if (!d || typeof d !== 'object') continue;
+        // Modifier, publier ou supprimer supposent de voir le contenu.
+        const voir = d.voir === true || d.modifier === true || d.publier === true || d.supprimer === true;
+        contenus[uid] = { voir, modifier: d.modifier === true, publier: d.publier === true, supprimer: d.supprimer === true, seulementSiens: d.seulementSiens === true };
+      }
+      await ecrireDroits(strapi, role.id, { contenus, capacites });
+      strapi.log.info(`[droits] droits du rôle ${code} modifiés par ${ctx.state.user.email}`);
+      ctx.body = await lireDroits(strapi, role.id);
+    },
+
     /** Un rédacteur (sans bouton Publier) demande à un responsable de publier un contenu. */
     async demanderPublication(ctx: any) {
       const { uid, documentId, message } = ctx.request.body ?? {};
@@ -161,8 +209,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         : await strapi.documents(uid).findOne({ documentId, status: 'draft' } as any);
       if (!doc) return ctx.notFound();
 
+      // Destinataires : les personnes dont le rôle peut publier ce contenu (réglé dans « Mon équipe »).
+      const publication: any[] = await strapi.db.query('admin::permission').findMany({
+        where: { action: 'plugin::content-manager.explorer.publish', subject: uid },
+        populate: { role: { select: ['id'] } },
+      });
+      // Sans condition : un rôle limité à « ses contenus » ne pourrait pas publier celui d'un autre.
+      const rolesPublieurs = new Set(publication.filter((p) => !(p.conditions ?? []).length).map((p) => p.role?.id).filter(Boolean));
       const destinataires: any[] = (await strapi.db.query('admin::user').findMany({ where: { isActive: true }, populate: { roles: true } }))
-        .filter((u: any) => u.id !== ctx.state.user.id && codes(u).some((c: string) => ROLES_PUBLICATION.includes(c)));
+        .filter((u: any) => u.id !== ctx.state.user.id && (u.roles ?? []).some((r: any) => rolesPublieurs.has(r.id)));
       const { nomSite } = await lireIdentite(strapi);
       const lien = `${urlBO()}/admin/content-manager/${type.unique ? 'single' : 'collection'}-types/${uid}${type.unique ? '' : `/${documentId}`}`;
       const auteur = `${ctx.state.user.firstname ?? ''} ${ctx.state.user.lastname ?? ''}`.trim() || ctx.state.user.email;

@@ -30,6 +30,6 @@ const jsonLd = {
 };
 ---
 
-<Base titre={e.titre} description={e.extrait} seo={e.seo} image={image} jsonLd={[jsonLd]} ariane={[{ libelle: 'Événements', url: '/evenements' }, { libelle: e.titre }]}>
+<Base titre={e.titre} description={e.extrait} seo={e.seo} image={image} jsonLd={[jsonLd]} ariane={[{ libelle: 'Événements', url: '/evenements/' }, { libelle: e.titre }]}>
   <VueEvenement evenement={e} />
 </Base>

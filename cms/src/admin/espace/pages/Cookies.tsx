@@ -6,6 +6,7 @@ import {
 } from '@strapi/design-system';
 import { Plus, Trash } from '@strapi/icons';
 import { Layouts, Page, useFetchClient, useNotification } from '@strapi/strapi/admin';
+import { messageErreur } from '../outils';
 
 interface Script { nom: string; code: string; emplacement: 'head' | 'body'; actif: boolean; consentement: boolean }
 interface Reglages {
@@ -21,6 +22,22 @@ interface Reglages {
 const TEXTE_PAR_DEFAUT =
   'Nous utilisons des cookies pour mesurer la fréquentation du site et améliorer nos services. Vous pouvez les accepter ou les refuser : votre choix est conservé 6 mois.';
 const NOUVEAU: Script = { nom: '', code: '', emplacement: 'head', actif: true, consentement: true };
+
+// Lien « En savoir plus » : adresse web complète ou chemin du site (« /… »), rien d'autre (javascript:, mailto:…).
+const lienValide = (lien: string) => !lien.trim() || /^\/(?!\/)/.test(lien.trim()) || /^https?:\/\/[^\s/]+/i.test(lien.trim());
+
+type Erreurs = { lien?: string; scripts: { nom?: string; code?: string }[] };
+
+function verifier(r: Reglages): Erreurs | null {
+  const erreurs: Erreurs = {
+    lien: lienValide(r.lienPolitiqueCookies) ? undefined : 'Indiquez une adresse commençant par https:// ou un chemin du site commençant par « / ».',
+    scripts: r.scripts.map((s) => ({
+      nom: s.nom.trim() ? undefined : 'Donnez un nom à ce script.',
+      code: s.code.trim() ? undefined : 'Collez le code du script, ou supprimez-le.',
+    })),
+  };
+  return erreurs.lien || erreurs.scripts.some((e) => e.nom || e.code) ? erreurs : null;
+}
 
 function Carte({ titre, sousTitre, children }: { titre: string; sousTitre?: string; children: React.ReactNode }) {
   return (
@@ -42,6 +59,8 @@ export default function Cookies() {
   const [initial, setInitial] = React.useState<(Reglages & { modifiable: boolean }) | null>(null);
   const [r, setR] = React.useState<Reglages | null>(null);
   const [enregistrement, setEnregistrement] = React.useState(false);
+  const [erreurChargement, setErreurChargement] = React.useState<string | null>(null);
+  const [erreurs, setErreurs] = React.useState<Erreurs | null>(null);
 
   const charger = React.useCallback(async () => {
     const { data } = await get<Reglages & { modifiable: boolean }>('/espace/cookies');
@@ -51,27 +70,40 @@ export default function Cookies() {
   }, [get]);
 
   React.useEffect(() => {
-    charger().catch(() => toggleNotification({ type: 'danger', message: 'Les réglages n’ont pas pu être chargés.' }));
+    charger().catch((e) => setErreurChargement(messageErreur(e, 'Les réglages n’ont pas pu être chargés.')));
   }, [charger]);
 
+  if (erreurChargement) return <Page.Error content={erreurChargement} />;
   if (!r || !initial) return <Page.Loading />;
 
   const lectureSeule = !initial.modifiable;
-  const changer = <K extends keyof Reglages>(cle: K, valeur: Reglages[K]) => setR({ ...r, [cle]: valeur });
+  const changer = <K extends keyof Reglages>(cle: K, valeur: Reglages[K]) => {
+    const suivant = { ...r, [cle]: valeur };
+    setR(suivant);
+    // Une fois les erreurs affichées, elles disparaissent au fur et à mesure des corrections.
+    if (erreurs) setErreurs(verifier(suivant));
+  };
   const changerScript = (i: number, modif: Partial<Script>) => changer('scripts', r.scripts.map((s, j) => (j === i ? { ...s, ...modif } : s)));
   const { modifiable, ...reglagesInitiaux } = initial;
   const modifie = JSON.stringify(r) !== JSON.stringify(reglagesInitiaux);
 
-  const outilsSansAccord = !r.bandeauCookies && (r.googleTagManagerId || r.googleAnalyticsId || r.scripts.some((s) => s.actif && s.consentement));
+  // Le site affiche le bandeau dès qu'un outil attend l'accord du visiteur (site/src/lib/suivi.ts).
+  const bandeauAutomatique = !!(r.googleTagManagerId || r.googleAnalyticsId || r.scripts.some((s) => s.actif && s.consentement));
 
   const enregistrer = async () => {
+    const aCorriger = verifier(r);
+    setErreurs(aCorriger);
+    if (aCorriger) {
+      toggleNotification({ type: 'warning', message: 'Certains champs sont à compléter avant d’enregistrer.' });
+      return;
+    }
     setEnregistrement(true);
     try {
       await put('/espace/cookies', r);
       toggleNotification({ type: 'success', message: 'Enregistré : le site sera à jour dans quelques instants.' });
       await charger();
-    } catch (e: any) {
-      toggleNotification({ type: 'danger', message: e?.response?.data?.error?.message ?? "L'enregistrement a échoué." });
+    } catch (e) {
+      toggleNotification({ type: 'danger', message: messageErreur(e, "L'enregistrement a échoué.") });
     } finally {
       setEnregistrement(false);
     }
@@ -93,23 +125,23 @@ export default function Cookies() {
         <Flex direction="column" alignItems="stretch" gap={6}>
           {lectureSeule && (
             <Alert variant="default" title="Consultation seule" closeLabel="Fermer">
-              Ces réglages ajoutent du code à toutes les pages du site : seuls les responsables peuvent les modifier.
-            </Alert>
-          )}
-          {outilsSansAccord && (
-            <Alert variant="warning" title="Outils de mesure sans bandeau de cookies" closeLabel="Fermer">
-              Sans bandeau, les outils de mesure se lancent dès l'arrivée du visiteur, sans lui demander son accord. La loi (RGPD,
-              recommandations de la CNIL) impose généralement de recueillir ce consentement : activez le bandeau.
+              Ces réglages ajoutent du code à toutes les pages du site : votre rôle ne permet pas de les modifier (droits réglés dans « Mon équipe »).
             </Alert>
           )}
 
           <Carte titre="Bandeau de cookies" sousTitre="Le visiteur accepte ou refuse les cookies ; les outils soumis au consentement ne se lancent qu'après son accord.">
-            <Field.Root name="bandeauCookies">
-              <Field.Label>Afficher le bandeau</Field.Label>
+            <Field.Root
+              name="bandeauCookies"
+              hint={bandeauAutomatique
+                ? 'Le bandeau est affiché : un outil de mesure ou un script attend l’accord des visiteurs.'
+                : 'Aucun outil ne demande l’accord des visiteurs : le bandeau n’est affiché que si vous activez cette option.'}
+            >
+              <Field.Label>Toujours afficher le bandeau</Field.Label>
               <Toggle
-                onLabel="Oui" offLabel="Non" checked={r.bandeauCookies} disabled={lectureSeule}
+                onLabel="Oui" offLabel="Non" checked={bandeauAutomatique || r.bandeauCookies} disabled={lectureSeule || bandeauAutomatique}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => changer('bandeauCookies', e.target.checked)}
               />
+              <Field.Hint />
             </Field.Root>
             <Field.Root name="texteBandeauCookies" hint="Laisser vide pour utiliser le texte proposé.">
               <Field.Label>Texte du bandeau</Field.Label>
@@ -119,17 +151,18 @@ export default function Cookies() {
               />
               <Field.Hint />
             </Field.Root>
-            <Field.Root name="lienPolitiqueCookies" hint="Page qui détaille les cookies utilisés, ex. : /donnees-personnelles">
+            <Field.Root name="lienPolitiqueCookies" hint="Page qui détaille les cookies utilisés, ex. : /donnees-personnelles" error={erreurs?.lien}>
               <Field.Label>Lien « En savoir plus »</Field.Label>
               <TextInput
                 value={r.lienPolitiqueCookies} placeholder="/donnees-personnelles" disabled={lectureSeule}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => changer('lienPolitiqueCookies', e.target.value)}
               />
               <Field.Hint />
+              <Field.Error />
             </Field.Root>
           </Carte>
 
-          <Carte titre="Google" sousTitre="Il suffit de coller l'identifiant : le code de Google est ajouté automatiquement, après accord du visiteur si le bandeau est actif.">
+          <Carte titre="Google" sousTitre="Il suffit de coller l'identifiant : le code de Google est ajouté automatiquement et ne se lance qu'après l'accord du visiteur.">
             <Grid.Root gap={4}>
               <Grid.Item col={6} s={12} direction="column" alignItems="stretch">
                 <Field.Root name="googleTagManagerId" hint="Format : GTM-ABC1234">
@@ -164,12 +197,13 @@ export default function Cookies() {
                 <Flex direction="column" alignItems="stretch" gap={3}>
                   <Grid.Root gap={4}>
                     <Grid.Item col={5} s={12} direction="column" alignItems="stretch">
-                      <Field.Root name={`nom-${i}`} required>
+                      <Field.Root name={`nom-${i}`} required error={erreurs?.scripts[i]?.nom}>
                         <Field.Label>Nom</Field.Label>
                         <TextInput
                           value={s.nom} placeholder="Ex. : Matomo" maxLength={80} disabled={lectureSeule}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => changerScript(i, { nom: e.target.value })}
                         />
+                        <Field.Error />
                       </Field.Root>
                     </Grid.Item>
                     <Grid.Item col={4} s={12} direction="column" alignItems="stretch">
@@ -191,13 +225,14 @@ export default function Cookies() {
                       </Field.Root>
                     </Grid.Item>
                   </Grid.Root>
-                  <Field.Root name={`code-${i}`} required>
+                  <Field.Root name={`code-${i}`} required error={erreurs?.scripts[i]?.code}>
                     <Field.Label>Code</Field.Label>
                     <Textarea
                       value={s.code} placeholder={'<script>…</script>'} disabled={lectureSeule}
                       style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', fontSize: '1.2rem', minHeight: '12rem' }}
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => changerScript(i, { code: e.target.value })}
                     />
+                    <Field.Error />
                   </Field.Root>
                   <Flex justifyContent="space-between" alignItems="center">
                     <Checkbox checked={s.consentement} disabled={lectureSeule} onCheckedChange={(v: boolean) => changerScript(i, { consentement: !!v })}>

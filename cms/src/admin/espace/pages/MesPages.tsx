@@ -50,7 +50,7 @@ export default function MesPages() {
   const [recherche, setRecherche] = React.useState('');
 
   if (chargement && !donnees) return <Page.Loading />;
-  if (erreur || !donnees) return <Page.Error />;
+  if (erreur || !donnees) return <Page.Error content={erreur} />;
 
   const lignes: Ligne[] = [
     ...donnees.principales.map((p) => ({ ...p, cle: p.uid, principale: true })),

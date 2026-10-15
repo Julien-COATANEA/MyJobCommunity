@@ -135,6 +135,38 @@
       "component": "shared.reseau-social",
       "repeatable": true
     },
+    "editeurNom": {
+      "type": "string",
+      "maxLength": 160
+    },
+    "editeurSiret": {
+      "type": "string",
+      "maxLength": 20,
+      "regex": "^[0-9 ]{9,17}$"
+    },
+    "directeurPublication": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "hebergeurNom": {
+      "type": "string",
+      "maxLength": 160
+    },
+    "hebergeurAdresse": {
+      "type": "text",
+      "maxLength": 300
+    },
+    "hebergeurTelephone": {
+      "type": "string",
+      "maxLength": 30
+    },
+    "contactDonneesEmail": {
+      "type": "email"
+    },
+    "prestataireNom": {
+      "type": "string",
+      "maxLength": 160
+    },
     "emailNotificationInscriptions": {
       "type": "email",
       "private": true

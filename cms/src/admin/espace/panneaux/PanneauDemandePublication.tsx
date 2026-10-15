@@ -3,6 +3,7 @@ import * as React from 'react';
 import { Box, Button, Flex, Textarea, Typography } from '@strapi/design-system';
 import { Mail } from '@strapi/icons';
 import { useAuth, useFetchClient, useNotification } from '@strapi/strapi/admin';
+import { messageErreur } from '../outils';
 import { definition } from '../types';
 
 const ACTION_PUBLIER = 'plugin::content-manager.explorer.publish';
@@ -20,8 +21,8 @@ function Contenu({ model, documentId }: { model: string; documentId?: string }) 
       const { data } = await post<{ destinataires: number }>('/espace/demande-publication', { uid: model, documentId, message });
       setEnvoye(true);
       toggleNotification({ type: 'success', message: `Demande envoyée à ${data.destinataires} responsable${data.destinataires > 1 ? 's' : ''}.` });
-    } catch {
-      toggleNotification({ type: 'danger', message: "La demande n'a pas pu être envoyée." });
+    } catch (e) {
+      toggleNotification({ type: 'danger', message: messageErreur(e, "La demande n'a pas pu être envoyée.") });
     } finally {
       setEnvoi(false);
     }

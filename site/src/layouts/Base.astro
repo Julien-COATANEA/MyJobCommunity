@@ -9,7 +9,7 @@ import BandeauCookies from '../components/BandeauCookies.astro';
 import FilAriane, { type Miette } from '../components/FilAriane.astro';
 import { lireNavigation, lireParametres } from '../lib/contenus';
 import { cssTheme, policesUtilisees } from '../lib/theme';
-import { codesSuivi } from '../lib/suivi';
+import { bandeauNecessaire, codesSuivi } from '../lib/suivi';
 import { urlMedia, type Seo as SeoStrapi } from '../lib/strapi';
 
 interface Props {
@@ -30,7 +30,8 @@ const { ariane, sansSuivi, ...seo } = Astro.props;
 const [parametres, navigation] = await Promise.all([lireParametres(), lireNavigation()]);
 const favicon = urlMedia(parametres.favicon, true);
 const suivi = sansSuivi ? { head: [], body: [] } : codesSuivi(parametres);
-const bandeau = !sansSuivi && !!parametres.bandeauCookies;
+// Bandeau dès qu'un outil attend l'accord du visiteur ; l'option « Toujours afficher le bandeau » du BO l'affiche aussi sans outil.
+const bandeau = !sansSuivi && (bandeauNecessaire(suivi) || !!parametres.bandeauCookies);
 
 // Fil d'Ariane : un en-tête de page immersif l'affiche dans son bandeau (voir EnTetePage) ; sinon il est placé en haut
 // du contenu. La page est donc rendue avant la mise en page, pour savoir lequel des deux s'en charge.

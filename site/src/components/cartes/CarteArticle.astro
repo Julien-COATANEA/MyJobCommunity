@@ -27,7 +27,7 @@ const Titre = `h${niveauTitre}`;
     {!article.image && article.categorie && <p class="etiquette">{article.categorie.nom}</p>}
     <p class="carte__date"><time datetime={article.datePublication}>{formatDate(article.datePublication)}</time></p>
     <Titre class="carte__titre">
-      <a href={`/actualites/${article.slug}`} class="carte__lien">{article.titre}</a>
+      <a href={`/actualites/${article.slug}/`} class="carte__lien">{article.titre}</a>
     </Titre>
     <p class="carte__texte">{article.extrait}</p>
     <p class="carte__pied"><span class="lien-action" aria-hidden="true">Lire l'article<Icone nom="fleche" taille={16} /></span></p>

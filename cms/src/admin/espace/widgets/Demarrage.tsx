@@ -10,7 +10,7 @@ interface Etape { cle: string; libelle: string; fait: boolean; lien: string }
 export default function Demarrage() {
   const { donnees, chargement, erreur } = useDonnees<{ demarrage: Etape[] }>('/espace/tableau-de-bord');
   if (chargement && !donnees) return <Widget.Loading />;
-  if (erreur || !donnees) return <Widget.Error />;
+  if (erreur || !donnees) return <Widget.Error>{erreur}</Widget.Error>;
 
   const etapes = donnees.demarrage;
   const faites = etapes.filter((e) => e.fait).length;

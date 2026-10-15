@@ -64,3 +64,10 @@ export function initiales(nom: string, max = 2): string {
     .map((m) => m[0]!.toLocaleUpperCase('fr'))
     .join('');
 }
+
+/**
+ * JSON à écrire dans un <script type="application/ld+json"> : « < » échappé (un « </script> » saisi dans un titre
+ * fermerait la balise), ainsi que les séparateurs U+2028 et U+2029.
+ */
+export const jsonPourScript = (donnees: unknown) =>
+  JSON.stringify(donnees).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');

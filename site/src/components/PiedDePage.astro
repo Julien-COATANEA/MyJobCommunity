@@ -2,11 +2,12 @@
 // Pied de page (maquette) : marque + réseaux sociaux, liens utiles, contact, barre légale, mention « propulsé par ».
 // Repris aussi par le site Gestmax (voir shell.css).
 import Icone from './Icone.astro';
-import type { Navigation, Parametres } from '../lib/contenus';
+import { lirePages, type Navigation, type Parametres } from '../lib/contenus';
+import { liensLegauxParDefaut } from '../lib/pages-legales';
 import { absolu, resoudreLien } from '../lib/liens';
 import { urlMedia } from '../lib/strapi';
 import { initiales } from '../lib/format';
-import { LOGOS_RESEAUX, NOMS_RESEAUX } from '../lib/reseaux';
+import { LOGOS_RESEAUX, NOMS_RESEAUX, reseauxSurs } from '../lib/reseaux';
 
 interface Props {
   parametres: Parametres;
@@ -18,6 +19,12 @@ interface Props {
 
 const { parametres, navigation, base, gestionCookies } = Astro.props;
 const lien = (url: string) => absolu(resoudreLien(url, parametres.gestmaxUrlFront), base);
+// Liens sans adresse valide (vide, protocole refusé) écartés.
+const avecLien = <T extends { url: string }>(liens: T[]) => liens.map((l) => ({ ...l, href: lien(l.url) })).filter((l) => l.href);
+const liensUtiles = avecLien(navigation.liensPiedDePage);
+// Sans liens légaux saisis dans le BO : les pages légales publiées (jamais un brouillon, qui serait en 404).
+const liensLegaux = avecLien(navigation.liensLegaux?.length ? navigation.liensLegaux : liensLegauxParDefaut(await lirePages()));
+const reseaux = reseauxSurs(parametres.reseauxSociaux);
 const logo = urlMedia(parametres.logo, true);
 const description = parametres.seoParDefaut?.metaDescription;
 const annee = new Date().getFullYear();
@@ -44,9 +51,9 @@ const annee = new Date().getFullYear();
         </a>
         {description && <p class="pied__description">{description}</p>}
         {
-          parametres.reseauxSociaux.length > 0 && (
+          reseaux.length > 0 && (
             <ul class="pied__reseaux" aria-label="Nos réseaux sociaux">
-              {parametres.reseauxSociaux.map((r) => (
+              {reseaux.map((r) => (
                 <li>
                   <a href={r.url} rel="me noopener" aria-label={NOMS_RESEAUX[r.reseau] ?? r.reseau}>
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true" focusable="false">
@@ -61,12 +68,12 @@ const annee = new Date().getFullYear();
       </div>
 
       {
-        navigation.liensPiedDePage.length > 0 && (
+        liensUtiles.length > 0 && (
           <nav class="pied__nav" aria-labelledby="pied-titre-liens">
             <h2 id="pied-titre-liens" class="pied__titre">Liens utiles</h2>
             <ul>
-              {navigation.liensPiedDePage.map((l) => (
-                <li><a href={lien(l.url)}>{l.libelle}</a></li>
+              {liensUtiles.map((l) => (
+                <li><a href={l.href}>{l.libelle}</a></li>
               ))}
             </ul>
           </nav>
@@ -90,8 +97,9 @@ const annee = new Date().getFullYear();
     <div class="pied__legal">
       <p class="pied__copyright">© {annee} {parametres.nomSite}. Tous droits réservés.</p>
       <ul>
-        {navigation.liensLegaux.map((l) => <li><a href={lien(l.url)}>{l.libelle}</a></li>)}
-        {gestionCookies && <li><button type="button" class="pied__cookies" data-mjc-cookies-ouvrir>Gestion des cookies</button></li>}
+        {liensLegaux.map((l) => <li><a href={l.href}>{l.libelle}</a></li>)}
+        {/* Révélé par le script du bandeau : sans JavaScript, le bouton ne servirait à rien. */}
+        {gestionCookies && <li hidden><button type="button" class="pied__cookies" data-mjc-cookies-ouvrir>Gestion des cookies</button></li>}
       </ul>
     </div>
   </div>

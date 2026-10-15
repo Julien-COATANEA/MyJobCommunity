@@ -11,7 +11,7 @@ const evenements = (await lireEvenementsAVenir()).slice(0, bloc.nombre ?? 3);
   evenements.length > 0 && (
     <section class="section">
       <div class="conteneur">
-        <EnteteSection surtitre={bloc.surtitre} titre={bloc.titre} introduction={bloc.introduction} lien="/evenements" libelleLien="Tous les événements" />
+        <EnteteSection surtitre={bloc.surtitre} titre={bloc.titre} introduction={bloc.introduction} lien="/evenements/" libelleLien="Tous les événements" />
         <ul class="grille grille--3">
           {evenements.map((evenement) => (
             <li><CarteEvenement evenement={evenement} /></li>

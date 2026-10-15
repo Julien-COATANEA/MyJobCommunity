@@ -4,12 +4,12 @@ import Base from '../../layouts/Base.astro';
 import EnTetePage from '../../components/EnTetePage.astro';
 ---
 
-<Base titre="Inscription enregistrée" noIndex ariane={[{ libelle: 'Événements', url: '/evenements' }, { libelle: 'Inscription enregistrée' }]}>
+<Base titre="Inscription enregistrée" noIndex ariane={[{ libelle: 'Événements', url: '/evenements/' }, { libelle: 'Inscription enregistrée' }]}>
   <EnTetePage
     titre="Votre inscription est confirmée"
     chapo="Un e-mail de confirmation vient de vous être envoyé. Il contient un lien pour annuler en cas d'empêchement."
   />
-  <p class="conteneur conteneur--etroit section"><a href="/evenements" class="bouton bouton--plein">Voir les autres événements</a></p>
+  <p class="conteneur conteneur--etroit section"><a href="/evenements/" class="bouton bouton--plein">Voir les autres événements</a></p>
 </Base>
 
 <script>

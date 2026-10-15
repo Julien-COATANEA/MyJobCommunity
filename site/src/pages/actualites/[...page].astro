@@ -42,12 +42,13 @@ const categories = [...new Set((await lireArticles()).map((a) => a.categorie?.no
         <div class="conteneur">
           <TitreSection surtitre="À la une" titre="Le sujet du moment" />
           <ALaUne
+            niveauTitre={3}
             titre={vedette.titre}
             texte={vedette.extrait}
             image={vedette.image}
             pastille={vedette.categorie?.nom ?? 'À la une'}
             surtitre={formatDate(vedette.datePublication)}
-            lien={`/actualites/${vedette.slug}`}
+            lien={`/actualites/${vedette.slug}/`}
             libelleLien="Lire l'article"
           />
         </div>

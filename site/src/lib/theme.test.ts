@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contraste, cssTheme, texteSur } from './theme';
+import { contraste, cssTheme, melanger, nuancesTexte, texteSur } from './theme';
 
 const tokens = {
   couleurPrimaire: '#1a5f7a',
@@ -32,5 +32,23 @@ describe('thème', () => {
     expect(css).toContain("font-family:'Sora Variable'");
     expect(css).not.toContain('Inter Variable');
     expect(css).toContain('--police-texte:system-ui');
+  });
+
+  it('garantit 4,5:1 au texte doux et au secondaire sur leurs fonds', () => {
+    for (const couleurTexte of ['#1c2b33', '#595959', '#767676']) {
+      const t = { ...tokens, couleurTexte, couleurPrimaire: '#757575', couleurSecondaire: '#7aa7c7' };
+      const n = nuancesTexte(t);
+      const doux = n['--c-texte-doux-theme'];
+      const fonds = [t.couleurFond, melanger(t.couleurPrimaire, t.couleurFond, 0.11), melanger(t.couleurSecondaire, t.couleurFond, 0.09)];
+      for (const f of fonds) expect(contraste(doux, f)).toBeGreaterThanOrEqual(4.5);
+      expect(contraste(n['--c-secondaire-texte-theme'], fonds[2])).toBeGreaterThanOrEqual(4.5);
+      expect(contraste(n['--c-secondaire-texte-theme'], '#ffffff')).toBeGreaterThanOrEqual(4.5);
+    }
+    expect(cssTheme(tokens)).toMatch(/--c-texte-doux-theme:#[0-9a-f]{6};/);
+  });
+
+  it('mélange deux couleurs comme color-mix(in srgb)', () => {
+    expect(melanger('#000000', '#ffffff', 0.5)).toBe('#808080');
+    expect(melanger('#1a5f7a', '#ffffff', 1)).toBe('#1a5f7a');
   });
 });

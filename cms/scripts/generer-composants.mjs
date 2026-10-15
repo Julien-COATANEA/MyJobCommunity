@@ -218,6 +218,10 @@ const composants = {
     introduction,
     afficherCoordonnees: { type: 'boolean', default: true },
   }, 'Les messages sont envoyés à l’e-mail de contact des Informations du site'],
+  'blocs/cookies-utilises': ['Liste des cookies (automatique)', 'shield', {
+    titre: str({ default: 'Cookies et traceurs utilisés' }),
+    introduction,
+  }, 'Tableau des cookies réellement utilisés par le site, mis à jour tout seul d’après l’écran « Cookies et suivi »'],
   'blocs/iframe': ['Contenu externe intégré', 'code', {
     titre: str(),
     url: str({ required: true }),

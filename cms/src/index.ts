@@ -4,8 +4,12 @@ import { verifierContrastes } from './utils/contraste';
 import { initialiserDonneesDemo } from './bootstrap/demo';
 import { creerComptesDemo } from './bootstrap/comptes-demo';
 import { configurerBackOffice } from './bootstrap/back-office';
+import { assurerPagesLegales } from './bootstrap/pages-legales';
 import { routesEspace } from './api/espace/routes-admin';
 import { protegerOffres, UID_OFFRE } from './utils/garde-offres';
+import { protegerParametres } from './utils/garde-parametres';
+import { protegerLiens } from './utils/garde-liens';
+import { declarerCapacites } from './utils/droits';
 import { INSCRIPTION, promouvoirListeAttente } from './utils/inscriptions';
 
 // Lecture publique (rôle « Public ») : le site statique lit l'API sans jeton.
@@ -33,7 +37,9 @@ const LECTURE_PUBLIQUE = [
 const WEBHOOK_REBUILD = 'Régénération du site';
 
 export default {
-  register({ strapi }: { strapi: Core.Strapi }) {
+  async register({ strapi }: { strapi: Core.Strapi }) {
+    // Capacités de l'espace (droits réglés dans « Mon équipe ») : déclarées avant que l'admin nettoie les permissions.
+    await declarerCapacites(strapi);
     strapi.server.routes(routesEspace as any);
 
     // Champ « Lien » des formulaires : liste des pages du site, raccourcis Gestmax ou adresse libre (voir admin/espace/LienInput).
@@ -41,6 +47,10 @@ export default {
 
     // Les offres viennent de Gestmax : jamais créées ni modifiées depuis le BO.
     protegerOffres(strapi);
+    // Scripts de suivi et bandeau de cookies : écrits seulement par l'écran « Cookies et suivi ».
+    protegerParametres(strapi);
+    // Liens « javascript: » et assimilés refusés dans tous les contenus.
+    protegerLiens(strapi);
 
     // Une inscription annulée ou supprimée dans le BO libère une place : on prévient le suivant de la liste d'attente.
     strapi.documents.use(async (context, next) => {
@@ -77,6 +87,7 @@ export default {
     await strapi.db.query(UID_OFFRE).updateMany({ where: { aLaUne: { $null: true } }, data: { aLaUne: false } });
     await assurerWebhookRebuild(strapi);
     await configurerBackOffice(strapi).catch((e) => strapi.log.error(`[back-office] ${e.stack ?? e}`));
+    await assurerPagesLegales(strapi).catch((e) => strapi.log.error(`[pages-legales] ${e.stack ?? e}`));
 
     if (process.env.SEED_DEMO === 'true') {
       await initialiserDonneesDemo(strapi).catch((e) => strapi.log.error(`[demo] ${e.stack ?? e}`));

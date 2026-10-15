@@ -60,9 +60,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (peut(LIRE, PAGE)) {
       const versions: any[] = await strapi.db.query(PAGE).findMany({
         select: ['documentId', 'titre', 'slug', 'publishedAt', 'updatedAt', 'publierLe'],
+        populate: { createdBy: { select: ['id'] } },
       });
+      // Droits avec condition (Auteur : « seulement ses contenus ») : vérifiés page par page, comme le gestionnaire de contenu.
+      const verificateur = strapi.plugin('content-manager').service('permission-checker').create({ userAbility: ctx.state.userAbility, model: PAGE });
       const parDocument = new Map<string, any[]>();
-      for (const v of versions) parDocument.set(v.documentId, [...(parDocument.get(v.documentId) ?? []), v]);
+      for (const v of versions) {
+        if (verificateur.cannot.read(v)) continue;
+        parDocument.set(v.documentId, [...(parDocument.get(v.documentId) ?? []), v]);
+      }
       for (const [documentId, liste] of parDocument) {
         const { etat, publiee, reference, modifieLe } = etatDocument(liste);
         pages.push({

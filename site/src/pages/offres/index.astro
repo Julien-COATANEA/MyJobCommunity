@@ -2,7 +2,7 @@
 // Liste des offres. Le HTML statique contient les offres les plus récentes (indexables, lisibles sans JS).
 // Le script prend ensuite le relais : filtres appliqués en direct via l'API Strapi, pastilles des filtres actifs,
 // nombre d'offres par contrat, tri et recherche autour d'une ville (géocodage IGN + distance).
-// Titre, introduction, carte OpenStreetMap et blocs sous la liste se règlent dans « Ma page d'offres » du BO.
+// Titre, introduction, carte (fond Plan IGN) et blocs sous la liste se règlent dans « Ma page d'offres » du BO.
 import Base from '../../layouts/Base.astro';
 import EnTetePage from '../../components/EnTetePage.astro';
 import CarteOffre from '../../components/cartes/CarteOffre.astro';
@@ -45,7 +45,7 @@ const pl = (n: number) => (n > 1 ? 's' : '');
 
   <section class="section section--serree">
     <div class:list={['conteneur', page?.carte && 'conteneur--large']}>
-      <form action="/offres" method="get" role="search" aria-label="Filtrer les offres" class="filtres-offres" data-filtres>
+      <form action="/offres/" method="get" role="search" aria-label="Filtrer les offres" class="filtres-offres" data-filtres>
         <div class="filtres-offres__principal">
           <div class="recherche__champ recherche__champ--large">
             <label for="filtre-q">Métier, mot-clé, entreprise</label>
@@ -137,7 +137,8 @@ const pl = (n: number) => (n > 1 ? 's' : '');
           </div>
 
           <p class="section__suite">
-            <button type="button" class="bouton bouton--contour" data-plus hidden={offres.length <= PAR_PAGE}>Afficher plus d'offres</button>
+            {/* Révélé par le script : sans JavaScript, il ne pourrait rien afficher de plus. */}
+            <button type="button" class="bouton bouton--contour" data-plus data-plus-initial={offres.length > PAR_PAGE ? '' : undefined} hidden>Afficher plus d'offres</button>
           </p>
         </div>
 
@@ -550,5 +551,8 @@ const pl = (n: number) => (n > 1 ? 's' : '');
   if (modeCarte) montrerCarte(preferenceCarte(), false);
   // Carte affichée : toutes les offres sont chargées dès l'arrivée (repères et filtrage par zone).
   if (location.search || carteVisible) chercher();
-  else afficherActifs(initiaux);
+  else {
+    afficherActifs(initiaux);
+    plus.hidden = !plus.hasAttribute('data-plus-initial');
+  }
 </script>

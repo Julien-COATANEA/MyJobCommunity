@@ -10,7 +10,7 @@ interface Controle { cle: string; libelle: string; statut: 'ok' | 'attention' | 
 export default function ATraiter() {
   const { donnees, chargement, erreur } = useDonnees<{ controles: Controle[]; aTraiter: number }>('/espace/sante');
   if (chargement && !donnees) return <Widget.Loading />;
-  if (erreur || !donnees) return <Widget.Error />;
+  if (erreur || !donnees) return <Widget.Error>{erreur}</Widget.Error>;
 
   const points = donnees.controles.filter((c) => c.statut !== 'ok').sort((a, b) => Number(b.statut === 'erreur') - Number(a.statut === 'erreur'));
   if (!points.length) {

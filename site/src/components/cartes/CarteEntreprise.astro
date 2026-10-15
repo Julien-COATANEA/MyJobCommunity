@@ -13,7 +13,7 @@ const { entreprise: e, niveauTitre = 3 } = Astro.props;
 const Titre = `h${niveauTitre}`;
 const nbOffres = e.offres?.length ?? 0;
 const lettres = initiales(e.nom);
-const lienOffres = e.nomEntiteGestmax ? `/offres?entreprise=${encodeURIComponent(e.nomEntiteGestmax)}` : null;
+const lienOffres = e.nomEntiteGestmax ? `/offres/?entreprise=${encodeURIComponent(e.nomEntiteGestmax)}` : null;
 ---
 
 <article class="carte carte--entreprise" data-secteur={e.secteur?.slug ?? ''} data-nom={e.nom.toLowerCase()}>
@@ -36,7 +36,7 @@ const lienOffres = e.nomEntiteGestmax ? `/offres?entreprise=${encodeURIComponent
       <div>
         {e.secteur && <p class="etiquette">{e.secteur.nom}</p>}
         <Titre class="carte__titre">
-          <a href={`/entreprises/${e.slug}`} class="carte__lien">{e.nom}</a>
+          <a href={`/entreprises/${e.slug}/`} class="carte__lien">{e.nom}</a>
         </Titre>
       </div>
     </div>

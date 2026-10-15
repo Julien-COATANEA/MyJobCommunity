@@ -45,6 +45,59 @@ export function texteSur(fond: string, texteSombre: string): string {
   return contraste('#ffffff', fond) >= contraste(texteSombre, fond) ? '#ffffff' : texteSombre;
 }
 
+const HEX = /^#[0-9a-f]{6}$/i;
+
+/** Équivalent de color-mix(in srgb, a p%, b) ; p entre 0 et 1. */
+export function melanger(a: string, b: string, p: number): string {
+  const canal = (hex: string, i: number) => parseInt(hex.slice(i, i + 2), 16);
+  return `#${[1, 3, 5]
+    .map((i) => Math.round(canal(a, i) * p + canal(b, i) * (1 - p)).toString(16).padStart(2, '0'))
+    .join('')}`;
+}
+
+/**
+ * Mélange le moins prononcé de `couleur` vers `cible` (à partir de `depart`) qui atteint 4,5:1 sur chacun des fonds ;
+ * si `couleur` elle-même n'y suffit pas, elle est poussée vers le noir (ou le blanc sur un fond sombre).
+ * Sans réglage possible (couleurs invalides), null : la feuille de style garde sa valeur de repli.
+ */
+function versContraste(couleur: string, cible: string, depart: number, fonds: string[]): string | null {
+  if (![couleur, cible, ...fonds].every((c) => HEX.test(c))) return null;
+  const lisible = (c: string) => fonds.every((f) => contraste(c, f) >= 4.5);
+  for (let p = depart; p < 1; p += 0.02) {
+    const c = melanger(couleur, cible, p);
+    if (lisible(c)) return c;
+  }
+  const extreme = contraste('#000000', fonds[0]) >= contraste('#ffffff', fonds[0]) ? '#000000' : '#ffffff';
+  for (let p = 0; p < 1; p += 0.05) {
+    const c = melanger(extreme, couleur, p);
+    if (lisible(c)) return c;
+  }
+  return extreme;
+}
+
+/**
+ * Nuances de texte dont le contraste est garanti (RGAA 3.2), quelles que soient les couleurs du BO :
+ *  - texte doux : texte éclairci vers le fond, lisible sur le fond et les fonds pâles (primaire, secondaire) ;
+ *  - secondaire « texte » : secondaire assombri, lisible sur son fond pâle (bouton espace recruteur, étiquettes).
+ * Les fonds pâles reprennent les mélanges de jetons.css.
+ */
+export function nuancesTexte(t: TokensTheme): Record<string, string> {
+  const fond = t.couleurFond;
+  const fonds = [fond];
+  if (HEX.test(fond) && HEX.test(t.couleurPrimaire)) fonds.push(melanger(t.couleurPrimaire, fond, 0.11));
+  if (HEX.test(fond) && HEX.test(t.couleurSecondaire)) fonds.push(melanger(t.couleurSecondaire, fond, 0.09));
+  // Texte doux : au moins 78 % de texte, plus si nécessaire (jusqu'au texte lui-même).
+  const doux = versContraste(t.couleurTexte, fond, 0.78, fonds);
+  // Secondaire : de la couleur pure (p = 0 côté noir) vers le noir.
+  const secondaire = HEX.test(t.couleurSecondaire)
+    ? versContraste('#000000', t.couleurSecondaire, 0, fonds.length > 2 ? [fonds[2]] : fonds)
+    : null;
+  return {
+    ...(doux ? { '--c-texte-doux-theme': doux } : {}),
+    ...(secondaire ? { '--c-secondaire-texte-theme': secondaire } : {}),
+  };
+}
+
 const pile = (cle: string) => {
   const police = POLICES[cle] ?? POLICES.systeme;
   return police.famille ? `'${police.famille}', ${SYSTEME}` : SYSTEME;
@@ -74,6 +127,7 @@ export function cssTheme(t: TokensTheme): string {
     '--police-titres': pile(t.policeTitres),
     '--police-texte': pile(t.policeTexte),
     '--rayon': RAYONS[t.arrondis] ?? RAYONS.legers,
+    ...nuancesTexte(t),
   };
   const declarations = Object.entries(variables)
     .map(([k, v]) => `${k}:${v};`)

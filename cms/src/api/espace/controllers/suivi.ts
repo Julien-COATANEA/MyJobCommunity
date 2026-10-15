@@ -41,7 +41,9 @@ async function brouillons(strapi: Core.Strapi, uid: string) {
 }
 
 const echapperCsv = (v: unknown) => {
-  const s = v === null || v === undefined ? '' : String(v);
+  let s = v === null || v === undefined ? '' : String(v);
+  // Un prénom « =HYPERLINK(…) » saisi sur le site serait exécuté comme formule par Excel.
+  if (/^[=+\-@\t\r]/.test(s) && !/^\+?[0-9().\s-]+$/.test(s)) s = `'${s}`;
   return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 

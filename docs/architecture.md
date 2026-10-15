@@ -133,13 +133,32 @@ site. Un échec de synchronisation prévient la collectivité par e-mail (une se
 | Avant de publier | Encart `PanneauQualite` : texte alternatif, ordre des titres, liens peu explicites ou cassés, longueurs, dates, aperçu Google (`admin/espace/qualite.ts`, fonctions pures) |
 | Santé du site | Page + widget « À traiter » : synchro, entreprises sans fiche, offres bientôt expirées, événements peu remplis, images sans alt, liens cassés, brouillons oubliés, adresse de notification (`controllers/sante.ts`) |
 | Inscriptions | Liste d'attente automatique, lien d'annulation personnel (jeton) avec promotion du suivant, message groupé (envois individuels), émargement imprimable, rappel J-1 (cron 8 h), purge RGPD à 12 mois (cron 3 h 30) |
-| Équipe | Rôles « Responsable » (publie, gère l'équipe) et « Rédacteur » (prépare, demande la publication par e-mail), créés au démarrage à partir du rôle Éditeur ; page « Mon équipe » avec invitation par e-mail |
+| Équipe | Rôles « Responsable » (publie, gère l'équipe) et « Rédacteur » (prépare, demande la publication par e-mail), créés au démarrage à partir du rôle Éditeur ; page « Mon équipe » avec invitation par e-mail et réglage des droits de chaque rôle (voir ci-dessous) |
 | Gagner du temps | Modèles de pages (`utils/modeles.ts`, bouton « À partir d'un modèle » de Mes pages, page créée en brouillon), recherche globale Ctrl + K, fenêtre de bienvenue |
 | Cookies et suivi | Bandeau de consentement (choix conservé 6 mois), Google Tag Manager / Analytics par identifiant, scripts personnalisés head/body ; les scripts soumis au consentement attendent « Tout accepter » (`site/src/lib/suivi.ts`) |
 | Fréquentation | Widget lisant l'API Plausible (`PLAUSIBLE_URL`, `PLAUSIBLE_SITE`, `PLAUSIBLE_API_KEY`) ; sans configuration, le widget explique quoi renseigner |
 
 Toutes les routes `/espace/*` sont des routes d'admin (`strapi.server.routes({ type: 'admin' })`) protégées par
-`admin::isAuthenticatedAdmin`. La gestion d'équipe est réservée aux rôles Responsable, Éditeur et super administrateur.
+`admin::isAuthenticatedAdmin`, puis, pour les actions sensibles, par une capacité (policy `global::capacite`).
+
+### Droits des rôles (« Mon équipe » › Droits des rôles)
+
+Les responsables règlent les droits des rôles Responsable et Rédacteur sans passer par les réglages de Strapi
+(masqués aux collectivités). Le super administrateur garde tous les droits. Code : `cms/src/utils/droits.ts`.
+
+- **Contenus** : grille voir / créer et modifier / publier / supprimer / seulement ses contenus, pour les pages, la
+  page d'accueil, la page des offres, les actualités et leurs catégories, les événements, les entreprises, les menus
+  et les informations du site. Chaque case écrit les permissions `plugin::content-manager.explorer.*` du rôle
+  (« seulement ses contenus » = condition `admin::is-creator`). Les champs du suivi (scripts, cookies) restent exclus.
+- **Capacités de l'espace** : apparence, cookies et suivi, site Gestmax, offres (une, masquer, coupler,
+  synchroniser), mise en ligne du site, voir les inscrits, écrire aux inscrits, gérer l'équipe. Ce sont de vraies
+  permissions Strapi (`api::espace.<capacité>`), déclarées dans `register()` : déclarées plus tard, l'admin les
+  effacerait à chaque démarrage. Elles protègent les routes `/espace/*`, les entrées du menu et les écrans.
+- **Valeurs par défaut** (données une seule fois) : Responsable et Éditeur ont toutes les capacités, le Rédacteur
+  voit les inscrits. La demande de publication est envoyée aux personnes dont le rôle peut publier ce contenu.
+- **Garde-fous** : on ne peut pas retirer « Gérer l'équipe » à son propre rôle ; les rôles Strapi (super
+  administrateur, Éditeur, Auteur) ne se règlent pas ici. Un changement s'applique aux appels suivants côté serveur ;
+  le menu de la personne concernée se met à jour quand elle recharge le back-office.
 
 ## 4. Offres d'emploi
 

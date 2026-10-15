@@ -12,7 +12,7 @@ import { Check, Eye, Image as IconeImage, WarningCircle } from '@strapi/icons';
 import { Layouts, Page, useFetchClient, useNotification } from '@strapi/strapi/admin';
 import { Link } from 'react-router-dom';
 import { ratioContraste, verifierContrastes } from '../../../utils/contraste';
-import { unique } from '../outils';
+import { messageErreur, unique } from '../outils';
 
 interface Theme {
   nomSite: string;
@@ -151,6 +151,7 @@ export default function Apparence() {
   const [enregistrement, setEnregistrement] = React.useState(false);
   const [televersement, setTeleversement] = React.useState(false);
   const champFichier = React.useRef<HTMLInputElement>(null);
+  const [erreurChargement, setErreurChargement] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     get('/espace/apparence').then(({ data }: any) => {
@@ -165,9 +166,10 @@ export default function Apparence() {
       setLogo(data.logo ?? null);
       setLogoInitial(data.logo?.id ?? null);
       setUrlSite(data.urlSite ?? '');
-    });
+    }).catch((e: unknown) => setErreurChargement(messageErreur(e, 'Les réglages n’ont pas pu être chargés.')));
   }, [get]);
 
+  if (erreurChargement) return <Page.Error content={erreurChargement} />;
   if (!theme) return <Page.Loading />;
 
   const changer = (cle: keyof Theme, valeur: string) => setTheme({ ...theme, [cle]: valeur });
@@ -183,7 +185,7 @@ export default function Apparence() {
       setLogoInitial(logo?.id ?? null);
       toggleNotification({ type: 'success', message: 'Apparence enregistrée : votre site sera mis à jour dans quelques instants.' });
     } catch (e: any) {
-      toggleNotification({ type: 'danger', message: e?.response?.data?.error?.message ?? "L'enregistrement a échoué." });
+      toggleNotification({ type: 'danger', message: messageErreur(e, "L'enregistrement a échoué.") });
     } finally {
       setEnregistrement(false);
     }

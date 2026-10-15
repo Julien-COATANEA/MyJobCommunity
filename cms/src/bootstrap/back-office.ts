@@ -4,7 +4,9 @@
 //  - offres en lecture seule pour les rôles Éditeur et Auteur (elles viennent de Gestmax).
 // Les libellés ne remplacent que les valeurs par défaut : une personnalisation faite dans le BO est conservée.
 import type { Core } from '@strapi/strapi';
-import { ROLE_REDACTEUR, ROLE_RESPONSABLE, assurerDroitsType, assurerRoles } from '../utils/roles';
+import { ROLE_REDACTEUR, ROLE_RESPONSABLE, assurerDroitsType, assurerRoles, harmoniserRoles } from '../utils/roles';
+import { CHAMPS_SUIVI, UID_PARAMETRES, restreindreChampsSuivi } from '../utils/garde-parametres';
+import { initialiserCapacites } from '../utils/droits';
 
 type Libelle = string | [libelle: string, description: string];
 
@@ -173,13 +175,21 @@ const PAR_TYPE: Record<string, Record<string, Libelle>> = {
     arrondis: 'Arrondis des angles',
     email: 'E-mail de contact',
     reseauxSociaux: 'Réseaux sociaux',
+    editeurNom: ['Nom officiel de l’éditeur', 'Ex. : Communauté d’agglomération de la Vallée Verte. Utilisé dans les mentions légales et la politique de confidentialité.'],
+    editeurSiret: ['N° SIRET', '14 chiffres, sans lettres.'],
+    directeurPublication: ['Directeur ou directrice de la publication', 'Nom et fonction, ex. : Mme Claire Martin, Présidente.'],
+    hebergeurNom: ['Nom de l’hébergeur', 'Société qui héberge le site (obligatoire dans les mentions légales).'],
+    hebergeurAdresse: 'Adresse de l’hébergeur',
+    hebergeurTelephone: 'Téléphone de l’hébergeur',
+    contactDonneesEmail: ['E-mail pour exercer ses droits', 'Adresse du délégué à la protection des données (DPO) ou du service qui répond aux demandes RGPD. Si vide : l’e-mail de contact.'],
+    prestataireNom: ['Conception et maintenance', 'Nom du prestataire qui apparaît dans les mentions légales.'],
     emailNotificationInscriptions: ['E-mail de notification', 'Reçoit un message à chaque inscription à un événement.'],
     gestmaxUrlFront: ['Adresse du site Gestmax', 'Ex. : https://emploi.ma-collectivite.fr'],
     lienEspaceCandidat: 'Lien « Espace candidat »',
     lienEspaceRecruteur: 'Lien « Espace recruteur »',
     lienCandidatureSpontanee: 'Lien « Candidature spontanée »',
     seoParDefaut: 'Référencement par défaut',
-    bandeauCookies: ['Bandeau de cookies', 'Demande l’accord des visiteurs avant de lancer les outils de mesure (écran « Cookies et suivi »).'],
+    bandeauCookies: ['Bandeau de cookies', 'Toujours afficher le bandeau, même sans outil de mesure (écran « Cookies et suivi »).'],
     texteBandeauCookies: 'Texte du bandeau de cookies',
     lienPolitiqueCookies: 'Lien « En savoir plus » du bandeau',
     googleTagManagerId: ['Google Tag Manager', 'Identifiant du conteneur, ex. : GTM-ABC1234'],
@@ -297,6 +307,8 @@ const OFFRE_MODIFIABLE = ['aLaUne', 'masquee'];
 const MASQUES: Record<string, string[]> = {
   'api::offre.offre': ['slug', 'entreprise', 'logoUrl', 'latitude', 'longitude', 'departement', 'secteur'],
   'api::inscription.inscription': ['jeton', 'rappelEnvoye'],
+  // Modifiés seulement depuis l'écran « Cookies et suivi » (voir garde-parametres).
+  [UID_PARAMETRES]: CHAMPS_SUIVI,
 };
 
 // Exemples affichés dans les champs vides.
@@ -401,11 +413,14 @@ export async function configurerBackOffice(strapi: Core.Strapi) {
 
   await configuration.set({ value: { ...etat, versionListes: VERSION_LISTES } });
   await assurerRoles(strapi);
+  await harmoniserRoles(strapi);
   // Droits des éditeurs, responsables et rédacteurs sur les contenus éditoriaux, nouveaux champs compris (Strapi ne
   // les ajoute pas aux rôles existants). Exclus volontairement : les Informations du site (scripts de suivi réservés
   // aux responsables, via l'écran « Cookies et suivi ») et les offres (lecture seule, voir restreindreOffres).
   for (const uid of TYPES_EDITORIAUX) await assurerDroitsType(strapi, uid);
   await restreindreOffres(strapi);
+  await restreindreChampsSuivi(strapi);
+  await initialiserCapacites(strapi);
 }
 
 /** Les offres viennent de Gestmax : Éditeur et Auteur peuvent les consulter, pas les modifier. */

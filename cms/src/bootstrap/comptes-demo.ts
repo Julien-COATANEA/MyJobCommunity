@@ -4,7 +4,7 @@ import type { Core } from '@strapi/strapi';
 
 const COMPTES = [
   { prefixe: 'DEMO_ADMIN', role: 'strapi-super-admin', firstname: 'Admin', lastname: 'Agence' },
-  { prefixe: 'DEMO_EDITEUR', role: 'strapi-editor', firstname: 'Éditeur', lastname: 'Collectivité' },
+  { prefixe: 'DEMO_EDITEUR', role: 'mjc-responsable', firstname: 'Responsable', lastname: 'Collectivité' },
 ];
 
 export async function creerComptesDemo(strapi: Core.Strapi) {

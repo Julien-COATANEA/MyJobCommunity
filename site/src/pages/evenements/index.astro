@@ -36,12 +36,13 @@ const s = (n: number) => (n > 1 ? 's' : '');
         <div class="conteneur">
           <TitreSection surtitre="Prochain rendez-vous" titre="Ne le manquez pas" />
           <ALaUne
+            niveauTitre={3}
             titre={phare.titre}
             texte={phare.extrait}
             image={phare.image}
             pastille={phare.typeEvenement}
             surtitre={`${formatDateLongue(phare.dateDebut)}, ${formatHeure(phare.dateDebut)} · ${phare.enLigne ? 'En ligne' : phare.lieu ?? ''}`}
-            lien={`/evenements/${phare.slug}`}
+            lien={`/evenements/${phare.slug}/`}
             libelleLien="Voir l'événement"
           />
         </div>
@@ -85,7 +86,7 @@ const s = (n: number) => (n > 1 ? 's' : '');
           <ul class="liste-simple">
             {passes.map((e) => (
               <li>
-                <a href={`/evenements/${e.slug}`}>{e.titre}</a>, <time datetime={e.dateDebut}>{formatDate(e.dateDebut)}</time>
+                <a href={`/evenements/${e.slug}/`}>{e.titre}</a>, <time datetime={e.dateDebut}>{formatDate(e.dateDebut)}</time>
               </li>
             ))}
           </ul>

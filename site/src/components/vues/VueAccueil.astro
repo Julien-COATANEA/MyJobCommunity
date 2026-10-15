@@ -31,7 +31,7 @@ const s = (n: number) => (n > 1 ? 's' : '');
       <h1 class="hero__titre">{accueil?.heroTitre ?? parametres.nomSite}</h1>
       {accueil?.heroTexte && <p class="hero__texte">{accueil.heroTexte}</p>}
       <div class="hero__actions">
-        <a href="/offres" class="bouton bouton--plein">Voir les offres<Icone nom="fleche" taille={18} /></a>
+        <a href="/offres/" class="bouton bouton--plein">Voir les offres<Icone nom="fleche" taille={18} /></a>
         {
           compteurs.offres > 0 && (
             <p class="hero__compteur">

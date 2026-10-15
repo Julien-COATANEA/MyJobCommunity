@@ -1,5 +1,6 @@
 // Rendu HTML du champ « blocks » (éditeur de texte riche de Strapi 5).
 // Rendu au build : aucun JavaScript côté navigateur.
+import { avecSlash, lienSur } from './liens';
 
 export interface NoeudTexte {
   type: 'text';
@@ -24,11 +25,10 @@ export function echapper(texte: string): string {
   return texte.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }
 
-const URL_AUTORISEE = /^(https?:|mailto:|tel:|\/|#)/i;
 
-function texte(n: NoeudTexte): string {
+function texte(n: NoeudTexte, o: Options): string {
   // Retours à la ligne dans un paragraphe : <br>
-  let html = echapper(n.text).replace(/\n/g, '<br>');
+  let html = echapper(o.texte ? o.texte(n.text) : n.text).replace(/\n/g, '<br>');
   if (n.code) html = `<code>${html}</code>`;
   if (n.bold) html = `<strong>${html}</strong>`;
   if (n.italic) html = `<em>${html}</em>`;
@@ -46,14 +46,17 @@ interface Options {
   niveauMin: number;
   /** Préfixe des URL d'images relatives (Strapi public). */
   baseMedias: string;
+  /** Transformation du texte brut de chaque nœud, avant l'échappement HTML (ex. jetons des pages légales). */
+  texte?: (texte: string) => string;
 }
 
 function noeud(n: any, o: Options): string {
   switch (n.type) {
     case 'text':
-      return texte(n);
+      return texte(n, o);
     case 'link': {
-      const url = URL_AUTORISEE.test(n.url) ? n.url : '#';
+      const sur = lienSur(n.url);
+      const url = sur ? avecSlash(sur) : '#';
       return `<a href="${echapper(url)}">${enfants(n.children, o)}</a>`;
     }
     case 'paragraph': {

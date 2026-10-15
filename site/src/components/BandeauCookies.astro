@@ -1,9 +1,11 @@
 ---
-// Bandeau de consentement aux cookies (activé dans « Cookies et suivi » du BO). « Tout accepter » et « Tout refuser »
+// Bandeau de consentement aux cookies, affiché dès qu'un outil de mesure attend l'accord du visiteur (voir lib/suivi.ts). « Tout accepter » et « Tout refuser »
 // ont le même poids (recommandation CNIL) ; le choix est conservé 6 mois dans le navigateur. Après accord, les
 // <template data-mjc-suivi> écrits par Base.astro sont transformés en vrais scripts. Placé en tête du <body> pour
 // être atteint en premier au clavier et par les lecteurs d'écran.
+import { lirePages } from '../lib/contenus';
 import { resoudreLien } from '../lib/liens';
+import { lienPolitiqueCookiesEffectif } from '../lib/pages-legales';
 import { TEXTE_BANDEAU } from '../lib/suivi';
 
 interface Props {
@@ -13,7 +15,9 @@ interface Props {
 }
 
 const { texte, lien, gestmaxUrlFront } = Astro.props;
-const href = lien ? resoudreLien(lien, gestmaxUrlFront) : null;
+// Sans lien dans le BO : la politique de cookies, si cette page est publiée.
+const lienEffectif = lienPolitiqueCookiesEffectif(lien, await lirePages());
+const href = lienEffectif ? resoudreLien(lienEffectif, gestmaxUrlFront) : null;
 ---
 
 <section id="mjc-cookies" class="cookies" aria-labelledby="mjc-cookies-titre" hidden>
@@ -79,7 +83,28 @@ const href = lien ? resoudreLien(lien, gestmaxUrlFront) : null;
       });
     };
 
-    const ouvrir = () => {
+    // Retrait du consentement : cookies Google Analytics effacés (domaine courant et domaines parents).
+    const effacerCookies = () => {
+      const noms = document.cookie.split(';').map((c) => c.split('=')[0].trim()).filter((n) => n === '_ga' || n === '_gid' || n.startsWith('_ga_'));
+      const parties = location.hostname.split('.');
+      const domaines = [''];
+      for (let i = 0; i < parties.length - 1; i++) domaines.push(`; domain=.${parties.slice(i).join('.')}`);
+      for (const nom of noms) for (const d of domaines) document.cookie = `${nom}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/${d}`;
+    };
+
+    // Bouton « Gestion des cookies » du pied de page (plus bas dans la page) : masqué sans JavaScript.
+    // Idem pour le bouton « Gérer mes choix » du bloc « Cookies utilisés » d'une page.
+    const montrerGestion = () => {
+      document.querySelectorAll('[data-mjc-cookies-ouvrir]').forEach((b) => {
+        b.hidden = false;
+        const li = b.closest('li');
+        if (li) li.hidden = false;
+      });
+    };
+
+    let rouvertPar = null;
+    const ouvrir = (bouton) => {
+      rouvertPar = bouton;
       bandeau.hidden = false;
       bandeau.querySelector('button')?.focus();
     };
@@ -87,21 +112,28 @@ const href = lien ? resoudreLien(lien, gestmaxUrlFront) : null;
       const choix = e.target.closest?.('[data-mjc-cookies]')?.dataset.mjcCookies;
       if (!choix) return;
       ecrire(choix);
+      // Le focus ne doit pas se perdre avec le bandeau masqué : retour au bouton « Gestion des cookies » qui l'a
+      // rouvert, sinon début du contenu (sans faire défiler la page).
+      if (rouvertPar?.isConnected) rouvertPar.focus();
+      else document.getElementById('contenu')?.focus({ preventScroll: true });
       bandeau.hidden = true;
       if (choix === 'oui') activer();
-      // Des outils déjà lancés ne s'arrêtent pas : on recharge la page sans eux.
-      else if (actifs) location.reload();
+      else {
+        effacerCookies();
+        // Des outils déjà lancés ne s'arrêtent pas : on recharge la page sans eux.
+        if (actifs) location.reload();
+      }
     });
     document.addEventListener('click', (e) => {
-      if (e.target.closest?.('[data-mjc-cookies-ouvrir]')) ouvrir();
+      const bouton = e.target.closest?.('[data-mjc-cookies-ouvrir]');
+      if (bouton) ouvrir(bouton);
     });
 
+    // Le bandeau est en haut de page : le pied et les <template> de fin de page ne sont pas encore lus.
+    const quandPret = (f) => (document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', f) : f());
+    quandPret(montrerGestion);
     const choix = lire();
     if (!choix) bandeau.hidden = false;
-    // Le bandeau est en haut de page : les <template> de fin de page ne sont pas encore lus.
-    else if (choix === 'oui') {
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', activer);
-      else activer();
-    }
+    else if (choix === 'oui') quandPret(activer);
   })();
 </script>

@@ -1,0 +1,19 @@
+{
+  "collectionName": "components_blocs_cookies_utilises",
+  "info": {
+    "displayName": "Liste des cookies (automatique)",
+    "icon": "shield",
+    "description": "Tableau des cookies réellement utilisés par le site, mis à jour tout seul d’après l’écran « Cookies et suivi »"
+  },
+  "options": {},
+  "attributes": {
+    "titre": {
+      "type": "string",
+      "default": "Cookies et traceurs utilisés"
+    },
+    "introduction": {
+      "type": "text",
+      "maxLength": 400
+    }
+  }
+}

@@ -1,4 +1,6 @@
 ---
+import { jsonPourScript } from '../lib/format';
+
 export interface Miette {
   libelle: string;
   url?: string;
@@ -39,4 +41,4 @@ const jsonLd = {
     }
   </ol>
 </nav>
-<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+<script type="application/ld+json" set:html={jsonPourScript(jsonLd)} />

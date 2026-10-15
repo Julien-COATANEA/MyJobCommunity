@@ -1,5 +1,6 @@
 ---
 import type { Page } from 'astro';
+import { avecSlash, urlPagination } from '../lib/liens';
 
 interface Props {
   page: Page<unknown>;
@@ -7,7 +8,7 @@ interface Props {
 
 const { page } = Astro.props;
 const pages = Array.from({ length: page.lastPage }, (_, i) => i + 1);
-const urlPage = (n: number) => (n === 1 ? page.url.first : `${page.url.first}/${n}`);
+const urlPage = (n: number) => urlPagination(page.url, page.currentPage, n);
 ---
 
 {
@@ -15,7 +16,7 @@ const urlPage = (n: number) => (n === 1 ? page.url.first : `${page.url.first}/${
     <nav class="pagination" aria-label="Pagination">
       <ul>
         {page.url.prev && (
-          <li><a href={page.url.prev} rel="prev">Page précédente</a></li>
+          <li><a href={avecSlash(page.url.prev)} rel="prev">Page précédente</a></li>
         )}
         {pages.map((n) => (
           <li>
@@ -27,7 +28,7 @@ const urlPage = (n: number) => (n === 1 ? page.url.first : `${page.url.first}/${
           </li>
         ))}
         {page.url.next && (
-          <li><a href={page.url.next} rel="next">Page suivante</a></li>
+          <li><a href={avecSlash(page.url.next)} rel="next">Page suivante</a></li>
         )}
       </ul>
     </nav>

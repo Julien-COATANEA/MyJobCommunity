@@ -4,7 +4,7 @@
 import Icone from './Icone.astro';
 import type { Navigation, Parametres } from '../lib/contenus';
 import { absolu, estActif, estExterne, resoudreLien } from '../lib/liens';
-import { PUBLIC_STRAPI_URL, urlMedia } from '../lib/strapi';
+import { urlMedia } from '../lib/strapi';
 import { initiales } from '../lib/format';
 
 interface Props {
@@ -18,18 +18,22 @@ const { parametres, navigation, base } = Astro.props;
 const chemin = Astro.url.pathname;
 const lien = (url: string | null | undefined) => absolu(resoudreLien(url, parametres.gestmaxUrlFront), base);
 const logo = urlMedia(parametres.logo, true);
+// Espaces recruteur et candidat : affichés seulement si leur lien est saisi dans « Site Gestmax » du BO.
 const acces = [
-  // Espace recruteur : le back-office (Strapi), sauf si un autre lien est saisi dans « Site Gestmax ».
-  { libelle: 'recruteur', url: parametres.lienEspaceRecruteur || `${PUBLIC_STRAPI_URL}/admin`, icone: 'emploi', classe: 'acces--recruteur' },
-  { libelle: 'candidat', url: parametres.lienEspaceCandidat, icone: 'utilisateur', classe: 'acces--candidat' },
-].filter((a) => a.url);
+  { libelle: 'recruteur', href: lien(parametres.lienEspaceRecruteur), icone: 'emploi', classe: 'acces--recruteur' },
+  { libelle: 'candidat', href: lien(parametres.lienEspaceCandidat), icone: 'utilisateur', classe: 'acces--candidat' },
+].filter((a): a is typeof a & { href: string } => !!a.href);
+// Entrées sans lien valide (vide, protocole refusé) écartées.
+const menu = navigation.menuPrincipal
+  .map((entree) => ({ ...entree, sousLiens: entree.sousLiens.filter((s) => lien(s.url)) }))
+  .filter((entree) => entree.sousLiens.length || lien(entree.url));
 ---
 
 <div class="mjc-shell" data-mjc-shell={parametres.nomSite}>
 <div class="evitement">
   {/* Liens relatifs à la page affichée : aussi valables sur les pages Gestmax qui reprennent l'en-tête. */}
   <a href="#contenu">Aller au contenu</a>
-  <a href="#navigation">Aller au menu</a>
+  <a href="#navigation" data-aller-menu>Aller au menu</a>
 </div>
 
 <header class="entete">
@@ -57,7 +61,7 @@ const acces = [
     <nav id="navigation" class="nav" aria-label="Menu principal" data-nav>
       <ul class="nav__liste">
         {
-          navigation.menuPrincipal.map((entree, i) => {
+          menu.map((entree, i) => {
             const actif = [entree.url, ...entree.sousLiens.map((s) => s.url)].some((u) => u && estActif(u, chemin));
             return entree.sousLiens.length ? (
               <li class="nav__item nav__item--sous-menu">
@@ -111,18 +115,15 @@ const acces = [
       {
         acces.length > 0 && (
           <ul class="nav__acces">
-            {acces.map((a) => {
-              const href = lien(a.url);
-              return (
-                <li>
-                  <a href={href} class:list={['acces', a.classe]}>
-                    <Icone nom={a.icone} taille={18} />
-                    <span class="acces__texte">Espace <strong>{a.libelle}</strong></span>
-                    {estExterne(href) && !base && <span class="sr-only"> (site partenaire)</span>}
-                  </a>
-                </li>
-              );
-            })}
+            {acces.map((a) => (
+              <li>
+                <a href={a.href} class:list={['acces', a.classe]}>
+                  <Icone nom={a.icone} taille={18} />
+                  <span class="acces__texte">Espace <strong>{a.libelle}</strong></span>
+                  {estExterne(a.href) && !base && <span class="sr-only"> (site partenaire)</span>}
+                </a>
+              </li>
+            ))}
           </ul>
         )
       }
@@ -132,7 +133,8 @@ const acces = [
 </div>
 
 <script>
-  document.documentElement.classList.add('js');
+  // Classe préfixée : le front Gestmax qui reprend l'en-tête peut poser sa propre classe « js ».
+  document.documentElement.classList.add('mjc-js');
 
   const burger = document.querySelector<HTMLButtonElement>('[data-burger]');
   const nav = document.querySelector<HTMLElement>('[data-nav]');
@@ -141,12 +143,19 @@ const acces = [
   const fermerSousMenus = (sauf?: HTMLButtonElement) =>
     boutons.forEach((b) => b !== sauf && b.setAttribute('aria-expanded', 'false'));
 
+  const ouvrirMenu = (ouvert: boolean) => {
+    burger?.setAttribute('aria-expanded', String(ouvert));
+    nav?.classList.toggle('nav--ouverte', ouvert);
+  };
+
   if (burger && nav) {
     burger.hidden = false;
-    burger.addEventListener('click', () => {
-      const ouvert = burger.getAttribute('aria-expanded') === 'true';
-      burger.setAttribute('aria-expanded', String(!ouvert));
-      nav.classList.toggle('nav--ouverte', !ouvert);
+    burger.addEventListener('click', () => ouvrirMenu(burger.getAttribute('aria-expanded') !== 'true'));
+    // Petits écrans : le menu replié est masqué, « Aller au menu » mène au bouton qui l'ouvre.
+    document.querySelector('[data-aller-menu]')?.addEventListener('click', (e) => {
+      if (getComputedStyle(nav).display !== 'none') return;
+      e.preventDefault();
+      burger.focus();
     });
   }
 
@@ -158,13 +167,16 @@ const acces = [
     });
   });
 
-  // Échap ferme le sous-menu ouvert et rend le focus à son bouton.
+  // Échap ferme le sous-menu ouvert (sinon le menu burger) et rend le focus à son bouton.
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     const ouvert = boutons.find((b) => b.getAttribute('aria-expanded') === 'true');
     if (ouvert) {
       ouvert.setAttribute('aria-expanded', 'false');
       ouvert.focus();
+    } else if (burger?.getAttribute('aria-expanded') === 'true') {
+      ouvrirMenu(false);
+      burger.focus();
     }
   });
 

@@ -8,6 +8,7 @@ import Partage from '../Partage.astro';
 import type { Entreprise, Offre } from '../../lib/contenus';
 import { rendreBlocks } from '../../lib/blocks';
 import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
+import { lienSur } from '../../lib/liens';
 
 interface Props {
   entreprise: Entreprise;
@@ -16,7 +17,8 @@ interface Props {
 
 const { entreprise: e, offres } = Astro.props;
 const AFFICHEES = 6;
-const lienOffres = e.nomEntiteGestmax ? `/offres?entreprise=${encodeURIComponent(e.nomEntiteGestmax)}` : null;
+const siteWeb = lienSur(e.siteWeb);
+const lienOffres = e.nomEntiteGestmax ? `/offres/?entreprise=${encodeURIComponent(e.nomEntiteGestmax)}` : null;
 ---
 
 <EnTetePage titre={e.nom} chapo={e.extrait} surtitre={e.secteur?.nom} />
@@ -35,7 +37,7 @@ const lienOffres = e.nomEntiteGestmax ? `/offres?entreprise=${encodeURIComponent
       {e.secteur && <div><dt><Icone nom="entreprise" taille={20} />Secteur</dt><dd>{e.secteur.nom}</dd></div>}
       <div><dt><Icone nom="emploi" taille={20} />Offres en ligne</dt><dd>{offres.length || 'Aucune pour le moment'}</dd></div>
     </dl>
-    {e.siteWeb && <p><a href={e.siteWeb} class="bouton bouton--contour bouton--large">Site de l'entreprise <Icone nom="externe" taille={18} /></a></p>}
+    {siteWeb && <p><a href={siteWeb} class="bouton bouton--contour bouton--large">Site de l'entreprise <Icone nom="externe" taille={18} /></a></p>}
     <Partage titre={e.nom} chemin={`/entreprises/${e.slug}/`} />
   </aside>
 </div>

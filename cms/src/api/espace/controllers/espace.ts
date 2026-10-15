@@ -2,6 +2,7 @@ import type { Core } from '@strapi/strapi';
 import { lireDerniereSynchro } from '../../../utils/synchro';
 import { OFFRES_VISIBLES } from '../../../utils/garde-offres';
 import { normaliserNom, rattacher } from '../../../utils/rattachement';
+import { PAGES_LEGALES } from '../../../utils/infos-legales';
 
 const UID = {
   page: 'api::page.page',
@@ -43,14 +44,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   /** « Votre site est prêt à X % » : étapes de mise en route d'une nouvelle collectivité. */
   const listeDemarrage = async (p: any, c: { pages: number; articles: number; entreprises: number; evenementsAVenir: number }) => {
     const navigation: any = await strapi.documents('api::navigation.navigation').findFirst({ populate: { menuPrincipal: true } } as any);
-    const pagesLegales = await db(UID.page).count({ where: { ...publies, slug: { $in: ['mentions-legales', 'accessibilite'] } } });
+    const pagesLegales = await db(UID.page).count({ where: { ...publies, slug: { $in: [...PAGES_LEGALES] } } });
     const cm = (uid: string, unique = false) => `/content-manager/${unique ? 'single' : 'collection'}-types/${uid}`;
     return [
       { cle: 'logo', libelle: 'Déposer votre logo et choisir vos couleurs', fait: !!p?.logo && p?.couleurPrimaire !== '#1a5f7a', lien: '/apparence' },
       { cle: 'coordonnees', libelle: 'Renseigner vos coordonnées', fait: !!(p?.email && p?.telephone), lien: cm('api::parametres.parametres', true) },
       { cle: 'menu', libelle: 'Construire le menu du site', fait: (navigation?.menuPrincipal?.length ?? 0) > 0, lien: cm('api::navigation.navigation', true) },
       { cle: 'carriere', libelle: 'Relier votre site Gestmax', fait: !!p?.gestmaxUrlFront, lien: '/site-carriere' },
-      { cle: 'legal', libelle: 'Publier les mentions légales et la page accessibilité', fait: pagesLegales >= 2, lien: cm(UID.page) },
+      { cle: 'legal', libelle: 'Compléter les informations légales et publier les pages légales', fait: pagesLegales >= PAGES_LEGALES.length, lien: cm(UID.page) },
       { cle: 'entreprises', libelle: "Présenter au moins 3 entreprises dans l'annuaire", fait: c.entreprises >= 3, lien: cm(UID.entreprise) },
       { cle: 'articles', libelle: 'Publier vos 3 premiers articles', fait: c.articles >= 3, lien: cm(UID.article) },
       { cle: 'evenement', libelle: 'Annoncer un événement', fait: c.evenementsAVenir >= 1, lien: cm(UID.evenement) },
@@ -183,8 +184,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const { nomEntreprise, entreprise } = ctx.request.body ?? {};
       if (typeof nomEntreprise !== 'string' || !nomEntreprise.trim()) return ctx.badRequest('Nom d’entreprise manquant.');
       if (entreprise !== null && typeof entreprise !== 'string') return ctx.badRequest('Fiche entreprise invalide.');
+      // « ; » sépare plusieurs noms dans « Nom dans Gestmax » : un nom qui en contient serait découpé au passage suivant.
+      if (nomEntreprise.includes(';')) return ctx.badRequest('Le nom d’entreprise ne doit pas contenir de « ; ».');
       try {
-        ctx.body = await rattacher(strapi, nomEntreprise, entreprise);
+        // Après une éventuelle synchronisation en cours : elle réécrirait sinon l'ancien rattachement.
+        ctx.body = await strapi.service('api::offre.offre').apresSynchro(() => rattacher(strapi, nomEntreprise, entreprise));
       } catch (e) {
         return ctx.badRequest((e as Error).message);
       }
@@ -192,7 +196,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     async synchroniserOffres(ctx: any) {
       try {
-        ctx.body = await strapi.service('api::offre.offre').synchroniserDepuisGestmax();
+        // « Forcer » : passe outre le garde-fou d'une forte baisse du nombre d'offres.
+        ctx.body = await strapi.service('api::offre.offre').synchroniserDepuisGestmax({ forcer: ctx.request.body?.forcer === true });
       } catch (e) {
         ctx.status = 502;
         ctx.body = { statut: 'erreur', message: (e as Error).message };

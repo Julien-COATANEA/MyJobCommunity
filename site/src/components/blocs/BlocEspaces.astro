@@ -15,6 +15,8 @@ interface Espace {
 
 const { bloc } = Astro.props;
 const espaces: Espace[] = bloc.espaces ?? [];
+// Sans titre de bloc, les titres des espaces sont les premiers titres de la section.
+const Titre = bloc.titre ? 'h3' : 'h2';
 ---
 
 {
@@ -26,7 +28,7 @@ const espaces: Espace[] = bloc.espaces ?? [];
           {espaces.map((e) => (
             <li class:list={['espace', `espace--${e.couleur ?? 'principale'}`]}>
               <span class="espace__icone" aria-hidden="true"><Icone nom={e.icone ?? 'utilisateur'} taille={26} /></span>
-              <h3 class="espace__titre">{e.titre}</h3>
+              <Titre class="espace__titre">{e.titre}</Titre>
               {e.texte && <p class="espace__texte">{e.texte}</p>}
               {e.bouton?.url && <p class="espace__action"><Bouton bouton={e.bouton} surFond /></p>}
             </li>

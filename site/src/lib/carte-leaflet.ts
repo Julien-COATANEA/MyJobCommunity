@@ -1,4 +1,4 @@
-// Carte OpenStreetMap de la page /offres (Leaflet). Chargée à la demande, seulement si la carte est activée
+// Carte de la page /offres (Leaflet, fond Plan IGN). Chargée à la demande, seulement si la carte est activée
 // dans « Ma page d'offres » et affichée : les autres pages ne téléchargent ni Leaflet ni les tuiles.
 //  - les lieux proches à l'écran sont regroupés (cercle avec le nombre d'offres) ; un clic zoome sur le groupe ;
 //  - une offre seule est une épingle, un lieu à plusieurs offres un cercle : leur infobulle liste les offres ;
@@ -9,6 +9,7 @@ import {
   EPINGLE, htmlInfobulle, libelleGroupe, libelleRepere, regrouperParLieu, regrouperProches, type Lieu, type OffreSurCarte, type Zone,
 } from './carte-offres';
 import type { Position } from './recherche-offres';
+import { OPTIONS_CARTE, preparerCarte } from './fond-carte';
 
 const FRANCE: L.LatLngTuple = [46.6, 2.4];
 /** Distance à l'écran sous laquelle deux lieux sont regroupés. */
@@ -32,12 +33,8 @@ const icone = (n: number) => {
 const epingle = L.divIcon({ className: 'carte-offres__epingle', html: EPINGLE, iconSize: [28, 38], iconAnchor: [14, 37], popupAnchor: [0, -34] });
 
 export function creerCarte(conteneur: HTMLElement, { surDeplacement }: OptionsCarte = {}) {
-  const carte = L.map(conteneur, { zoomSnap: 0.5 }).setView(FRANCE, 5);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">Contributeurs OpenStreetMap</a>',
-  }).addTo(carte);
-  carte.attributionControl.setPrefix(false);
+  const carte = L.map(conteneur, { ...OPTIONS_CARTE, zoomSnap: 0.5 }).setView(FRANCE, 5);
+  preparerCarte(carte);
   const calque = L.layerGroup().addTo(carte);
 
   let lieux: Lieu[] = [];

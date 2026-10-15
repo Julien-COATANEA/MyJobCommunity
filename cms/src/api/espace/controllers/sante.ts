@@ -1,4 +1,5 @@
 // « Santé du site » : tout ce qui demande l'attention de la collectivité, au même endroit.
+import { CHAMPS_LEGAUX, PAGES_LEGALES, infosLegalesManquantes } from '../../../utils/infos-legales';
 import type { Core } from '@strapi/strapi';
 import { OFFRES_VISIBLES } from '../../../utils/garde-offres';
 import { trouverLiensCasses } from '../../../utils/liens';
@@ -139,6 +140,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         ? { cle: 'notification', libelle: 'Adresse de notification', statut: 'ok', detail: 'Les inscriptions et les alertes sont envoyées à votre adresse de notification.' }
         : { cle: 'notification', libelle: 'Adresse de notification', statut: 'attention', detail: "Aucune adresse n'est renseignée : vous ne serez pas prévenu des inscriptions ni d'un problème de synchronisation.", lien: '/content-manager/single-types/api::parametres.parametres', libelleLien: 'Renseigner l’adresse' },
     );
+
+    // 9. Informations légales et pages légales
+    const legal: any = await db('api::parametres.parametres').findOne({ select: CHAMPS_LEGAUX.map((c) => c.champ) });
+    const manquantes = infosLegalesManquantes(legal);
+    const pagesLegalesPubliees: any[] = await db('api::page.page').findMany({ where: { publishedAt: { $notNull: true }, slug: { $in: [...PAGES_LEGALES] } }, select: ['slug'] });
+    const lienInfos = '/content-manager/single-types/api::parametres.parametres';
+    if (manquantes.length) {
+      ajouter({
+        cle: 'infos-legales', libelle: 'Informations légales', statut: pagesLegalesPubliees.length ? 'erreur' : 'attention',
+        detail: pagesLegalesPubliees.length
+          ? `Des pages légales sont en ligne, mais ${manquantes.length} information${manquantes.length > 1 ? 's' : ''} manque${manquantes.length > 1 ? 'nt' : ''} : « [à compléter] » s’affiche sur le site.`
+          : `Complétez ${manquantes.length} information${manquantes.length > 1 ? 's' : ''} avant de publier les mentions légales et la politique de confidentialité.`,
+        elements: manquantes.map((titre) => ({ titre, lien: lienInfos })),
+        lien: lienInfos, libelleLien: 'Compléter les informations',
+      });
+    } else {
+      ajouter({ cle: 'infos-legales', libelle: 'Informations légales', statut: 'ok', detail: 'Les mentions légales et la politique de confidentialité se remplissent avec vos informations.' });
+    }
     return resultats;
   };
 

@@ -12,6 +12,8 @@ interface CartePhoto { image: Media; etiquette?: string | null; titre: string; s
 const { bloc } = Astro.props;
 const cartes: CartePhoto[] = (bloc.cartes ?? []).filter((c: CartePhoto) => c.image);
 const { gestmaxUrlFront } = await lireParametres();
+// Sans titre de bloc, les titres des cartes sont les premiers titres de la section.
+const Titre = bloc.titre ? 'h3' : 'h2';
 ---
 
 {
@@ -25,9 +27,9 @@ const { gestmaxUrlFront } = await lireParametres();
               <ImageStrapi media={c.image} class="carte-photo__image" largeurs={[360, 600]} sizes="(min-width: 980px) 280px, 50vw" decorative />
               <div class="carte-photo__corps">
                 {c.etiquette && <span class="carte-photo__etiquette">{c.etiquette}</span>}
-                <h3 class="carte-photo__titre">
-                  {c.lien ? <a href={resoudreLien(c.lien, gestmaxUrlFront)} class="carte-photo__lien">{c.titre}</a> : c.titre}
-                </h3>
+                <Titre class="carte-photo__titre">
+                  {resoudreLien(c.lien, gestmaxUrlFront) ? <a href={resoudreLien(c.lien, gestmaxUrlFront)} class="carte-photo__lien">{c.titre}</a> : c.titre}
+                </Titre>
                 {c.sousTitre && <p class="carte-photo__sous-titre">{c.sousTitre}</p>}
               </div>
             </li>

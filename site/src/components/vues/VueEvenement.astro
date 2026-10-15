@@ -10,6 +10,7 @@ import type { Evenement } from '../../lib/contenus';
 import { rendreBlocks } from '../../lib/blocks';
 import { formatDateLongue, formatHeure, horaireEvenement } from '../../lib/format';
 import { PUBLIC_STRAPI_URL } from '../../lib/strapi';
+import { lienSur } from '../../lib/liens';
 
 interface Props {
   evenement: Evenement;
@@ -19,6 +20,8 @@ interface Props {
 
 const { evenement: e, apercu = false } = Astro.props;
 const termine = new Date(e.dateFin ?? e.dateDebut).getTime() < Date.now();
+// Lien d'inscription chez l'organisateur, s'il est d'un protocole autorisé.
+const inscriptionExterne = lienSur(e.inscriptionExterneUrl);
 const adresseLieu = e.enLigne ? null : [e.lieu, e.adresse].filter(Boolean).join(', ') || null;
 ---
 
@@ -60,7 +63,7 @@ const adresseLieu = e.enLigne ? null : [e.lieu, e.adresse].filter(Boolean).join(
         <dd>{e.enLigne ? 'En ligne' : [e.lieu, e.adresse].filter(Boolean).join(', ')}</dd>
       </div>
       {
-        e.inscriptionActive && e.placesMax && !e.inscriptionExterneUrl && (
+        e.inscriptionActive && e.placesMax && !inscriptionExterne && (
           <div>
             <dt><Icone nom="utilisateur" taille={20} />Places</dt>
             <dd data-places={e.documentId}>{e.placesMax} places</dd>
@@ -92,13 +95,13 @@ const adresseLieu = e.enLigne ? null : [e.lieu, e.adresse].filter(Boolean).join(
 </div>
 
 {
-  !termine && (e.inscriptionExterneUrl || e.inscriptionActive) && (
+  !termine && (inscriptionExterne || e.inscriptionActive) && (
     <section class="section section--teinte" aria-labelledby="inscription">
       <div class="conteneur conteneur--etroit">
         <h2 id="inscription" class="section__titre section__titre--gauche">S'inscrire</h2>
-        {e.inscriptionExterneUrl ? (
+        {inscriptionExterne ? (
           <p>
-            <a href={e.inscriptionExterneUrl} class="bouton bouton--plein">
+            <a href={inscriptionExterne} class="bouton bouton--plein">
               S'inscrire sur le site de l'organisateur <Icone nom="externe" taille={18} />
             </a>
           </p>

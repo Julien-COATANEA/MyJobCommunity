@@ -19,7 +19,7 @@ const Titre = bloc.titre ? 'h3' : 'h2';
             {c.icone && <span class="tuile__icone"><Icone nom={c.icone} taille={28} /></span>}
             <Titre class="tuile__titre">{c.titre}</Titre>
             {c.texte && <p>{c.texte}</p>}
-            {c.lien && (
+            {resoudreLien(c.lien, gestmaxUrlFront) && (
               <p class="tuile__lien">
                 <a href={resoudreLien(c.lien, gestmaxUrlFront)}>
                   {c.libelleLien ?? 'En savoir plus'}

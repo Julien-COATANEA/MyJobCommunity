@@ -36,13 +36,14 @@ const s = (n: number) => (n > 1 ? 's' : '');
         <div class="conteneur">
           <TitreSection surtitre="Coup de projecteur" titre="L'entreprise à la une" />
           <ALaUne
+            niveauTitre={3}
             titre={aLaUne.nom}
             texte={aLaUne.extrait}
             image={aLaUne.image}
             pastille={aLaUne.secteur?.nom}
             surtitre={aLaUne.ville}
             vignette={aLaUne.image ? null : initiales(aLaUne.nom)}
-            lien={`/entreprises/${aLaUne.slug}`}
+            lien={`/entreprises/${aLaUne.slug}/`}
             libelleLien="Voir la fiche entreprise"
           />
         </div>

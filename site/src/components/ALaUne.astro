@@ -17,9 +17,12 @@ interface Props {
   surtitre?: string | null;
   /** Vignette de logo ou d'initiales (entreprise), au-dessus du titre. */
   vignette?: string | null;
+  /** Niveau du titre : 3 sous un titre de section (TitreSection). */
+  niveauTitre?: 2 | 3;
 }
 
-const { titre, lien, libelleLien, texte, image, pastille, surtitre, vignette } = Astro.props;
+const { titre, lien, libelleLien, texte, image, pastille, surtitre, vignette, niveauTitre = 2 } = Astro.props;
+const Titre = `h${niveauTitre}`;
 ---
 
 <article class:list={['a-la-une', { 'a-la-une--sans-image': !image }]}>
@@ -35,7 +38,7 @@ const { titre, lien, libelleLien, texte, image, pastille, surtitre, vignette } =
     {!image && pastille && <p class="a-la-une__pastille">{pastille}</p>}
     {vignette && <span class="entreprise__vignette entreprise__vignette--initiales a-la-une__vignette" aria-hidden="true">{vignette}</span>}
     {surtitre && <p class="a-la-une__surtitre">{surtitre}</p>}
-    <h2 class="a-la-une__titre">{titre}</h2>
+    <Titre class="a-la-une__titre">{titre}</Titre>
     {texte && <p class="a-la-une__texte">{texte}</p>}
     <p><a href={lien} class="bouton bouton--plein">{libelleLien}<Icone nom="fleche" taille={18} /></a></p>
   </div>

@@ -1,11 +1,13 @@
-// Page « Mon équipe » : inviter un collègue, choisir son rôle (Responsable / Rédacteur), le désactiver ou le retirer.
+// Page « Mon équipe » : inviter un collègue, choisir son rôle (Responsable / Rédacteur), le désactiver ou le retirer,
+// et régler les droits de chaque rôle.
 import * as React from 'react';
 import {
   Box, Button, Field, Flex, Modal, SingleSelect, SingleSelectOption, Table, Tbody, Td, TextInput, Th, Thead, Tr, Typography,
 } from '@strapi/design-system';
 import { Mail, Pencil, Plus } from '@strapi/icons';
 import { Layouts, Page, useFetchClient, useNotification } from '@strapi/strapi/admin';
-import { useDonnees } from '../outils';
+import { messageErreur, useDonnees } from '../outils';
+import { DroitsRoles } from '../DroitsRoles';
 
 interface Membre {
   id: number; email: string; prenom: string; nom: string; actif: boolean; invitationEnAttente: boolean;
@@ -38,12 +40,12 @@ export default function EquipePage() {
     return (
       <Page.Main>
         <Layouts.Header title="Mon équipe" />
-        <Layouts.Content><Typography>Cette page est réservée aux responsables du site.</Typography></Layouts.Content>
+        <Layouts.Content><Typography>{erreur ?? 'Votre rôle ne permet pas de gérer l’équipe.'}</Typography></Layouts.Content>
       </Page.Main>
     );
   }
 
-  const erreurApi = (e: any, defaut: string) => toggleNotification({ type: 'danger', message: e?.response?.data?.error?.message ?? defaut });
+  const erreurApi = (e: unknown, defaut: string) => toggleNotification({ type: 'danger', message: messageErreur(e, defaut) });
 
   const inviter = async () => {
     setEnvoi(true);
@@ -90,7 +92,7 @@ export default function EquipePage() {
       <Page.Title>Mon équipe</Page.Title>
       <Layouts.Header
         title="Mon équipe"
-        subtitle="Les personnes qui gèrent le site. Un responsable publie ; un rédacteur prépare et demande la publication."
+        subtitle="Les personnes qui gèrent le site et ce que chaque rôle peut faire."
         primaryAction={<Button startIcon={<Plus />} onClick={() => { setLien(null); setOuvert(true); }}>Inviter un collègue</Button>}
       />
       <Layouts.Content>
@@ -163,6 +165,8 @@ export default function EquipePage() {
               ))}
             </Flex>
           </Box>
+
+          <DroitsRoles />
         </Flex>
 
         <Modal.Root open={ouvert} onOpenChange={setOuvert}>
