@@ -142,7 +142,7 @@ export interface Offre {
   departement: string | null;
   secteur: string | null;
   nomEntreprise: string | null;
-  entreprise: { nom: string; slug: string } | null;
+  entreprise: { nom: string; slug: string; siteWeb?: string | null } | null;
   salaire: string | null;
   descriptionHtml: string | null;
   profilHtml: string | null;
@@ -235,6 +235,8 @@ const TRI_OFFRES = 'aLaUne:desc,dateActivation:desc,id:desc';
 const CHAMPS_OFFRE_LEGERE = ['titre', 'slug', 'typeContrat', 'lieu', 'secteur', 'nomEntreprise', 'salaire', 'dateActivation', 'logoUrl', 'latitude', 'longitude', 'aLaUne'];
 /** Entreprise d'une offre : slug et nom suffisent (lien vers la fiche, nom affiché). */
 const POPULATE_ENTREPRISE_OFFRE = { 'populate[entreprise][fields][0]': 'slug', 'populate[entreprise][fields][1]': 'nom' } as const;
+// Fiche complète : le site web de l'entreprise sert au `sameAs` des données structurées JobPosting.
+const POPULATE_ENTREPRISE_FICHE_OFFRE = { ...POPULATE_ENTREPRISE_OFFRE, 'populate[entreprise][fields][2]': 'siteWeb' } as const;
 const PARAMS_OFFRES_LEGERES: Record<string, string> = {
   ...Object.fromEntries(CHAMPS_OFFRE_LEGERE.map((c, i) => [`fields[${i}]`, c])),
   ...POPULATE_ENTREPRISE_OFFRE,
@@ -313,7 +315,7 @@ function lirePageComplete(numero: number): Promise<Offre[]> {
   if (promesse) {
     pagesCompletes.delete(numero); // renouvelle sa place dans l'ordre d'ancienneté
   } else {
-    promesse = lirePage('offres', { sort: 'id:asc', 'pagination[page]': numero, 'pagination[pageSize]': TAILLE_PAGE, ...POPULATE_ENTREPRISE_OFFRE }, false)
+    promesse = lirePage('offres', { sort: 'id:asc', 'pagination[page]': numero, 'pagination[pageSize]': TAILLE_PAGE, ...POPULATE_ENTREPRISE_FICHE_OFFRE }, false)
       .then((json) => (json.data ?? []) as Offre[]);
     promesse.catch(() => pagesCompletes.delete(numero));
   }
@@ -330,7 +332,7 @@ export async function lireOffreComplete(slug: string, rang: number): Promise<Off
   const page = await enCours;
   const trouvee = page.find((o) => o.slug === slug);
   if (trouvee) return trouvee;
-  const json = await lirePage('offres', { 'filters[slug][$eq]': slug, 'pagination[pageSize]': 1, ...POPULATE_ENTREPRISE_OFFRE }, false);
+  const json = await lirePage('offres', { 'filters[slug][$eq]': slug, 'pagination[pageSize]': 1, ...POPULATE_ENTREPRISE_FICHE_OFFRE }, false);
   if (!json.data?.[0]) console.warn(`[offres] « ${slug} » introuvable dans Strapi (supprimée pendant le build ?) : page générée avec les données de la liste`);
   return json.data?.[0] ?? null;
 }

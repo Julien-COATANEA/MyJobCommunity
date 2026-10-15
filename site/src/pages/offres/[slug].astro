@@ -9,6 +9,7 @@ import CarteOffre from '../../components/cartes/CarteOffre.astro';
 import BanniereOffre from '../../components/BanniereOffre.astro';
 import { lireComptesParEntreprise, lireOffreComplete, lireOffres, lirePageOffres, lireParametres, lireSimilaires, type Offre, type OffreLegere } from '../../lib/contenus';
 import { classeContrat, formatDate, ilYA } from '../../lib/format';
+import { construireJobPosting } from '../../lib/jobposting';
 import { lienSur } from '../../lib/liens';
 
 // 90 000 offres : chaque page ne reçoit que des données légères (trois offres similaires, un compteur, le rang qui
@@ -56,37 +57,26 @@ const texteBrut = sanitizeHtml(o.descriptionHtml ?? '', { allowedTags: [], allow
 const resume = [o.titre, o.nomEntreprise && `chez ${o.nomEntreprise}`, o.lieu && `à ${o.lieu}`, o.typeContrat && `(${o.typeContrat})`].filter(Boolean).join(' ');
 const avertissement = `Vous allez postuler sur l'espace candidat de ${parametres.nomSite} : votre candidature sera transmise directement au recruteur.`;
 
-const TYPES_EMPLOI: Record<string, string> = {
-  CDI: 'FULL_TIME', CDD: 'TEMPORARY', Intérim: 'TEMPORARY', Saisonnier: 'TEMPORARY',
-  Stage: 'INTERN', Alternance: 'OTHER', Apprentissage: 'OTHER', 'Temps partiel': 'PART_TIME',
-};
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'JobPosting',
-  title: o.titre,
-  description: `${description}${profil}` || o.titre,
-  identifier: { '@type': 'PropertyValue', name: o.nomEntreprise ?? parametres.nomSite, value: o.sourceId },
-  ...(o.dateActivation ? { datePosted: o.dateActivation } : {}),
-  ...(o.dateFinPublication ? { validThrough: o.dateFinPublication } : {}),
-  ...(o.typeContrat && TYPES_EMPLOI[o.typeContrat] ? { employmentType: TYPES_EMPLOI[o.typeContrat] } : {}),
-  hiringOrganization: {
-    '@type': 'Organization',
-    name: o.nomEntreprise ?? parametres.nomSite,
-    ...(logoUrl ? { logo: logoUrl } : {}),
-    ...(o.entreprise ? { sameAs: new URL(`/entreprises/${o.entreprise.slug}/`, Astro.site).toString() } : {}),
-  },
-  jobLocation: {
-    '@type': 'Place',
-    address: {
-      '@type': 'PostalAddress',
-      ...(o.lieu ? { addressLocality: o.lieu } : {}),
-      ...(o.departement ? { addressRegion: o.departement } : {}),
-      addressCountry: 'FR',
-    },
-    ...(o.latitude != null ? { geo: { '@type': 'GeoCoordinates', latitude: o.latitude, longitude: o.longitude } } : {}),
-  },
-  directApply: false,
-};
+const jsonLd = construireJobPosting({
+  titre: o.titre,
+  sourceId: o.sourceId,
+  descriptionHtml: `${description}${profil ? `<h3>Le profil recherché</h3>${profil}` : ''}`,
+  resume,
+  typeContrat: o.typeContrat,
+  lieu: o.lieu,
+  departement: o.departement,
+  secteur: o.secteur,
+  salaire: o.salaire,
+  nomEntreprise: o.nomEntreprise,
+  logoUrl,
+  latitude: o.latitude,
+  longitude: o.longitude,
+  dateActivation: o.dateActivation,
+  dateFinPublication: o.dateFinPublication,
+  urlOffre: new URL(`/offres/${o.slug}/`, Astro.site).toString(),
+  urlEntreprise: lienSur(o.entreprise?.siteWeb),
+  nomSite: parametres.nomSite,
+});
 ---
 
 <Base titre={`${o.titre}${o.lieu ? ` à ${o.lieu}` : ''}`} description={texteBrut.slice(0, 155) || resume} jsonLd={[jsonLd]} ariane={ariane}>
