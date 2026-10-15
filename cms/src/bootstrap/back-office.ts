@@ -397,6 +397,13 @@ export async function configurerBackOffice(strapi: Core.Strapi) {
       modifie = true;
     }
 
+    // Type unique sans champ texte (« Menus du site » : que des composants) : Strapi y enregistre « documentId » comme
+    // champ principal et l'affiche en titre (l21loqmf8…). Avec « id », il retombe sur le nom du type.
+    if (modele.kind === 'singleType' && conf.settings.mainField === 'documentId') {
+      conf.settings.mainField = 'id';
+      modifie = true;
+    }
+
     if (modifie) {
       await service.updateConfiguration(modele, { settings: conf.settings, metadatas: conf.metadatas, layouts: conf.layouts });
     }

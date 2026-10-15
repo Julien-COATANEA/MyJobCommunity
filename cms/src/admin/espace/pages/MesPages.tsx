@@ -71,12 +71,15 @@ export default function MesPages() {
         subtitle={`${pluriel(lignes.length, 'page')}, ${enLigne === lignes.length ? (lignes.length > 1 ? 'toutes en ligne' : 'en ligne') : `dont ${enLigne} en ligne`}.${donnees.principales.length ? " La page d'accueil et la page des offres sont toujours en tête de liste." : ''}`}
         primaryAction={
           donnees.peutCreer ? (
-            <Button startIcon={<Plus />} onClick={() => navigate(creation('api::page.page'))}>
-              Créer une page
-            </Button>
+            // « À partir d'un modèle » sous « Créer une page », à la même largeur.
+            <Flex direction="column" alignItems="stretch" gap={2}>
+              <Button startIcon={<Plus />} onClick={() => navigate(creation('api::page.page'))}>
+                Créer une page
+              </Button>
+              <BoutonModeleSeul />
+            </Flex>
           ) : undefined
         }
-        secondaryAction={<BoutonModeleSeul />}
       />
       <Layouts.Content>
         <Box hasRadius background="neutral0" shadow="tableShadow">
