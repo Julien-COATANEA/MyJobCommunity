@@ -173,6 +173,8 @@ const PAR_TYPE: Record<string, Record<string, Libelle>> = {
     policeTitres: 'Police des titres',
     policeTexte: 'Police du texte',
     arrondis: 'Arrondis des angles',
+    gabarit: ['Template du site', 'Se choisit et se personnalise dans « Apparence ».'],
+    reglagesGabarits: 'Réglages des templates',
     email: 'E-mail de contact',
     reseauxSociaux: 'Réseaux sociaux',
     editeurNom: ['Nom officiel de l’éditeur', 'Ex. : Communauté d’agglomération de la Vallée Verte. Utilisé dans les mentions légales et la politique de confidentialité.'],
@@ -307,8 +309,8 @@ const OFFRE_MODIFIABLE = ['aLaUne', 'masquee'];
 const MASQUES: Record<string, string[]> = {
   'api::offre.offre': ['slug', 'entreprise', 'logoUrl', 'latitude', 'longitude', 'departement', 'secteur'],
   'api::inscription.inscription': ['jeton', 'rappelEnvoye'],
-  // Modifiés seulement depuis l'écran « Cookies et suivi » (voir garde-parametres).
-  [UID_PARAMETRES]: CHAMPS_SUIVI,
+  // Modifiés seulement depuis les écrans « Cookies et suivi » (voir garde-parametres) et « Apparence » (template).
+  [UID_PARAMETRES]: [...CHAMPS_SUIVI, 'gabarit', 'reglagesGabarits'],
 };
 
 // Exemples affichés dans les champs vides.

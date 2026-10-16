@@ -9,6 +9,7 @@ import BandeauCookies from '../components/BandeauCookies.astro';
 import FilAriane, { type Miette } from '../components/FilAriane.astro';
 import { lireNavigation, lireParametres } from '../lib/contenus';
 import { cssTheme, policesUtilisees } from '../lib/theme';
+import { resoudreGabarit } from '../lib/gabarits';
 import { bandeauNecessaire, codesSuivi } from '../lib/suivi';
 import { urlMedia, type Seo as SeoStrapi } from '../lib/strapi';
 
@@ -28,6 +29,9 @@ interface Props {
 
 const { ariane, sansSuivi, ...seo } = Astro.props;
 const [parametres, navigation] = await Promise.all([lireParametres(), lireNavigation()]);
+// Template du site (« Apparence » du BO), ou celui que l'aperçu du BO demande d'essayer : partagé avec les composants.
+const gabarit = Astro.locals.gabarit ?? resoudreGabarit(parametres);
+Astro.locals.gabarit = gabarit;
 const favicon = urlMedia(parametres.favicon, true);
 const suivi = sansSuivi ? { head: [], body: [] } : codesSuivi(parametres);
 // Bandeau dès qu'un outil attend l'accord du visiteur ; l'option « Toujours afficher le bandeau » du BO l'affiche aussi sans outil.
@@ -42,13 +46,14 @@ const arianeEnHaut = ariane && !Astro.locals.arianeAffichee;
 ---
 
 <!doctype html>
-<html lang="fr">
+<html lang="fr" {...gabarit.attributs}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <Seo parametres={parametres} {...seo} />
     {policesUtilisees(parametres).map((p) => <link rel="preload" href={p.url} as="font" type="font/woff2" crossorigin />)}
     <style is:inline set:html={cssTheme(parametres)}></style>
+    {gabarit.feuille && <link rel="stylesheet" href={gabarit.feuille} />}
     {favicon ? <link rel="icon" href={favicon} /> : <link rel="icon" href="/favicon.svg" type="image/svg+xml" />}
     <link rel="sitemap" href="/sitemap-index.xml" />
     {suivi.head.map((s) => (s.differe ? <template data-mjc-suivi="head" set:html={s.code} /> : <Fragment set:html={s.code} />))}

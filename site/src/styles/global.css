@@ -152,7 +152,8 @@ main:focus { outline: none; }
 .carte-recherche { padding: clamp(1.25rem, 3vw, 1.65rem); background: var(--c-fond); border: 1px solid var(--c-bordure); border-radius: var(--rayon-grand); box-shadow: var(--ombre-forte); }
 .carte-recherche__titre { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.1rem; font-weight: 700; font-size: 1.05rem; color: var(--c-fonce); }
 .carte-recherche__titre .icone { color: var(--c-accent-texte); }
-.section--recherche { padding-block: clamp(2rem, 5vw, 3rem); }
+/* « .section » est déclarée plus bas : le modificateur la vise avec elle pour l'emporter (même chose pour .section--serree). */
+.section.section--recherche { padding-block: clamp(2rem, 5vw, 3rem); }
 
 /* ---------- Formulaire de recherche ---------- */
 .recherche { display: grid; grid-template-columns: 1.4fr 1.2fr 1fr auto; gap: 0.9rem; align-items: end; color: var(--c-texte); }
@@ -191,7 +192,7 @@ main:focus { outline: none; }
 }
 
 /* ---------- Recherche d'offres (page /offres) ---------- */
-.section--serree { padding-block: 1.5rem 3rem; }
+.section.section--serree { padding-block: 1.5rem 3rem; }
 .filtres-offres {
   display: flex; flex-direction: column; gap: 0.9rem; padding: clamp(1.1rem, 3vw, 1.6rem);
   background: var(--c-fond); border: 1px solid var(--c-bordure); border-radius: var(--rayon-grand); box-shadow: var(--ombre);

@@ -110,7 +110,7 @@ export default function Guide() {
           <Grid.Item col={6} s={12} direction="column" alignItems="stretch">
             <Fiche titre="7. Besoin d’aide ?">
               <p>
-                Logo, couleurs : <Link to="/apparence">Apparence</Link>. Menus : <Link to="/content-manager/single-types/api::navigation.navigation">Menus du site</Link>.
+                Template, logo, couleurs : <Link to="/apparence">Apparence</Link>. Menus : <Link to="/content-manager/single-types/api::navigation.navigation">Menus du site</Link>.
                 Candidatures : <Link to="/site-carriere">Site Gestmax</Link>. Collègues : <Link to="/equipe">Mon équipe</Link>.
                 Points à corriger : <Link to="/sante">Santé du site</Link>. Bandeau de cookies et outils de mesure : <Link to="/cookies">Cookies et suivi</Link>.
               </p>

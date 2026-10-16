@@ -49,6 +49,11 @@ const types = {
       policeTitres: { type: 'enumeration', enum: ['sora', 'inter', 'source-sans-3', 'atkinson-hyperlegible', 'systeme'], default: 'sora', required: true },
       policeTexte: { type: 'enumeration', enum: ['inter', 'source-sans-3', 'atkinson-hyperlegible', 'sora', 'systeme'], default: 'inter', required: true },
       arrondis: { type: 'enumeration', enum: ['carres', 'legers', 'prononces'], default: 'legers', required: true },
+      // Template du site et réglages de chaque template (écran « Apparence », voir src/utils/gabarits.ts).
+      // Facultatifs et sans valeur par défaut : vide = template d'origine (« Communauté »), pas encore choisi. Un nouveau
+      // site arrive ainsi sur le choix du template ; une ligne existante reste valide.
+      gabarit: { type: 'enumeration', enum: ['communaute', 'institutionnel', 'facettes', 'vitrine', 'epure'] },
+      reglagesGabarits: { type: 'json' },
       // Coordonnées (pied de page)
       adresse: { type: 'text' },
       telephone: str(),

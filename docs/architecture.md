@@ -61,6 +61,49 @@ dynamiques, médias et relations directes, sans jamais exposer les inscriptions.
 - **Back-office** : nom, couleur principale (`STRAPI_ADMIN_*`) et logo propres à chaque client, interface en
   français, promotions et tutoriels Strapi masqués (`cms/src/admin/app.tsx`).
 
+### Templates du site (16/10/2026)
+
+La collectivité choisit l'allure générale de son site dans **Apparence** (étape « Template »), puis l'ajuste
+(étape « Personnaliser »). Cinq templates, chacun avec une signature visible dès le haut de page :
+**Communauté** (le style d'origine, par défaut : chaleureux, arrondi, dégradés), **Institutionnel** (barre de menu de la
+couleur principale, accueil en aplat foncé, boutons en capitales, titres soulignés à gauche, pied couleur secondaire),
+**Facettes** (en-tête sombre, fond gris et cartes blanches, bannière aux couleurs du site, filtres des offres en colonne),
+**Vitrine** (photo d'accueil presque plein écran, logo centré, cartes « magazine » sans cadre, pied en dégradé) et
+**Épuré** (en-tête fin, texte centré puis grande photo, cartes en liste séparées par des filets, aucun dégradé).
+
+- **Même balisage, autre habillage** : un template ne change aucun composant. Pages, articles, événements, offres,
+  formulaires et les 19 blocs sont rendus à l'identique ; tout bloc fonctionne donc dans tous les templates, et un
+  nouveau bloc n'a rien à prévoir pour eux (il hérite des styles communs).
+- **Options de disposition**, réglables template par template : en-tête (classique, logo centré, menu sur deux lignes),
+  haut de l'accueil (texte et photo, photo en bannière, ou texte centré et photo dessous), en-têtes de page (immersifs ou clairs), filtres de la page des
+  offres (au-dessus ou en colonne), cartes (en relief ou à plat), pied de page (sombre ou clair). Chaque template a ses
+  réglages par défaut et garde ceux de la collectivité (`reglagesGabarits`) : on peut en essayer un autre et revenir.
+  Un « style conseillé » (polices, arrondis) est proposé, jamais imposé ; couleurs et contrôle RGAA restent communs.
+- **Mise en œuvre** (`site/src/lib/gabarits.ts`) : le template et ses options deviennent des attributs `data-mjc-*` sur
+  `<html>` et sur l'habillage `.mjc-shell` ; chaque template a **une** feuille (`site/src/styles/gabarits/`, options
+  communes dans `options.css`), versionnée dans `/_astro/` et seule chargée (≈ 2,5 Ko compressés). Communauté avec ses
+  réglages d'origine n'en charge aucune : le site reste identique au pixel près (vérifié sur 26 captures bureau et mobile).
+- **Confinement** : les règles des pages visent `:root[data-mjc-…]`, celles de l'en-tête et du pied de page
+  `.mjc-shell[data-mjc-…]`. Le site Gestmax, qui reprend l'habillage mais pas la balise `<html>`, ne reçoit donc que les
+  secondes. Des tests vérifient ce confinement, l'absence de règle pour les valeurs d'origine et l'absence de collision
+  des attributs avec les sélecteurs des scripts (`gabarits.test.ts`).
+- **Côté Strapi** : champs `gabarit` (facultatif et sans défaut : vide = Communauté, pas encore choisi, ce qui ouvre
+  Apparence sur le choix du template) et `reglagesGabarits` (JSON) des Informations du site. Ils ne s'écrivent que depuis
+  l'écran Apparence (`garde-parametres`, comme les champs du suivi pour « Cookies et suivi ») : un enregistrement par le
+  gestionnaire de contenu les laisse inchangés. La liste des templates, options et libellés est dans
+  `cms/src/utils/gabarits.ts` ; seules les valeurs connues sont enregistrées. Un test du site vérifie qu'elle reste
+  identique à celle du site, à l'énumération du schéma et à l'aperçu du BO (`cms/src` est monté en lecture seule dans
+  le conteneur `site`).
+- **Essai réel** : « Essayer sur ma page d'accueil » ouvre la page d'aperçu du site (`/apercu/accueil/…?gabarit=…`)
+  avec les vrais contenus, sans rien enregistrer (nécessite `APERCU_URL`). L'adresse porte un jeton signé avec
+  `APERCU_SECRET`, valable 4 h et pour l'accueil publié seulement (`utils/essai-gabarit.ts`, `lib/essai-gabarit.ts`) :
+  le secret lui-même, qui ouvre tous les brouillons, ne quitte jamais le serveur.
+- **Choix dans le BO** : liste compacte des templates (miniature, points forts, « En ligne ») et grand aperçu du template
+  sélectionné (accueil, offres ou page), avec comparaison côte à côte avec le template en ligne.
+- **Ajouter un template** : une entrée dans les deux registres (`gabarits.ts` du site et du CMS), l'énumération du champ
+  `gabarit` (`generer-types.mjs`), une feuille `<id>.css` qui commence par `@import './options.css';` et dont chaque règle
+  est préfixée, et son habillage dans l'aperçu du BO (`cms/src/admin/espace/apparence/Apercu.tsx`).
+
 ## 3 bis. Back-office pensé pour les collectivités
 
 Objectif : un BO aussi simple à prendre en main que WordPress (`cms/src/admin/`).
@@ -79,7 +122,8 @@ Objectif : un BO aussi simple à prendre en main que WordPress (`cms/src/admin/`
   maintenant ») et des offres Gestmax. Les widgets Strapi destinés aux développeurs et la visite guidée sont masqués.
 - **Mes offres d'emploi** : synchronisation à la demande, répartition par contrat et par entreprise, offres non
   rattachées à l'annuaire, liens vers le site et vers Gestmax. Les offres sont en lecture seule pour les rôles Éditeur et Auteur.
-- **Apparence** : façon « Personnaliser » de WordPress, avec aperçu en direct du site, palettes prêtes à l'emploi,
+- **Apparence** : choix du template (vignettes aux couleurs du site, voir « Templates du site ») puis réglages façon
+  « Personnaliser » de WordPress, avec aperçu en direct (accueil, offres, page), palettes prêtes à l'emploi,
   dépôt du logo et contrôle RGAA des contrastes pendant la saisie (l'enregistrement est bloqué si illisible).
 - **Formulaires en français** : chaque champ a un libellé et une aide compréhensibles (`cms/src/bootstrap/back-office.ts`),
   les listes ont des colonnes et un tri adaptés. Une personnalisation faite à la main dans le BO n'est pas écrasée.

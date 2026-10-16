@@ -24,6 +24,9 @@ export interface Parametres {
   policeTitres: string;
   policeTexte: string;
   arrondis: 'carres' | 'legers' | 'prononces';
+  /** Template du site et réglages de chaque template (« Apparence » du BO, voir lib/gabarits.ts). */
+  gabarit: string | null;
+  reglagesGabarits: Record<string, Record<string, string>> | null;
   adresse: string | null;
   telephone: string | null;
   email: string | null;

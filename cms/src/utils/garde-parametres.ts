@@ -15,16 +15,24 @@ export const champsParametresSansSuivi = (strapi: Core.Strapi): string[] =>
   ((strapi.service('admin::content-type') as any).getNestedFields((strapi.contentTypes as any)[UID_PARAMETRES], { components: strapi.components }) as string[])
     .filter((c) => !estChampSuivi(c));
 
+/** Template du site et réglages de chaque template : écrits seulement par l'écran « Apparence » (capacité « Apparence »). */
+export const CHAMPS_TEMPLATE = ['gabarit', 'reglagesGabarits'];
+
 const ecranCookies = new AsyncLocalStorage<boolean>();
 export const executerReglagesSuivi = <T>(travail: () => Promise<T>): Promise<T> => ecranCookies.run(true, travail);
+const ecranApparence = new AsyncLocalStorage<boolean>();
+export const executerReglagesApparence = <T>(travail: () => Promise<T>): Promise<T> => ecranApparence.run(true, travail);
 
 export function protegerParametres(strapi: Core.Strapi) {
   strapi.documents.use(async (context, next) => {
-    if (context.uid !== UID_PARAMETRES || ecranCookies.getStore() || !['create', 'update'].includes(context.action)) return next();
-    // Le formulaire du gestionnaire de contenu renvoie tous les champs : on ignore ceux du suivi (ils restent inchangés).
+    if (context.uid !== UID_PARAMETRES || !['create', 'update'].includes(context.action)) return next();
+    // Le formulaire du gestionnaire de contenu renvoie tous les champs, même masqués : on ignore ceux du suivi et du
+    // template (ils restent inchangés). Sans cela, un enregistrement des Informations du site resté ouvert pendant un
+    // changement de template remettrait l'ancien template.
+    const exclus = [...(ecranCookies.getStore() ? [] : CHAMPS_SUIVI), ...(ecranApparence.getStore() ? [] : CHAMPS_TEMPLATE)];
     const donnees = (context.params as any).data;
-    if (donnees && typeof donnees === 'object') {
-      (context.params as any).data = Object.fromEntries(Object.entries(donnees).filter(([champ]) => !CHAMPS_SUIVI.includes(champ)));
+    if (exclus.length && donnees && typeof donnees === 'object') {
+      (context.params as any).data = Object.fromEntries(Object.entries(donnees).filter(([champ]) => !exclus.includes(champ)));
     }
     return next();
   });

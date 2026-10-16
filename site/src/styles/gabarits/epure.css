@@ -1,0 +1,121 @@
+/* ============================================================
+   Template « Épuré » : gabarit neutre et minimal, façon éditoriale.
+   Signature : en-tête fin, typographie légère, accueil « texte centré puis grande photo », cartes en liste séparées par
+   des filets (sans cadre ni fond), fonds blancs et gris neutres, aucun dégradé : la couleur est réservée aux actions.
+   Bandeaux, appels à l'action et espaces deviennent des encadrés clairs.
+   Réglages par défaut : accueil empilé, en-têtes de page clairs, filtres en colonne, cartes à plat, pied clair.
+   Ne touche jamais aux propriétés réglées par une option (voir options.css) sans viser la valeur de cette option.
+   ============================================================ */
+@import './options.css';
+
+/* ---------- En-tête et pied de page (site et site Gestmax) ---------- */
+/* Surfaces et bordures neutres, redéfinies aussi ici : le site Gestmax reprend l'habillage sans la balise <html>. */
+.mjc-shell[data-mjc-gabarit='epure'] {
+  --c-surface: color-mix(in srgb, var(--c-texte) 3%, var(--c-fond));
+  --c-bordure: color-mix(in srgb, var(--c-texte) 13%, var(--c-fond));
+
+  & .entete { background: var(--c-fond); backdrop-filter: none; }
+  & .entete__barre { min-height: 72px; }
+  & .marque__logo { height: 40px; }
+  & .marque__pastille { background: var(--c-primaire); border-radius: var(--rayon); box-shadow: none; }
+  & .marque__nom { font-weight: 700; }
+  & .marque__baseline { color: var(--c-texte-doux); }
+  & .nav__lien { font-weight: 500; }
+  & .nav__lien::after { bottom: 6px; height: 1px; background: var(--c-texte); }
+  & .nav__lien:hover, & .nav__lien[aria-expanded='true'], & .nav__lien--actif { color: var(--c-texte); }
+  /* Espaces candidat et recruteur : simples contours. */
+  & .acces { border-radius: var(--rayon); border-width: 1px; }
+  & .acces:hover { transform: none; }
+  & .acces--recruteur { background: transparent; border-color: var(--c-bordure); color: var(--c-texte); }
+  & .acces--recruteur:hover { background: var(--c-surface); border-color: var(--c-texte); color: var(--c-texte); }
+  & .acces--candidat { background: transparent; border-color: var(--c-primaire); color: var(--c-primaire-fonce); box-shadow: none; }
+  & .acces--candidat:hover { background: var(--c-primaire); color: #fff; }
+  & .entete__burger { border-radius: var(--rayon); background: transparent; border: 1px solid var(--c-bordure); color: var(--c-texte); }
+  & .pied__propulse-pastille { background: var(--c-primaire); }
+}
+
+/* ---------- Pages ---------- */
+:root[data-mjc-gabarit='epure'] {
+  /* Surfaces et bordures neutres (gris tirés du texte, sans teinte de la couleur principale). */
+  --c-surface: color-mix(in srgb, var(--c-texte) 3%, var(--c-fond));
+  --c-bordure: color-mix(in srgb, var(--c-texte) 13%, var(--c-fond));
+  --filet: color-mix(in srgb, var(--c-texte) 70%, var(--c-fond));
+
+  /* Typographie légère. */
+  & main :is(h1, h2, h3, h4) { font-weight: 600; letter-spacing: -0.02em; }
+  & .bouton { border-radius: var(--rayon); font-weight: 600; }
+  & .bouton:hover { transform: none; }
+  & :is(.bouton--plein, .bouton--accent) { box-shadow: none; }
+  & .bouton--contour { border-width: 1px; border-color: var(--c-texte); color: var(--c-texte); }
+  & .bouton--contour:hover { background: var(--c-surface); }
+
+  & .surtitre { padding: 0; border-radius: 0; background: none; color: var(--c-texte-doux); }
+  & :is(.tag, .offre__secteur) { background: var(--c-surface); }
+  & :is(.carte, .tuile, .logos__item, .faq__item, .temoignage, .aside-carte, .a-la-une, .carte-photo, .carte-recherche,
+      .filtres-offres, .filtres-liste, .section .recherche, .appel-action, .espace, .evenement__infos) { border-radius: var(--rayon-grand); }
+  & .evenement__infos { background: var(--c-surface); border-color: var(--c-bordure); }
+  & :is(.tuile__icone, .atout__icone) { background: var(--c-surface); }
+  & .faq__question::after { background: var(--c-surface); }
+  & :is(.entreprise__vignette--initiales, .temoignage__photo--initiale, .article__avatar) { background: var(--c-primaire); }
+  & .en-tete-page__pastilles li { border-radius: var(--rayon); }
+
+  /* Accueil : fond blanc, sans halo ; texte puis grande photo (empilé) ou texte et photo. */
+  &:is([data-mjc-accueil='deux-colonnes'], [data-mjc-accueil='empile']) {
+    & .hero { background: var(--c-fond); border-bottom: 1px solid var(--c-bordure); }
+    & .hero::before { content: none; }
+    & .hero__pastille { box-shadow: none; border-radius: var(--rayon); }
+    & .hero__titre { font-weight: 600; letter-spacing: -0.035em; }
+    & .hero__figure { border-radius: var(--rayon); box-shadow: none; }
+  }
+  &[data-mjc-accueil='empile'] .hero__titre { font-size: clamp(2.4rem, 1.4rem + 3.8vw, 4.4rem); }
+
+  /* Cartes à plat → liste éditoriale : ni cadre ni fond, un filet au-dessus, titre souligné au survol. */
+  &[data-mjc-cartes='plat'] {
+    & .grille { gap: 2rem 2.5rem; }
+    & .carte { overflow: visible; background: transparent; border: 0; border-top: 1px solid var(--filet); border-radius: 0; }
+    & .carte:hover { border-color: var(--c-primaire); }
+    & .carte:hover .carte__lien { text-decoration: underline; text-decoration-thickness: 1px; }
+    & :is(.carte__corps, .carte--offre .carte__corps, .carte--entreprise .carte__corps, .grille--lignes .carte__corps) { padding-inline: 0; }
+    & .carte--offre .offre__pied { border-top-style: dashed; }
+    & .carte--evenement .date-pastille { margin-left: 0; }
+    /* Avec une photo : la photo, arrondie, remplace le filet. */
+    & .carte:has(> .carte__visuel) { border-top: 0; }
+    & .carte__visuel { overflow: hidden; border-radius: var(--rayon); }
+    & .carte--evenement-photo .carte__visuel { overflow: visible; }
+    & .carte--evenement-photo .carte__visuel img { border-radius: var(--rayon); }
+    & .carte--evenement-photo .date-pastille--flottante { left: 0.75rem; }
+    & .tuile { padding: 1.5rem 0 0; background: transparent; border: 0; border-top: 1px solid var(--filet); border-radius: 0; }
+    & .tuile:hover { border-color: var(--c-primaire); }
+    & .faq { gap: 0; }
+    & .faq__item { background: transparent; border: 0; border-bottom: 1px solid var(--c-bordure); border-radius: 0; }
+    & .faq__item:first-child { border-top: 1px solid var(--filet); }
+    & .faq__question, & .faq__reponse { padding-inline: 0; }
+    & .faq__item[open] .faq__question { border-bottom: 0; }
+    & .temoignage { padding: 0.25rem 0 0.25rem 1.5rem; background: transparent; border: 0; border-left: 2px solid var(--c-primaire); border-radius: 0; }
+    & .logos__item { background: transparent; border-color: transparent; }
+  }
+
+  /* Chiffres clés : encadré clair, chiffres de la couleur principale. */
+  & .section--chiffres { color: var(--c-texte); background: var(--c-surface); border-block: 1px solid var(--c-bordure); }
+  & .section--chiffres::before { content: none; }
+  & .section--chiffres .section__titre { color: var(--c-fonce); }
+  & .section--chiffres .section__intro { color: var(--c-texte-doux); }
+  & .section--chiffres .surtitre { background: none; color: var(--c-texte-doux); }
+  & .section--chiffres .chiffre__valeur { color: var(--c-primaire); font-weight: 600; }
+  & .section--chiffres .chiffre__libelle { color: var(--c-texte-doux); }
+  & .section--chiffres :focus-visible { outline-color: var(--c-primaire); }
+
+  /* Appels à l'action et espaces : encadrés clairs. Les boutons prévus pour un fond coloré reprennent les styles courants. */
+  & :is(.appel-action, .espace) { color: var(--c-texte); background: var(--c-surface); border: 1px solid var(--c-bordure); box-shadow: none; }
+  & :is(.appel-action, .espace)::after { content: none; }
+  & :is(.appel-action__titre, .espace__titre) { color: var(--c-fonce); }
+  & .appel-action p { color: var(--c-texte-doux); }
+  & .espace__texte { color: var(--c-texte-doux); }
+  & .espace__icone { background: var(--c-primaire-pale); color: var(--c-primaire); }
+  & .espace--secondaire .espace__icone { background: var(--c-secondaire-pale); color: var(--c-secondaire-texte); }
+  & :is(.appel-action, .espace) :focus-visible { outline-color: var(--c-primaire); }
+  & :is(.appel-action, .espace) .bouton--clair { background: var(--c-primaire); color: #fff; }
+  & :is(.appel-action, .espace) .bouton--clair:hover { background: var(--c-primaire-fonce); box-shadow: none; }
+  & :is(.appel-action, .espace) .bouton--contour-clair { background: transparent; color: var(--c-texte); border-width: 1px; border-color: var(--c-texte); }
+  & :is(.appel-action, .espace) .bouton--contour-clair:hover { background: var(--c-fond); }
+}

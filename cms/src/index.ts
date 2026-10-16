@@ -1,6 +1,7 @@
 import type { Core } from '@strapi/strapi';
 import { errors } from '@strapi/utils';
 import { verifierContrastes } from './utils/contraste';
+import { normaliserReglages } from './utils/gabarits';
 import { initialiserDonneesDemo } from './bootstrap/demo';
 import { creerComptesDemo } from './bootstrap/comptes-demo';
 import { configurerBackOffice } from './bootstrap/back-office';
@@ -72,12 +73,18 @@ export default {
       return resultat;
     });
 
-    // Refuse l'enregistrement de couleurs non conformes RGAA : le message s'affiche dans le BO.
+    // Refuse l'enregistrement de couleurs non conformes RGAA (le message s'affiche dans le BO) et nettoie les réglages des templates.
     strapi.documents.use(async (context, next) => {
       if (context.uid === 'api::parametres.parametres' && (context.action === 'create' || context.action === 'update')) {
         const erreurs = verifierContrastes((context.params as any).data ?? {});
         if (erreurs.length) {
           throw new errors.ValidationError(`Couleurs non conformes à l'accessibilité (RGAA) : ${erreurs.join(' ; ')}`);
+        }
+        // Réglages des templates (écran « Apparence », API ou gestionnaire de contenu) : seuls les templates, options et
+        // valeurs connus sont enregistrés (voir utils/gabarits). Le site ignore de toute façon les autres.
+        const donnees = (context.params as any).data;
+        if (donnees && typeof donnees === 'object' && 'reglagesGabarits' in donnees) {
+          donnees.reglagesGabarits = normaliserReglages(donnees.reglagesGabarits);
         }
       }
       return next();

@@ -8,7 +8,7 @@ import { UID_PARAMETRES, champsParametresSansSuivi } from './garde-parametres';
 import { ROLE_REDACTEUR, ROLE_RESPONSABLE } from './roles';
 
 export const CAPACITES = [
-  { cle: 'apparence', libelle: 'Apparence', description: 'Logo, couleurs et polices du site.' },
+  { cle: 'apparence', libelle: 'Apparence', description: 'Template, logo, couleurs et polices du site.' },
   { cle: 'cookies', libelle: 'Cookies et suivi', description: 'Bandeau de cookies, Google Analytics et scripts ajoutés à toutes les pages.' },
   { cle: 'site-gestmax', libelle: 'Site Gestmax', description: 'Adresse du site Gestmax et liens de l’espace candidat.' },
   { cle: 'offres', libelle: 'Offres d’emploi', description: 'Mettre à la une, masquer, coupler aux entreprises, relancer la synchronisation.' },

@@ -1,0 +1,159 @@
+/* ============================================================
+   Options de disposition des templates (réglées dans « Apparence » du BO), communes à tous les templates.
+   Importée par chaque feuille de template ; chaque règle vise un attribut data-mjc-* posé par src/lib/gabarits.ts :
+     - :root[data-mjc-…]      → pages du site (jamais sur le site Gestmax, dont la balise <html> ne porte rien) ;
+     - .mjc-shell[data-mjc-…] → en-tête et pied de page, ici ET sur le site Gestmax (même confinement que shell.css).
+   Les sélecteurs reprennent ceux de global.css / shell.css avec ce préfixe : ils l'emportent quel que soit l'ordre
+   de chargement des feuilles. Les valeurs d'origine (classique, deux-colonnes, immersif, haut, relief, sombre) n'ont
+   aucune règle : elles laissent le site tel quel.
+   ============================================================ */
+
+/* ---------- En-tête sur deux lignes (grand écran) : logo, puis menu ---------- */
+/* La ligne du logo défile avec la page, la ligne du menu reste collée en haut (top négatif = hauteur du logo). */
+@media (min-width: 1241px) {
+  .mjc-shell:is([data-mjc-entete='centre'], [data-mjc-entete='deux-lignes']) {
+    & .entete { top: -4.6em; }
+    & .entete__barre { flex-wrap: wrap; row-gap: 0; min-height: 0; }
+    & .marque { height: 4.6em; }
+    & .nav { flex: 1 1 100%; margin-left: 0; min-height: 3.3em; }
+    & .sous-menu { top: calc(100% + 0.35em); }
+  }
+  /* Logo centré, menu centré dessous. */
+  .mjc-shell[data-mjc-entete='centre'] {
+    & .entete__barre { justify-content: center; }
+    & .nav { justify-content: center; gap: clamp(1.5em, 3vw, 3em); }
+  }
+  /* Logo à gauche, menu sur une barre pleine largeur (espaces candidat et recruteur à droite de la barre). */
+  .mjc-shell[data-mjc-entete='deux-lignes'] {
+    & .nav { justify-content: space-between; border-top: 1px solid var(--c-bordure); }
+    /* Menu aligné à gauche : les sous-menus partent du bord gauche de leur lien (centrés, le premier sortirait de l'écran). */
+    & .sous-menu { left: 0; transform: none; }
+    & .nav__acces .acces { padding-block: 0.4em; }
+  }
+}
+
+/* ---------- Pied de page clair ---------- */
+.mjc-shell[data-mjc-pied='clair'] {
+  & .pied { background: var(--c-surface); color: var(--c-texte-doux); border-top: 1px solid var(--c-bordure); }
+  & .pied a, & .pied__cookies { color: var(--c-texte); }
+  & .pied a:hover, & .pied__cookies:hover { color: var(--c-primaire); }
+  & .pied :focus-visible { outline-color: var(--c-primaire); }
+  & .pied__marque { color: var(--c-fonce) !important; }
+  & .pied__logo { border: 1px solid var(--c-bordure); }
+  & .pied__nom { color: var(--c-fonce); }
+  & .pied__nom small { color: var(--c-accent-texte); }
+  & .pied__titre { color: var(--c-fonce); }
+  & .pied__grille { border-bottom-color: var(--c-bordure); }
+  & .pied__reseaux a { background: var(--c-fond); border: 1px solid var(--c-bordure); color: var(--c-primaire-fonce); }
+  & .pied__reseaux a:hover { background: var(--c-primaire); border-color: var(--c-primaire); color: #fff; }
+  & .pied__contact .icone { color: var(--c-primaire); }
+  & .pied__copyright { color: var(--c-texte-doux); }
+  & .pied__propulse { background: var(--c-fond); }
+}
+
+/* ---------- Accueil : photo en fond sur toute la largeur, texte centré par-dessus ---------- */
+:root[data-mjc-accueil='banniere'] {
+  & .hero {
+    isolation: isolate; color: #fff;
+    background: linear-gradient(125deg, var(--c-fonce) 0%, color-mix(in srgb, var(--c-primaire) 70%, var(--c-fonce)) 55%, var(--c-secondaire) 100%);
+  }
+  & .hero::before { z-index: -1; background: radial-gradient(circle, rgb(255 255 255 / 0.08), transparent 70%); }
+  & .hero:not(.hero--sans-image)::before { content: none; }
+  & .hero__grille {
+    position: static; grid-template-columns: minmax(0, 1fr); justify-items: center; align-content: center; text-align: center;
+    min-height: clamp(24rem, 44vw, 34rem); padding-block: clamp(3.5rem, 8vw, 5.5rem) clamp(4.5rem, 9vw, 6.5rem);
+  }
+  & .hero__contenu { max-width: 50rem; }
+  /* La photo couvre tout le bandeau, sous un voile d'au moins 72 % de la couleur foncée : texte blanc lisible (≥ 4,5:1). */
+  & .hero__figure { position: absolute; inset: 0; z-index: -2; max-width: none; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
+  & .hero__figure::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c-fonce) 72%, transparent), color-mix(in srgb, var(--c-fonce) 84%, transparent));
+  }
+  & .hero__vignette { z-index: 1; top: 1.25rem; right: 1.25rem; bottom: auto; left: auto; }
+  & .hero__titre { color: #fff; text-shadow: 0 2px 24px rgb(0 0 0 / 0.25); font-size: clamp(2.3rem, 1.4rem + 3.4vw, 3.9rem); }
+  & .hero__texte { max-width: 38rem; margin-inline: auto; color: #fff; }
+  & .hero__pastille { background: rgb(255 255 255 / 0.14); border-color: rgb(255 255 255 / 0.35); box-shadow: none; color: #fff; backdrop-filter: blur(6px); }
+  & .hero__actions { justify-content: center; }
+  & .hero__compteur, & .hero__compteur strong { color: #fff; }
+  & .hero :focus-visible { outline-color: #fff; }
+  & .carte-recherche-wrap { margin-top: -3.5rem; }
+}
+@media (max-width: 760px) {
+  :root[data-mjc-accueil='banniere'] .hero__vignette { display: none; }
+}
+
+/* ---------- Accueil : texte centré, photo en grand en dessous ---------- */
+:root[data-mjc-accueil='empile'] {
+  & .hero__grille { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: clamp(2rem, 4vw, 3rem); text-align: center; }
+  & .hero__contenu { max-width: 48rem; }
+  & .hero__texte { max-width: 38rem; margin-inline: auto; }
+  & .hero__actions { justify-content: center; }
+  & .hero__figure { width: 100%; max-width: none; aspect-ratio: 21 / 9; }
+}
+@media (max-width: 760px) {
+  :root[data-mjc-accueil='empile'] .hero__figure { aspect-ratio: 4 / 3; }
+}
+
+/* ---------- En-têtes de page clairs : titre sur fond clair, photo éventuelle en bannière au-dessus ---------- */
+:root[data-mjc-bandeaux='clair'] {
+  & .en-tete-page--immersif {
+    display: block; min-height: 0; color: var(--c-texte);
+    padding-block: clamp(1.75rem, 4vw, 2.75rem) clamp(1.75rem, 3.5vw, 2.5rem);
+    background: var(--c-surface); border-bottom: 1px solid var(--c-bordure);
+  }
+  & .en-tete-page--immersif::after { content: none; }
+  & .en-tete-page--immersif h1 { max-width: 32ch; color: var(--c-fonce); text-shadow: none; font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem); }
+  & .en-tete-page--immersif .en-tete-page__chapo { max-width: 46rem; color: var(--c-texte-doux); }
+  & .en-tete-page--immersif .en-tete-page__surtitre { color: var(--c-primaire-fonce); }
+  & .en-tete-page--immersif :focus-visible { outline-color: var(--c-primaire); }
+  & .en-tete-page--image { padding-top: 0; }
+  & .en-tete-page--image::before { content: none; }
+  & .en-tete-page--immersif .en-tete-page__image {
+    position: static; display: block; height: clamp(9rem, 22vw, 17rem); margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
+  }
+  & .en-tete-page--immersif .ariane--bandeau { padding-bottom: 1rem; text-shadow: none; }
+  & .en-tete-page--immersif .ariane--bandeau :is(ol, a) { color: var(--c-texte-doux); }
+  & .en-tete-page--immersif .ariane--bandeau a { text-decoration-color: currentColor; }
+  & .en-tete-page--immersif .ariane--bandeau a:hover { color: var(--c-primaire); }
+  & .en-tete-page--immersif .ariane--bandeau [aria-current] { color: var(--c-fonce); }
+  & .en-tete-page__pastilles li { background: var(--c-fond); border-color: var(--c-bordure); color: var(--c-texte); backdrop-filter: none; }
+  & .en-tete-page__pastilles .icone { color: var(--c-primaire); }
+}
+
+/* ---------- Page des offres : filtres en colonne à gauche (recherche à facettes) ---------- */
+@media (min-width: 1024px) {
+  :root[data-mjc-filtres='cote'] {
+    & .section--offres > .conteneur {
+      display: grid; grid-template-columns: minmax(15rem, 17.5rem) minmax(0, 1fr); gap: 0 clamp(1.5rem, 3vw, 2.75rem); align-items: start;
+    }
+    & .section--offres .filtres-offres {
+      position: sticky; top: 6.5rem; max-height: calc(100vh - 8rem); overflow-y: auto; gap: 1rem; box-shadow: var(--ombre-douce);
+    }
+    & .filtres-offres__principal, & .filtres-offres__secondaire { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+    & .filtres-offres__secondaire { padding-top: 1rem; border-top: 1px solid var(--c-bordure); }
+    & .offres-principal > .filtres-actifs { margin-top: 0; margin-bottom: 0.75rem; }
+    & .offres-principal .offres-resultats__barre { margin-top: 0.25rem; }
+  }
+}
+/* Avec la carte des offres : trois colonnes seulement sur très grand écran, sinon la carte passe au-dessus de la liste. */
+@media (min-width: 1024px) and (max-width: 1399px) {
+  :root[data-mjc-filtres='cote'] {
+    & .offres-resultats--carte { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    & .offres-resultats--carte .offres-resultats__carte { position: static; order: -1; margin-top: 0; }
+    & .offres-resultats--carte .carte-offres__carte { height: 52vh; min-height: 320px; }
+  }
+}
+
+/* ---------- Cartes et encadrés à plat : bordure, ni ombre ni soulèvement ---------- */
+:root[data-mjc-cartes='plat'] {
+  & :is(.carte, .tuile, .logos__item, .carte-photo, .faq__item, .temoignage, .aside-carte, .a-la-une, .espace, .carte-recherche,
+      .filtres-offres, .filtres-liste, .section .recherche, .hero__figure, .bouton--plein, .bouton--accent) { box-shadow: none; }
+  & :is(.texte-image__image img, .article__image img, .evenement__image, .galerie__item figure, .evenement__infos) { box-shadow: none; }
+  & :is(.tuile, .logos__item, .carte-photo, .bouton, .pastille-choix span):hover,
+  & .grille > li:hover > .carte { transform: none; }
+  & :is(.carte, .tuile, .logos__item):hover { box-shadow: none; border-color: var(--c-primaire); }
+  & .carte-photo:hover { box-shadow: none; }
+  & .carte:focus-within { box-shadow: 0 0 0 3px var(--c-primaire); }
+  & .bouton--clair:hover { box-shadow: none; }
+}

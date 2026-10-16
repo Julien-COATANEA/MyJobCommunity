@@ -15,6 +15,9 @@ const { accueil } = Astro.props;
 const [parametres, compteurs] = await Promise.all([lireParametres(), lireCompteurs()]);
 const nombre = (n: number) => new Intl.NumberFormat('fr-FR').format(n);
 const s = (n: number) => (n > 1 ? 's' : '');
+// Template avec la photo d'accueil en grand (en fond de bannière, ou sous le texte) : il lui faut des versions plus grandes.
+const disposition = Astro.locals.gabarit?.options.accueil;
+const tailles = disposition === 'banniere' ? '100vw' : disposition === 'empile' ? '(min-width: 1240px) 1200px, 100vw' : null;
 ---
 
 <section class:list={['hero', { 'hero--sans-image': !accueil?.heroImage }]}>
@@ -44,7 +47,14 @@ const s = (n: number) => (n > 1 ? 's' : '');
     {
       accueil?.heroImage && (
         <figure class="hero__figure">
-          <ImageStrapi media={accueil.heroImage} class="hero__image" largeurs={[480, 800, 1200]} sizes="(min-width: 980px) 560px, 100vw" prioritaire decorative />
+          <ImageStrapi
+            media={accueil.heroImage}
+            class="hero__image"
+            largeurs={tailles ? [800, 1280, 1920] : [480, 800, 1200]}
+            sizes={tailles ?? '(min-width: 980px) 560px, 100vw'}
+            prioritaire
+            decorative
+          />
           {
             compteurs.recrutent > 0 && (
               <figcaption class="hero__vignette">

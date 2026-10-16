@@ -1,0 +1,123 @@
+/* ============================================================
+   Template « Institutionnel » : sobre et structuré, à la manière des sites de collectivités.
+   Signature : barre de menu pleine couleur, accueil en aplat foncé, boutons en capitales, titres soulignés à gauche,
+   pied de page de la couleur secondaire, angles réduits et aucun dégradé.
+   Réglages par défaut : menu sur deux lignes, en-têtes de page clairs, cartes à plat (voir src/lib/gabarits.ts).
+   Ne touche jamais aux propriétés réglées par une option (voir options.css) sans viser la valeur de cette option.
+   Contrastes : texte blanc seulement sur la couleur principale, la secondaire ou plus foncé (vérifiés par le BO).
+   ============================================================ */
+@import './options.css';
+
+/* ---------- En-tête et pied de page (site et site Gestmax) ---------- */
+.mjc-shell[data-mjc-gabarit='institutionnel'] {
+  & .entete { background: var(--c-fond); backdrop-filter: none; box-shadow: inset 0 4px 0 var(--c-primaire); }
+  & .marque__pastille { background: var(--c-primaire); border-radius: var(--rayon); box-shadow: none; }
+  & .marque__baseline { color: var(--c-texte-doux); letter-spacing: 0.1em; }
+  & .nav__lien::after { bottom: 0; height: 3px; border-radius: 0; background: var(--c-primaire); }
+  & .nav__lien:hover, & .nav__lien[aria-expanded='true'], & .nav__lien--actif { color: var(--c-primaire-fonce); }
+  & .sous-menu { border-radius: var(--rayon); }
+  & .sous-menu__lien { border-radius: calc(var(--rayon) * 0.6); }
+  & .acces { border-radius: var(--rayon); }
+  & .acces:hover { transform: none; }
+  & .acces--candidat { background: var(--c-primaire); box-shadow: none; }
+  & .acces--candidat:hover { background: var(--c-primaire-fonce); }
+  & .entete__burger { border-radius: var(--rayon); }
+  & .pied__reseaux a { border-radius: var(--rayon); }
+  & .pied__reseaux a:hover { transform: none; }
+  & .pied__propulse-pastille { background: var(--c-primaire); }
+}
+
+/* Menu sur sa propre ligne (grand écran) : barre pleine largeur de la couleur principale, liens en blanc.
+   Le fond déborde de la largeur du contenu par border-image (débordement visuel seulement : ni barre de défilement
+   horizontale, ni sous-menus coupés). */
+@media (min-width: 1241px) {
+  .mjc-shell[data-mjc-gabarit='institutionnel']:is([data-mjc-entete='centre'], [data-mjc-entete='deux-lignes']) {
+    & .nav { border-top: 0; border-image: conic-gradient(var(--c-primaire) 0 0) fill 0 // 0 100vmax; }
+    & .nav__lien { color: #fff; }
+    & .nav__lien:hover, & .nav__lien[aria-expanded='true'], & .nav__lien--actif { color: #fff; }
+    & .nav__lien::after { background: #fff; }
+    & .nav :focus-visible { outline-color: #fff; }
+    & .sous-menu :focus-visible { outline-color: var(--c-primaire); }
+    & .acces--recruteur { color: #fff; background: rgb(255 255 255 / 0.12); border-color: rgb(255 255 255 / 0.55); }
+    & .acces--recruteur:hover { color: var(--c-primaire-fonce); background: #fff; border-color: #fff; }
+    & .acces--candidat { color: var(--c-primaire-fonce); background: #fff; }
+    & .acces--candidat:hover { background: var(--c-primaire-pale); }
+  }
+}
+
+/* Pied de page sombre : couleur secondaire, texte blanc. */
+.mjc-shell[data-mjc-gabarit='institutionnel'][data-mjc-pied='sombre'] {
+  & .pied { background: var(--c-secondaire); color: #fff; }
+  & .pied a, & .pied__cookies, & .pied__copyright { color: #fff; }
+  & .pied__grille { border-bottom-color: rgb(255 255 255 / 0.3); }
+  & .pied__contact .icone { color: #fff; }
+}
+
+/* ---------- Pages ---------- */
+:root[data-mjc-gabarit='institutionnel'] {
+  & main :is(h1, h2, h3, h4) { font-weight: 700; letter-spacing: -0.01em; }
+
+  /* Boutons rectangulaires en capitales, sans soulèvement ni halo. */
+  & .bouton { border-radius: var(--rayon); font-size: 0.88rem; letter-spacing: 0.06em; text-transform: uppercase; }
+  & .bouton:hover { transform: none; }
+  & :is(.bouton--plein, .bouton--accent) { box-shadow: none; }
+
+  /* Surtitre : texte en capitales avec un filet d'accent, au lieu de la pastille. */
+  & .surtitre { padding: 0.1rem 0 0.1rem 0.7rem; border-radius: 0; background: none; border-left: 4px solid var(--c-accent); color: var(--c-primaire-fonce); letter-spacing: 0.1em; }
+  & .section--chiffres .surtitre { background: none; color: #fff; }
+
+  /* Titres de section à gauche, soulignés d'un trait d'accent. */
+  & .section__tete { text-align: left; }
+  & :is(.section__titre, .section__intro) { margin-inline: 0; text-align: left; }
+  & .section__tete .section__intro { margin-inline: 0; }
+  & .section__titre::after { content: ''; display: block; width: 3.5rem; height: 4px; margin-top: 0.8rem; background: var(--c-accent); }
+
+  /* Étiquettes et pastilles rectangulaires. */
+  & :is(.tag, .offre__secteur, .etiquette, .badge-contrat, .badge-nouveau, .badge-une, .pastille-filtre, .pastille-choix span,
+      .en-tete-page__pastilles li, .a-la-une__pastille, .carte-photo__etiquette, .hero__pastille, .hero__vignette) { border-radius: min(var(--rayon), 6px); }
+
+  /* Cartes, encadrés et champs : angles du thème, liseré de couleur en haut des cartes. */
+  & :is(.carte, .tuile, .logos__item, .faq__item, .temoignage, .aside-carte, .a-la-une, .espace, .carte-photo, .carte-recherche,
+      .filtres-offres, .filtres-liste, .section .recherche, .appel-action, .evenement__infos, .aucun-resultat, .cookies) { border-radius: var(--rayon); }
+  & :is(.tuile__icone, .espace__icone, .atout__icone, .hero__vignette-icone, .partage__liens a, .partage__liens button) { border-radius: var(--rayon); }
+  & .faq__question::after { border-radius: var(--rayon); }
+  & :is(.texte-image__image img, .article__image img, .evenement__image, .galerie__item figure) { border-radius: var(--rayon); }
+  & :is(.carte, .tuile) { border-top: 3px solid var(--c-primaire); }
+  & .carte-recherche { border-top: 4px solid var(--c-primaire); }
+
+  /* Accueil (texte et photo) : aplat foncé de la couleur principale, texte blanc, photo aux angles du thème. */
+  &[data-mjc-accueil='deux-colonnes'] {
+    & .hero { color: #fff; background: var(--c-primaire-fonce); }
+    & .hero::before { content: none; }
+    & .hero__titre, & .hero__texte, & .hero__compteur, & .hero__compteur strong { color: #fff; }
+    & .hero__pastille { background: rgb(255 255 255 / 0.12); border-color: rgb(255 255 255 / 0.4); box-shadow: none; color: #fff; }
+    & .hero__figure { border-radius: var(--rayon); box-shadow: none; }
+    & .hero .bouton--plein { background: #fff; color: var(--c-primaire-fonce); }
+    & .hero .bouton--plein:hover { background: var(--c-primaire-pale); }
+    & .hero :focus-visible { outline-color: #fff; }
+  }
+  &[data-mjc-accueil='empile'] .hero { background: var(--c-surface); border-bottom: 1px solid var(--c-bordure); }
+  &[data-mjc-accueil='empile'] .hero::before { content: none; }
+  &[data-mjc-accueil='empile'] .hero__figure { border-radius: var(--rayon); }
+
+  /* Bandeaux de couleur unie (chiffres clés, appel à l'action, espaces). */
+  & .section--chiffres { background: var(--c-secondaire); }
+  & .section--chiffres::before { content: none; }
+  & .section--chiffres .section__titre::after { background: #fff; }
+  & .chiffres { text-align: left; }
+  & .chiffre { padding: 0.25rem 0 0.25rem 1.25rem; border-left: 3px solid rgb(255 255 255 / 0.4); }
+  & .appel-action { background: var(--c-primaire-fonce); text-align: left; }
+  & .appel-action::after { content: none; }
+  & .appel-action p { margin-inline: 0; }
+  & .appel-action__boutons { justify-content: flex-start; }
+  & .espace--principale { background: var(--c-primaire-fonce); }
+  & .espace--secondaire { background: color-mix(in srgb, var(--c-secondaire) 85%, #000); }
+  & .espace::after { content: none; }
+
+  /* Initiales (entreprises, témoignages, auteur) : aplat de la couleur principale. */
+  & :is(.entreprise__vignette--initiales, .temoignage__photo--initiale, .article__avatar) { background: var(--c-primaire); }
+  & .entreprise__vignette { border-radius: var(--rayon); }
+
+  & .date-pastille { border-radius: var(--rayon); }
+  & .pagination :is(a, [aria-current]) { border-radius: min(var(--rayon), 6px); }
+}

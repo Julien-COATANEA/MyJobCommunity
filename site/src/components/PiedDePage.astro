@@ -6,6 +6,7 @@ import { lirePages, type Navigation, type Parametres } from '../lib/contenus';
 import { liensLegauxParDefaut } from '../lib/pages-legales';
 import { absolu, resoudreLien } from '../lib/liens';
 import { urlMedia } from '../lib/strapi';
+import { resoudreGabarit } from '../lib/gabarits';
 import { initiales } from '../lib/format';
 import { LOGOS_RESEAUX, NOMS_RESEAUX, reseauxSurs } from '../lib/reseaux';
 
@@ -26,11 +27,12 @@ const liensUtiles = avecLien(navigation.liensPiedDePage);
 const liensLegaux = avecLien(navigation.liensLegaux?.length ? navigation.liensLegaux : liensLegauxParDefaut(await lirePages()));
 const reseaux = reseauxSurs(parametres.reseauxSociaux);
 const logo = urlMedia(parametres.logo, true);
+const gabarit = Astro.locals.gabarit ?? resoudreGabarit(parametres);
 const description = parametres.seoParDefaut?.metaDescription;
 const annee = new Date().getFullYear();
 ---
 
-<div class="mjc-shell">
+<div class="mjc-shell" {...gabarit.attributs}>
 <footer class="pied">
   <div class="conteneur">
     <div class="pied__grille">

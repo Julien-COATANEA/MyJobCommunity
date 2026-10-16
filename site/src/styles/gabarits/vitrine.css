@@ -1,0 +1,76 @@
+/* ============================================================
+   Template « Vitrine » : met le territoire en scène, façon magazine.
+   Signature : photo d'accueil presque plein écran avec un très grand titre, logo centré et menu en capitales, cartes
+   « magazine » (grande photo arrondie, texte dessous, sans cadre), sections teintées, pied de page en dégradé.
+   Idéal avec la carte des offres (« Ma page d'offres »).
+   Réglages par défaut : logo centré, accueil en bannière, cartes en relief (voir src/lib/gabarits.ts).
+   Ne touche jamais aux propriétés réglées par une option (voir options.css) sans viser la valeur de cette option.
+   ============================================================ */
+@import './options.css';
+
+/* ---------- En-tête et pied de page (site et site Gestmax) ---------- */
+.mjc-shell[data-mjc-gabarit='vitrine'] {
+  --rayon-grand: calc(var(--rayon) * 2.2); /* aussi ici : le site Gestmax reprend l'habillage sans la balise <html> */
+
+  & .nav__lien { font-size: 0.8em; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+  & .acces { padding-inline: 1.2em; }
+}
+/* Pied de page sombre en dégradé (du foncé à la secondaire assombrie : texte blanc lisible partout). */
+.mjc-shell[data-mjc-gabarit='vitrine'][data-mjc-pied='sombre'] .pied {
+  background: linear-gradient(135deg, var(--c-fonce) 0%, color-mix(in srgb, var(--c-secondaire) 70%, #000) 100%);
+}
+
+/* ---------- Pages ---------- */
+:root[data-mjc-gabarit='vitrine'] {
+  --rayon-grand: calc(var(--rayon) * 2.2);
+
+  /* Sections plus aérées (sauf la page des offres et le bloc de recherche, qui gardent l'espacement courant). */
+  & .section:not(.section--serree, .section--recherche) { padding-block: clamp(4rem, 9vw, 6.5rem); }
+  /* Sections teintées de la couleur principale (le texte doux y est garanti lisible, voir theme.ts). */
+  & .section--teinte, & .section--temoignages { background: var(--c-primaire-pale); }
+  & .section__titre { font-size: clamp(1.95rem, 1.25rem + 2.4vw, 3.2rem); letter-spacing: -0.03em; }
+  & .section__intro { font-size: 1.15rem; }
+  & .surtitre { background: var(--c-accent-pale); color: var(--c-accent-texte); }
+  & .section--chiffres .surtitre { background: rgb(255 255 255 / 0.15); color: #fff; }
+
+  /* Accueil en bannière : presque tout l'écran, très grand titre, recherche qui chevauche la photo. */
+  &[data-mjc-accueil='banniere'] .hero__grille { min-height: clamp(30rem, 76vh, 48rem); padding-block: clamp(4rem, 9vw, 7rem) clamp(6rem, 11vw, 8.5rem); }
+  &[data-mjc-accueil='banniere'] .hero__titre { font-size: clamp(2.6rem, 1.2rem + 5.2vw, 5.4rem); line-height: 1.02; letter-spacing: -0.035em; }
+  &[data-mjc-accueil='banniere'] .hero__texte { font-size: 1.25rem; }
+  &[data-mjc-accueil='banniere'] .carte-recherche-wrap { margin-top: -5rem; }
+  & .carte-recherche { padding: clamp(1.4rem, 3vw, 2.1rem); }
+  & .carte-recherche__titre { justify-content: center; font-size: 1.15rem; }
+
+  /* En-têtes de page immersifs plus hauts. */
+  &[data-mjc-bandeaux='immersif'] .en-tete-page--immersif { min-height: clamp(340px, 42vw, 540px); }
+  &[data-mjc-bandeaux='immersif'] .en-tete-page--immersif h1 { font-size: clamp(2.4rem, 1.4rem + 3.6vw, 4.2rem); }
+
+  /* Visuels plus présents. */
+  & .carte__visuel img { height: 240px; }
+  & .carte--evenement-photo .carte__visuel img { height: 210px; }
+  & .a-la-une__visuel { min-height: 420px; }
+  & .chiffre__valeur { font-size: clamp(2.8rem, 1.8rem + 3vw, 3.8rem); }
+  & .appel-action { padding: clamp(3rem, 7vw, 5rem); }
+
+  /* Cartes en relief → cartes « magazine » : la photo arrondie porte la carte, le texte est dessous, sans cadre.
+     Le survol avance légèrement la photo. Sans :has() (navigateurs anciens), les cartes restent encadrées. */
+  &[data-mjc-cartes='relief'] {
+    & .carte:has(> .carte__visuel) { overflow: visible; background: transparent; border-color: transparent; }
+    & .carte:has(> .carte__visuel):hover { border-color: transparent; box-shadow: none; }
+    & .grille > li:hover > .carte:has(> .carte__visuel) { transform: none; }
+    & .carte:has(> .carte__visuel) .carte__visuel { overflow: hidden; border-radius: var(--rayon-grand); background: var(--c-primaire-pale); }
+    & .carte:has(> .carte__visuel) .carte__corps { padding: 1.15rem 0.25rem 0.25rem; }
+    & .carte:has(> .carte__visuel) .carte__titre { font-size: 1.3rem; }
+    & .carte__visuel img { transition: transform 0.45s; }
+    & .grille > li:hover .carte__visuel img { transform: scale(1.05); }
+    /* Événements : la pastille de date déborde de la photo, qui n'est donc pas rognée (pas d'avancée). */
+    & .carte--evenement-photo:has(> .carte__visuel) .carte__visuel { overflow: visible; background: none; }
+    & .carte--evenement-photo .carte__visuel img { border-radius: var(--rayon-grand); }
+    & .grille > li:hover .carte--evenement-photo .carte__visuel img { transform: none; }
+    & .carte--evenement-photo .date-pastille--flottante { left: 1rem; }
+    & .carte--evenement-photo:has(> .carte__visuel) .carte__corps { padding-top: 2.4rem; }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-mjc-gabarit='vitrine'] .grille > li:hover .carte__visuel img { transform: none; }
+}

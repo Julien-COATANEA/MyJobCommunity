@@ -7,7 +7,7 @@ const CLE = 'mjc-bienvenue-vue';
 const ETAPES = [
   { titre: 'Mes pages, Mes articles, Mes événements', texte: 'Le menu de gauche réunit tout ce que vous publiez. Cliquez sur « Créer » pour ajouter un contenu.' },
   { titre: 'Enregistrer et publier', texte: 'Le bouton « Enregistrer et publier » met le contenu en ligne : le site se met à jour en quelques secondes. L’indicateur en bas à droite vous le confirme.' },
-  { titre: 'Apparence', texte: 'Logo, couleurs et polices de votre site se règlent dans « Apparence », sans toucher au reste.' },
+  { titre: 'Apparence', texte: 'Template, logo, couleurs et polices de votre site se règlent dans « Apparence », sans toucher au contenu.' },
   { titre: 'Rechercher partout', texte: 'Appuyez sur Ctrl + K pour retrouver en un instant une page, un article, une entreprise ou un inscrit.' },
 ];
 

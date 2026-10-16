@@ -5,6 +5,7 @@ import Icone from './Icone.astro';
 import type { Navigation, Parametres } from '../lib/contenus';
 import { absolu, estActif, estExterne, resoudreLien } from '../lib/liens';
 import { urlMedia } from '../lib/strapi';
+import { resoudreGabarit } from '../lib/gabarits';
 import { initiales } from '../lib/format';
 
 interface Props {
@@ -18,6 +19,8 @@ const { parametres, navigation, base } = Astro.props;
 const chemin = Astro.url.pathname;
 const lien = (url: string | null | undefined) => absolu(resoudreLien(url, parametres.gestmaxUrlFront), base);
 const logo = urlMedia(parametres.logo, true);
+// Template : ses options visent aussi l'habillage repris par le site Gestmax (attributs posés sur .mjc-shell).
+const gabarit = Astro.locals.gabarit ?? resoudreGabarit(parametres);
 // Espaces recruteur et candidat : affichés seulement si leur lien est saisi dans « Site Gestmax » du BO.
 const acces = [
   { libelle: 'recruteur', href: lien(parametres.lienEspaceRecruteur), icone: 'emploi', classe: 'acces--recruteur' },
@@ -29,7 +32,7 @@ const menu = navigation.menuPrincipal
   .filter((entree) => entree.sousLiens.length || lien(entree.url));
 ---
 
-<div class="mjc-shell" data-mjc-shell={parametres.nomSite}>
+<div class="mjc-shell" data-mjc-shell={parametres.nomSite} {...gabarit.attributs}>
 <div class="evitement">
   {/* Liens relatifs à la page affichée : aussi valables sur les pages Gestmax qui reprennent l'en-tête. */}
   <a href="#contenu">Aller au contenu</a>

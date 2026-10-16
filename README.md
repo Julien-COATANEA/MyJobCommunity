@@ -100,5 +100,6 @@ Renseigner aussi « URL du front Gestmax » dans **Paramètres du site** (liens 
 
 Une pile Docker par client (Strapi + MariaDB + build), une seule base de code jamais forkée :
 nouveau `.env` (secrets, URLs, Gestmax, `STRAPI_ADMIN_BRAND_NAME` / `STRAPI_ADMIN_PRIMARY_COLOR`),
-logo du back-office dans `cms/src/admin/extensions/logo.svg`, puis identité et couleurs du site dans le BO.
+logo du back-office dans `cms/src/admin/extensions/logo.svg`, puis template, identité et couleurs du site dans le BO
+(« Apparence »).
 Mettre `SEED_DEMO=false` en dehors des démonstrations.

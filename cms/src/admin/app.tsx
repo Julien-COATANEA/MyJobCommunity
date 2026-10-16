@@ -16,6 +16,7 @@ import { PanneauDemandePublication } from './espace/panneaux/PanneauDemandePubli
 import { LienInput } from './espace/LienInput';
 import { BoutonModele } from './espace/BoutonModele';
 import { monterIndicateur } from './espace/IndicateurSite';
+import { monterBoutonVoirSite } from './espace/BoutonVoirSite';
 import { monterRecherche } from './espace/Recherche';
 import { monterBienvenue } from './espace/Bienvenue';
 import { monterNavigation } from './espace/navigation';
@@ -258,8 +259,10 @@ export default {
     (app.getPlugin('content-manager').apis as any).addEditViewSidePanel([PanneauSite, PanneauQualite, PanneauDemandePublication, PanneauInscriptions]);
     // « Mes pages » : bouton « À partir d'un modèle » sous « Créer une nouvelle entrée ».
     (app.getPlugin('content-manager') as any).injectComponent('listView', 'actions', { name: 'mjc-modele-page', Component: BoutonModele });
-    // Indicateur permanent « Site à jour / brouillons non publiés », recherche Ctrl + K, fenêtre d'accueil.
+    // Indicateur permanent « Site à jour / brouillons non publiés », recherche Ctrl + K, fenêtre d'accueil,
+    // bouton « Voir mon site » en haut du tableau de bord.
     monterIndicateur();
+    monterBoutonVoirSite();
     monterRecherche();
     monterBienvenue();
     monterNavigation();

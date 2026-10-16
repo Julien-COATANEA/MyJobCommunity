@@ -9,9 +9,14 @@ import Entete from '../components/Entete.astro';
 import PiedDePage from '../components/PiedDePage.astro';
 import { lireNavigation, lireParametres } from '../lib/contenus';
 import { cssTheme } from '../lib/theme';
+import { resoudreGabarit } from '../lib/gabarits';
 
 const [parametres, navigation] = await Promise.all([lireParametres(), lireNavigation()]);
 const base = Astro.site?.toString().replace(/\/+$/, '');
+// Feuille du template, comme jetons.css et shell.css (adresse relative, complétée par Gestmax avec base_url) : ses règles
+// d'habillage visent .mjc-shell[data-mjc-…], celles des pages visent <html data-mjc-…>, absent des pages Gestmax.
+const gabarit = resoudreGabarit(parametres);
+Astro.locals.gabarit = gabarit;
 ---
 
 <!doctype html>
@@ -21,6 +26,7 @@ const base = Astro.site?.toString().replace(/\/+$/, '');
     <meta name="robots" content="noindex, nofollow" />
     <title>{parametres.nomSite}</title>
     <style is:inline set:html={cssTheme(parametres)}></style>
+    {gabarit.feuille && <link rel="stylesheet" href={gabarit.feuille} />}
   </head>
   <body>
     <Entete parametres={parametres} navigation={navigation} base={base} />

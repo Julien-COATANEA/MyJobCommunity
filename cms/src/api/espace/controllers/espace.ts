@@ -3,6 +3,8 @@ import { lireDerniereSynchro } from '../../../utils/synchro';
 import { OFFRES_VISIBLES } from '../../../utils/garde-offres';
 import { rattacher } from '../../../utils/rattachement';
 import { PAGES_LEGALES } from '../../../utils/infos-legales';
+import { executerReglagesApparence } from '../../../utils/garde-parametres';
+import { jetonEssaiGabarit } from '../../../utils/essai-gabarit';
 
 const UID = {
   page: 'api::page.page',
@@ -19,6 +21,7 @@ const CHAMPS_APPARENCE = [
   'nomSite', 'baseline', 'logoTexte',
   'couleurPrimaire', 'couleurSecondaire', 'couleurAccent', 'couleurTexte', 'couleurFond',
   'policeTitres', 'policeTexte', 'arrondis',
+  'gabarit', 'reglagesGabarits',
 ] as const;
 
 const urlSite = () => (process.env.SITE_URL ?? '').replace(/\/+$/, '');
@@ -313,8 +316,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     },
 
     async lireApparence(ctx: any) {
-      const p = await strapi.documents(UID.parametres).findFirst({ populate: { logo: true } } as any);
-      ctx.body = { ...p, urlSite: urlSite() };
+      const [p, accueil]: any[] = await Promise.all([
+        strapi.documents(UID.parametres).findFirst({ populate: { logo: true } } as any),
+        strapi.documents('api::accueil.accueil').findFirst({ status: 'published', fields: ['heroTitre'], populate: { heroImage: true } } as any),
+      ]);
+      // Photo de l'accueil (version réduite) : les aperçus des templates la reprennent.
+      const photo = accueil?.heroImage;
+      const imageAccueil = photo ? (photo.formats?.medium?.url ?? photo.formats?.small?.url ?? photo.url) : null;
+      // Essai d'un template sur la vraie page d'accueil, sans rien enregistrer : page d'aperçu du site, à laquelle l'écran
+      // ajoute ?gabarit=…&reglages=…. Jamais le secret d'aperçu lui-même (il ouvre tous les brouillons) : un jeton signé,
+      // valable quelques heures et pour la seule page d'accueil publiée (voir utils/gabarits).
+      const { APERCU_URL, APERCU_SECRET } = process.env;
+      const apercuAccueil = APERCU_URL && APERCU_SECRET && accueil
+        ? `${APERCU_URL.replace(/\/+$/, '')}/apercu/accueil/${accueil.documentId}?${new URLSearchParams({ essai: jetonEssaiGabarit(accueil.documentId, APERCU_SECRET) })}`
+        : null;
+      ctx.body = { ...p, urlSite: urlSite(), imageAccueil, apercuAccueil };
     },
 
     async enregistrerApparence(ctx: any) {
@@ -324,10 +340,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
       const existant = await strapi.documents(UID.parametres).findFirst();
       try {
-        // Passe par le service documents : le contrôle des contrastes RGAA s'applique.
-        const resultat = existant
-          ? await strapi.documents(UID.parametres).update({ documentId: existant.documentId, data } as any)
-          : await strapi.documents(UID.parametres).create({ data } as any);
+        // Passe par le service documents : le contrôle des contrastes RGAA s'applique. Seul chemin d'écriture du template
+        // (voir garde-parametres).
+        const resultat = await executerReglagesApparence(() =>
+          existant
+            ? strapi.documents(UID.parametres).update({ documentId: existant.documentId, data } as any)
+            : strapi.documents(UID.parametres).create({ data } as any),
+        );
         ctx.body = resultat;
       } catch (e: any) {
         ctx.status = 400;

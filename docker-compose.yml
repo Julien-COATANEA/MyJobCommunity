@@ -64,6 +64,8 @@ services:
     volumes:
       - ./site:/app
       - /app/node_modules
+      # Lecture seule : le test des templates vérifie que le registre du BO est identique à celui du site.
+      - ./cms/src:/cms/src:ro
     depends_on:
       - strapi
 

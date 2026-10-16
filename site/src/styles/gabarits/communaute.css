@@ -1,0 +1,3 @@
+/* Template « Communauté » : le style d'origine (maquette MyJobCommunity), entièrement porté par global.css et shell.css.
+   Cette feuille n'apporte que les options de disposition ; elle n'est chargée que si l'une d'elles est modifiée. */
+@import './options.css';

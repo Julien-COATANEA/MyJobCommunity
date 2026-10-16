@@ -41,7 +41,7 @@ const pl = (n: number) => (n > 1 ? 's' : '');
     </ul>
   </EnTetePage>
 
-  <section class="section section--serree">
+  <section class="section section--serree section--offres">
     <div class:list={['conteneur', page?.carte && 'conteneur--large']}>
       <form action="/offres/" method="get" role="search" aria-label="Filtrer les offres" class="filtres-offres" data-filtres>
         <div class="filtres-offres__principal">
@@ -92,74 +92,77 @@ const pl = (n: number) => (n > 1 ? 's' : '');
         </div>
       </form>
 
-      <div class="filtres-actifs" data-actifs hidden>
-        <span class="filtres-actifs__titre">Filtres :</span>
-        <ul data-actifs-liste></ul>
-        <button type="button" class="lien-bouton" data-effacer>Tout effacer</button>
-      </div>
+      {/* Résultats regroupés : un template peut placer les filtres en colonne à côté (sans effet sinon). */}
+      <div class="offres-principal">
+        <div class="filtres-actifs" data-actifs hidden>
+          <span class="filtres-actifs__titre">Filtres :</span>
+          <ul data-actifs-liste></ul>
+          <button type="button" class="lien-bouton" data-effacer>Tout effacer</button>
+        </div>
 
-      <!-- Avec la carte (activée dans le BO) : liste à gauche, carte à droite ; déplacer la carte filtre la liste. -->
-      <div class="offres-resultats" data-resultats-offres>
-        <div class="offres-resultats__liste">
-          <div class="offres-resultats__barre">
-            <p class="resultats" aria-live="polite" data-resultats>{nbOffres} offre{nbOffres > 1 ? 's' : ''}</p>
-            <button type="button" class="lien-bouton" data-zone-toute hidden>Voir toutes les offres de la recherche</button>
-            {
-              page?.carte && (
-                <button type="button" class="bouton bouton--contour bouton--petit offres-resultats__bascule" data-basculer-carte aria-controls="carte-offres" hidden>
-                  <Icone nom="carte" taille={18} /><span data-basculer-libelle>Afficher la carte</span>
-                </button>
-              )
-            }
-          </div>
+        <!-- Avec la carte (activée dans le BO) : liste à gauche, carte à droite ; déplacer la carte filtre la liste. -->
+        <div class="offres-resultats" data-resultats-offres>
+          <div class="offres-resultats__liste">
+            <div class="offres-resultats__barre">
+              <p class="resultats" aria-live="polite" data-resultats>{nbOffres} offre{nbOffres > 1 ? 's' : ''}</p>
+              <button type="button" class="lien-bouton" data-zone-toute hidden>Voir toutes les offres de la recherche</button>
+              {
+                page?.carte && (
+                  <button type="button" class="bouton bouton--contour bouton--petit offres-resultats__bascule" data-basculer-carte aria-controls="carte-offres" hidden>
+                    <Icone nom="carte" taille={18} /><span data-basculer-libelle>Afficher la carte</span>
+                  </button>
+                )
+              }
+            </div>
 
-          <ul
-            class:list={['grille grille--offres', enLignes && 'grille--lignes']}
-            style={`--colonnes: ${enLignes ? 1 : colonnes}`}
-            data-liste-offres
-            data-api={PUBLIC_STRAPI_URL}
-            data-par-page={PAR_PAGE}
-            data-total={nbOffres}
-            data-masquer={masquerAttr}
-          >
-            {premieres.map((o) => <li><CarteOffre offre={o} niveauTitre={2} masquer={masquer} /></li>)}
-          </ul>
+            <ul
+              class:list={['grille grille--offres', enLignes && 'grille--lignes']}
+              style={`--colonnes: ${enLignes ? 1 : colonnes}`}
+              data-liste-offres
+              data-api={PUBLIC_STRAPI_URL}
+              data-par-page={PAR_PAGE}
+              data-total={nbOffres}
+              data-masquer={masquerAttr}
+            >
+              {premieres.map((o) => <li><CarteOffre offre={o} niveauTitre={2} masquer={masquer} /></li>)}
+            </ul>
 
-          <div class="aucun-resultat" data-aucun hidden>
-            <Icone nom="cloche" taille={36} />
-            <h2>Aucune offre ne correspond pour le moment</h2>
-            <p>Élargissez votre recherche, ou soyez prévenu dès qu'une offre correspondante est publiée.</p>
-            <p class="aucun-resultat__actions">
-              {lienAlerte && <a class="bouton bouton--plein" href={lienAlerte}><Icone nom="cloche" taille={18} />Créer une alerte e-mail</a>}
-              <button type="button" class="bouton bouton--contour" data-effacer>Effacer les filtres</button>
+            <div class="aucun-resultat" data-aucun hidden>
+              <Icone nom="cloche" taille={36} />
+              <h2>Aucune offre ne correspond pour le moment</h2>
+              <p>Élargissez votre recherche, ou soyez prévenu dès qu'une offre correspondante est publiée.</p>
+              <p class="aucun-resultat__actions">
+                {lienAlerte && <a class="bouton bouton--plein" href={lienAlerte}><Icone nom="cloche" taille={18} />Créer une alerte e-mail</a>}
+                <button type="button" class="bouton bouton--contour" data-effacer>Effacer les filtres</button>
+              </p>
+            </div>
+
+            <p class="section__suite">
+              {/* Révélé par le script : sans JavaScript, il ne pourrait rien afficher de plus. */}
+              <button type="button" class="bouton bouton--contour" data-plus data-plus-initial={nbOffres > PAR_PAGE ? '' : undefined} hidden>Afficher plus d'offres</button>
             </p>
           </div>
 
-          <p class="section__suite">
-            {/* Révélé par le script : sans JavaScript, il ne pourrait rien afficher de plus. */}
-            <button type="button" class="bouton bouton--contour" data-plus data-plus-initial={nbOffres > PAR_PAGE ? '' : undefined} hidden>Afficher plus d'offres</button>
-          </p>
+          {
+            page?.carte && (
+              <div class="offres-resultats__carte carte-offres" id="carte-offres" data-carte-offres hidden>
+                <div class="carte-offres__carte" data-carte role="region" aria-label="Carte des offres d'emploi"></div>
+                <p class="sr-only">Déplacer ou zoomer la carte limite la liste des offres à la zone affichée.</p>
+              </div>
+            )
+          }
         </div>
 
         {
-          page?.carte && (
-            <div class="offres-resultats__carte carte-offres" id="carte-offres" data-carte-offres hidden>
-              <div class="carte-offres__carte" data-carte role="region" aria-label="Carte des offres d'emploi"></div>
-              <p class="sr-only">Déplacer ou zoomer la carte limite la liste des offres à la zone affichée.</p>
-            </div>
+          lienSpontanee && (
+            <aside class="appel-action appel-action--discret">
+              <h2 class="appel-action__titre">Aucune offre ne vous correspond ?</h2>
+              <p>Déposez votre candidature spontanée : elle sera visible des recruteurs du territoire.</p>
+              <p><a class="bouton bouton--clair" href={lienSpontanee}>Déposer mon CV</a></p>
+            </aside>
           )
         }
       </div>
-
-      {
-        lienSpontanee && (
-          <aside class="appel-action appel-action--discret">
-            <h2 class="appel-action__titre">Aucune offre ne vous correspond ?</h2>
-            <p>Déposez votre candidature spontanée : elle sera visible des recruteurs du territoire.</p>
-            <p><a class="bouton bouton--clair" href={lienSpontanee}>Déposer mon CV</a></p>
-          </aside>
-        )
-      }
     </div>
   </section>
 

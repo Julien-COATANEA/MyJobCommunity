@@ -1,0 +1,117 @@
+/* ============================================================
+   Template « Facettes » : site de recherche d'emploi, façon application.
+   Signature : en-tête sombre (logo dans une capsule blanche), fond gris et cartes blanches, bannière d'accueil aux
+   couleurs du site avec le texte à gauche, affichage dense, page des offres avec filtres en colonne.
+   Réglages par défaut : accueil en bannière, filtres en colonne, cartes à plat (voir src/lib/gabarits.ts).
+   Ne touche jamais aux propriétés réglées par une option (voir options.css) sans viser la valeur de cette option.
+   Contrastes : sur l'en-tête (--c-fonce, couleur principale très assombrie), texte blanc ou très clair uniquement.
+   ============================================================ */
+@import './options.css';
+
+/* ---------- En-tête sombre et pied de page (site et site Gestmax) ---------- */
+.mjc-shell[data-mjc-gabarit='facettes'] {
+  & .entete { background: var(--c-fonce); border-bottom-color: transparent; backdrop-filter: none; }
+  & .entete__barre { min-height: 68px; }
+  & .marque { color: #fff; }
+  /* Logo dans une capsule blanche : lisible quel que soit le logo déposé. */
+  & .marque__logo { height: 42px; padding: 5px 9px; object-fit: contain; background: #fff; border-radius: var(--rayon); }
+  & .marque__pastille { border-radius: var(--rayon); box-shadow: 0 0 0 2px rgb(255 255 255 / 0.3); }
+  & .marque__baseline { color: color-mix(in srgb, var(--c-accent) 30%, #fff); }
+  & .nav__lien { color: rgb(255 255 255 / 0.9); }
+  & .nav__lien:hover, & .nav__lien[aria-expanded='true'], & .nav__lien--actif { color: #fff; }
+  & .entete :focus-visible { outline-color: #fff; }
+  & .sous-menu :focus-visible { outline-color: var(--c-primaire); }
+  & .acces { border-radius: var(--rayon); }
+  & .acces:hover { transform: none; }
+  & .acces--recruteur { color: #fff; background: rgb(255 255 255 / 0.1); border-color: rgb(255 255 255 / 0.4); }
+  & .acces--recruteur:hover { color: var(--c-fonce); background: #fff; border-color: #fff; }
+  & .acces--candidat { color: var(--c-sur-accent); background: var(--c-accent); box-shadow: none; }
+  & .acces--candidat:hover { background: color-mix(in srgb, var(--c-accent) 88%, #000); }
+  & .entete__burger { border-radius: var(--rayon); background: rgb(255 255 255 / 0.12); color: #fff; }
+}
+/* Petits écrans : le menu déplié (et ses sous-menus, alors dans le flux) reste sur fond sombre. */
+@media (max-width: 1240px) {
+  .mjc-shell[data-mjc-gabarit='facettes'] {
+    /* « .entete » : plus spécifique que la règle de shell.css (html.mjc-js .mjc-shell .nav.nav--ouverte). */
+    & .entete .nav.nav--ouverte { max-height: calc(100vh - 68px); background: var(--c-fonce); border-bottom-color: transparent; }
+    & .sous-menu { background: transparent; border-left-color: rgb(255 255 255 / 0.25); }
+    & .sous-menu__titre, & .sous-menu__lien:hover .sous-menu__titre { color: #fff; }
+    & .sous-menu__desc { color: rgb(255 255 255 / 0.8); }
+    & .sous-menu__lien:hover, & .sous-menu__lien[aria-current='page'] { background: rgb(255 255 255 / 0.1); }
+    & .sous-menu :focus-visible { outline-color: #fff; }
+  }
+}
+
+/* ---------- Pages ---------- */
+:root[data-mjc-gabarit='facettes'] {
+  scroll-padding-top: 5.5rem;
+
+  /* Fond gris, contenus sur cartes blanches ; les sections « teintées » deviennent des bandes blanches. */
+  & main { background: var(--c-surface); }
+  & .section--teinte { background: var(--c-fond); border-block: 1px solid var(--c-bordure); }
+
+  /* Plus dense : sections et grilles resserrées. */
+  & .section:not(.section--serree, .section--recherche) { padding-block: clamp(2.5rem, 6vw, 3.75rem); }
+  & .grille { gap: 1.1rem; }
+  & main :is(h1, h2, h3, h4) { letter-spacing: -0.015em; }
+  & .section__titre { font-size: clamp(1.55rem, 1.15rem + 1.3vw, 2.15rem); }
+
+  & .bouton { border-radius: var(--rayon); }
+  & .bouton:hover { transform: none; }
+
+  /* Surtitre : petites capitales de la couleur d'accent, sans pastille. */
+  & .surtitre { margin-bottom: 0.6rem; padding: 0; border-radius: 0; background: none; color: var(--c-accent-texte); }
+  & .section--chiffres .surtitre { background: none; color: #fff; }
+
+  & .section__tete { margin-bottom: 1.75rem; text-align: left; }
+  & :is(.section__titre, .section__intro) { margin-inline: 0; text-align: left; }
+  & .section__tete .section__intro { margin-inline: 0; }
+  & .section__intro { margin-bottom: 1.75rem; }
+  & .section__entete { margin-bottom: 1.5rem; }
+
+  & :is(.tag, .offre__secteur, .etiquette, .pastille-filtre, .en-tete-page__pastilles li, .a-la-une__pastille) { border-radius: min(var(--rayon), 6px); }
+  & :is(.carte, .tuile, .logos__item, .faq__item, .temoignage, .aside-carte, .a-la-une, .carte-photo, .filtres-offres, .filtres-liste,
+      .section .recherche, .evenement__infos) { border-radius: var(--rayon); }
+
+  /* Cartes d'offres compactes, liseré de couleur à gauche. */
+  & .carte--offre { border-left: 4px solid var(--c-primaire); }
+  & .carte--offre .carte__corps { padding: 1.15rem 1.3rem; }
+  & .carte--offre .offre__haut { margin-bottom: 0.65rem; }
+  & .carte--offre .offre__tags { margin-top: 0.7rem; }
+  & .carte__visuel img { height: 170px; }
+
+  /* Recherche de l'accueil : grand champ au premier plan. */
+  & .carte-recherche { border-radius: var(--rayon-grand); border-top: 4px solid var(--c-accent); }
+  & .carte-recherche__titre { font-size: 1.15rem; }
+
+  /* Accueil en bannière : moins haute, texte à gauche, photo sous un voile aux couleurs du site (≥ 84 % de foncé). */
+  &[data-mjc-accueil='banniere'] {
+    & .hero__grille { justify-items: start; text-align: left; min-height: clamp(20rem, 34vw, 27rem); padding-block: clamp(3rem, 6vw, 4.5rem) clamp(4.5rem, 8vw, 5.5rem); }
+    & .hero__contenu { max-width: 40rem; }
+    & .hero__titre { font-size: clamp(2.1rem, 1.3rem + 2.8vw, 3.3rem); }
+    & .hero__texte { margin-inline: 0; }
+    & .hero__actions { justify-content: flex-start; }
+    & .hero__figure::after {
+      background: linear-gradient(100deg, color-mix(in srgb, var(--c-fonce) 94%, transparent) 0%, color-mix(in srgb, var(--c-fonce) 88%, transparent) 45%, color-mix(in srgb, var(--c-primaire-fonce) 84%, transparent) 100%);
+    }
+  }
+  &[data-mjc-accueil='deux-colonnes'] .hero__grille { padding-block: clamp(2.5rem, 5vw, 3.5rem) clamp(3rem, 6vw, 4rem); }
+
+  /* En-têtes de page immersifs moins hauts, dans le prolongement de l'en-tête sombre. */
+  &[data-mjc-bandeaux='immersif'] .en-tete-page--immersif {
+    min-height: clamp(220px, 22vw, 300px); padding-block: clamp(2.25rem, 5vw, 3.25rem) clamp(1.75rem, 4vw, 2.5rem);
+    background: linear-gradient(125deg, var(--c-fonce) 0%, var(--c-fonce) 40%, color-mix(in srgb, var(--c-primaire) 70%, var(--c-fonce)) 100%);
+  }
+  &[data-mjc-bandeaux='immersif'] .en-tete-page--immersif h1 { font-size: clamp(2rem, 1.3rem + 2.4vw, 3rem); }
+  & .en-tete-page__pastilles { margin-top: 1.25rem; }
+
+  /* Filtres des offres : libellés façon facettes. */
+  & .filtres-offres .recherche__champ label { font-size: 0.74rem; letter-spacing: 0.07em; text-transform: uppercase; }
+
+  & .section--chiffres { background: var(--c-fonce); }
+  & .section--chiffres::before { content: none; }
+  & .appel-action { border-radius: var(--rayon-grand); }
+  & .appel-action::after { content: none; }
+  & .espace::after { content: none; }
+  & .espace { border-radius: var(--rayon-grand); }
+}

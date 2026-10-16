@@ -121,6 +121,19 @@
       "default": "legers",
       "required": true
     },
+    "gabarit": {
+      "type": "enumeration",
+      "enum": [
+        "communaute",
+        "institutionnel",
+        "facettes",
+        "vitrine",
+        "epure"
+      ]
+    },
+    "reglagesGabarits": {
+      "type": "json"
+    },
     "adresse": {
       "type": "text"
     },

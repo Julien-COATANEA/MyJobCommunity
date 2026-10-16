@@ -11,6 +11,8 @@ import VueEvenement from '../../../components/vues/VueEvenement.astro';
 import VueEntreprise from '../../../components/vues/VueEntreprise.astro';
 import { lireOffresEntreprise } from '../../../lib/contenus';
 import { PUBLIC_STRAPI_URL, lireBrouillon } from '../../../lib/strapi';
+import { resoudreGabarit } from '../../../lib/gabarits';
+import { jetonEssaiValide } from '../../../lib/essai-gabarit';
 
 const TYPES: Record<string, { api: string; unique: boolean }> = {
   accueil: { api: 'accueil', unique: true },
@@ -22,17 +24,32 @@ const TYPES: Record<string, { api: string; unique: boolean }> = {
 
 const { type = '', id = '' } = Astro.params;
 const secret = process.env.APERCU_SECRET;
-if (!secret || Astro.url.searchParams.get('secret') !== secret) {
+// Essai d'un template depuis « Apparence » : jeton signé par le BO, qui n'ouvre que l'accueil publié (jamais un brouillon).
+const essaiSigne = type === 'accueil' && jetonEssaiValide(Astro.url.searchParams.get('essai'), id, secret);
+if (!secret || (!essaiSigne && Astro.url.searchParams.get('secret') !== secret)) {
   return new Response('Aperçu non autorisé.', { status: 403 });
 }
 const definition = TYPES[type];
 if (!definition) return new Response('Type de contenu inconnu.', { status: 404 });
 
-const statut = Astro.url.searchParams.get('statut') === 'published' ? 'published' : 'draft';
+const statut = essaiSigne || Astro.url.searchParams.get('statut') === 'published' ? 'published' : 'draft';
 // Dans l'aperçu intégré au BO, un clic sur un texte ouvre son champ (désactivable avec ?visuel=0).
-const edition = Astro.url.searchParams.get('visuel') !== '0';
+const edition = !essaiSigne && Astro.url.searchParams.get('visuel') !== '0';
 const doc: any = await lireBrouillon(definition.api, id, statut, definition.unique, edition);
 if (!doc) return new Response('Contenu introuvable.', { status: 404 });
+
+// Essai d'un template depuis « Apparence » du BO (?gabarit=vitrine&reglages={…}) : rien n'est enregistré, Base.astro
+// et les composants utilisent ce template au lieu de celui du site. Valeurs inconnues ignorées (voir resoudreGabarit).
+const essai = Astro.url.searchParams.get('gabarit');
+if (essai) {
+  let reglages: unknown = null;
+  try {
+    reglages = JSON.parse(Astro.url.searchParams.get('reglages') ?? 'null');
+  } catch {
+    // Réglages illisibles : ceux par défaut du template.
+  }
+  Astro.locals.gabarit = resoudreGabarit({ gabarit: essai, reglagesGabarits: { [essai]: reglages } });
+}
 
 const offresEntreprise = type === 'entreprise' ? await lireOffresEntreprise(doc.slug) : { offres: [], total: 0 };
 const titre = doc.titre ?? doc.nom ?? doc.heroTitre ?? 'Aperçu';
@@ -43,7 +60,13 @@ const originesBO = [PUBLIC_STRAPI_URL];
 
 <Base titre={`Aperçu : ${titre}`} noIndex sansSuivi>
   <div class="bandeau-apercu" role="status">
-    {statut === 'draft' ? 'Aperçu du brouillon : cette version n’est pas encore publiée.' : 'Aperçu de la version publiée.'}
+    {
+      essai
+        ? 'Essai d’un template : le site en ligne n’a pas changé.'
+        : statut === 'draft'
+          ? 'Aperçu du brouillon : cette version n’est pas encore publiée.'
+          : 'Aperçu de la version publiée.'
+    }
   </div>
   {type === 'accueil' && <VueAccueil accueil={doc} />}
   {type === 'page' && <VuePage page={doc} />}

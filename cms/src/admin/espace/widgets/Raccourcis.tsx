@@ -10,7 +10,7 @@ export default function Raccourcis() {
     { to: creation('api::page.page'), icone: <File />, titre: 'Ajouter une page', sousTitre: 'Composée de blocs', couleur: 'secondary' as const },
     { to: creation('api::entreprise.entreprise'), icone: <Store />, titre: 'Ajouter une entreprise', sousTitre: "À l'annuaire", couleur: 'alternative' as const },
     { to: '/mes-offres', icone: <Briefcase />, titre: 'Suivre mes offres', sousTitre: 'Importées de Gestmax', couleur: 'warning' as const },
-    { to: '/apparence', icone: <PaintBrush />, titre: "Changer l'apparence", sousTitre: 'Logo, couleurs, polices', couleur: 'danger' as const },
+    { to: '/apparence', icone: <PaintBrush />, titre: "Changer l'apparence", sousTitre: 'Template, logo, couleurs', couleur: 'danger' as const },
   ];
 
   return (
