@@ -338,6 +338,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const data: Record<string, unknown> = Object.fromEntries(CHAMPS_APPARENCE.filter((c) => c in corps).map((c) => [c, corps[c]]));
       if ('logo' in corps) data.logo = corps.logo ?? null;
 
+      // Modèle chargé par Strapi sans le champ du template (schéma modifié sans redémarrage complet, par exemple pendant un
+      // changement de branche en développement) : l'enregistrement « réussirait » sans rien écrire et le site serait
+      // reconstruit avec l'ancien template. On le refuse avec un message explicite.
+      if ('gabarit' in data && !(strapi.contentTypes as any)[UID.parametres]?.attributes?.gabarit) {
+        ctx.status = 503;
+        ctx.body = { error: { message: 'Le template ne peut pas être enregistré : le serveur n’a pas chargé la dernière version du back-office. Redémarrez Strapi puis réessayez.' } };
+        return;
+      }
+
       const existant = await strapi.documents(UID.parametres).findFirst();
       try {
         // Passe par le service documents : le contrôle des contrastes RGAA s'applique. Seul chemin d'écriture du template

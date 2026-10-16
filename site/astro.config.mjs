@@ -21,7 +21,8 @@ export default defineConfig({
   trailingSlash: 'ignore',
   // Tout le site est statique ; seule la page /apercu (brouillons du BO) est rendue à la demande par Node.
   adapter: node({ mode: 'standalone' }),
-  build: { format: 'directory' },
+  // Pages générées en parallèle (BUILD_CONCURRENCE, 1 par défaut = une page à la fois).
+  build: { format: 'directory', concurrency: Math.max(1, Number(process.env.BUILD_CONCURRENCE) || 1) },
   vite: {
     // Les polices restent des fichiers (cache navigateur) au lieu d'être inlinées en base64.
     build: { assetsInlineLimit: 0 },
