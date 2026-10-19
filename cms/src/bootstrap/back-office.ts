@@ -4,9 +4,9 @@
 //  - offres en lecture seule pour les rôles Éditeur et Auteur (elles viennent de Gestmax).
 // Les libellés ne remplacent que les valeurs par défaut : une personnalisation faite dans le BO est conservée.
 import type { Core } from '@strapi/strapi';
-import { ROLE_REDACTEUR, ROLE_RESPONSABLE, assurerDroitsType, assurerRoles, harmoniserRoles } from '../utils/roles';
-import { CHAMPS_SUIVI, UID_PARAMETRES, restreindreChampsSuivi } from '../utils/garde-parametres';
-import { initialiserCapacites } from '../utils/droits';
+import { ROLE_REDACTEUR, ROLE_RESPONSABLE, assurerDroitsType, assurerRoles, effacerJetonsInscription, harmoniserRoles } from '../utils/roles';
+import { CHAMPS_GESTMAX, CHAMPS_SUIVI, UID_PARAMETRES, restreindreChampsSuivi } from '../utils/garde-parametres';
+import { initialiserCapacites, restreindreParametresRedacteur } from '../utils/droits';
 
 type Libelle = string | [libelle: string, description: string];
 
@@ -185,6 +185,7 @@ const PAR_TYPE: Record<string, Record<string, Libelle>> = {
     hebergeurTelephone: 'Téléphone de l’hébergeur',
     contactDonneesEmail: ['E-mail pour exercer ses droits', 'Adresse du délégué à la protection des données (DPO) ou du service qui répond aux demandes RGPD. Si vide : l’e-mail de contact.'],
     prestataireNom: ['Conception et maintenance', 'Nom du prestataire qui apparaît dans les mentions légales.'],
+    conformiteAccessibilite: ['Conformité à l’accessibilité (RGAA)', 'Résultat du dernier audit, affiché dans le pied de page. « Non conforme » tant qu’aucun audit n’a été fait.'],
     emailNotificationInscriptions: ['E-mail de notification', 'Reçoit un message à chaque inscription à un événement.'],
     gestmaxUrlFront: ['Adresse du site Gestmax', 'Ex. : https://emploi.ma-collectivite.fr'],
     lienEspaceCandidat: 'Lien « Espace candidat »',
@@ -309,8 +310,8 @@ const OFFRE_MODIFIABLE = ['aLaUne', 'masquee'];
 const MASQUES: Record<string, string[]> = {
   'api::offre.offre': ['slug', 'entreprise', 'logoUrl', 'latitude', 'longitude', 'departement', 'secteur'],
   'api::inscription.inscription': ['jeton', 'rappelEnvoye'],
-  // Modifiés seulement depuis les écrans « Cookies et suivi » (voir garde-parametres) et « Apparence » (template).
-  [UID_PARAMETRES]: [...CHAMPS_SUIVI, 'gabarit', 'reglagesGabarits'],
+  // Modifiés seulement depuis les écrans « Cookies et suivi », « Site Gestmax » (voir garde-parametres) et « Apparence » (template).
+  [UID_PARAMETRES]: [...CHAMPS_SUIVI, ...CHAMPS_GESTMAX, 'gabarit', 'reglagesGabarits'],
 };
 
 // Exemples affichés dans les champs vides.
@@ -423,13 +424,34 @@ export async function configurerBackOffice(strapi: Core.Strapi) {
   await configuration.set({ value: { ...etat, versionListes: VERSION_LISTES } });
   await assurerRoles(strapi);
   await harmoniserRoles(strapi);
+  await effacerJetonsInscription(strapi);
   // Droits des éditeurs, responsables et rédacteurs sur les contenus éditoriaux, nouveaux champs compris (Strapi ne
   // les ajoute pas aux rôles existants). Exclus volontairement : les Informations du site (scripts de suivi réservés
   // aux responsables, via l'écran « Cookies et suivi ») et les offres (lecture seule, voir restreindreOffres).
   for (const uid of TYPES_EDITORIAUX) await assurerDroitsType(strapi, uid);
   await restreindreOffres(strapi);
+  await restreindreInscriptions(strapi);
   await restreindreChampsSuivi(strapi);
   await initialiserCapacites(strapi);
+  await restreindreParametresRedacteur(strapi);
+}
+
+/**
+ * Inscriptions aux événements (données personnelles) : consultées seulement par l'encart de l'événement et l'export,
+ * soumis aux capacités « Voir les inscrits » / « Écrire aux inscrits ». Aucun droit du gestionnaire de contenu pour les
+ * rôles des collectivités : sinon un rédacteur lirait, exporterait ou supprimerait les inscrits sans ces capacités.
+ */
+async function restreindreInscriptions(strapi: Core.Strapi) {
+  const roles = await strapi.db.query('admin::role').findMany({ where: { code: { $ne: 'strapi-super-admin' } } });
+  if (!roles.length) return;
+  const supprimees = await strapi.db.query('admin::permission').deleteMany({
+    where: {
+      subject: 'api::inscription.inscription',
+      action: { $startsWith: 'plugin::content-manager.explorer.' },
+      role: { id: { $in: roles.map((r: any) => r.id) } },
+    },
+  });
+  if (supprimees?.count) strapi.log.info(`[roles] ${supprimees.count} droit(s) du gestionnaire de contenu retirés sur les inscriptions`);
 }
 
 /** Les offres viennent de Gestmax : Éditeur et Auteur peuvent les consulter, pas les modifier. */

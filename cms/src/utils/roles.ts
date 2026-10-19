@@ -91,6 +91,18 @@ const NOMS_NATIFS: Record<string, { name: string; description: string }> = {
 };
 const ROLES_DE_REMPLACEMENT: Record<string, string> = { 'strapi-editor': ROLE_RESPONSABLE, 'strapi-author': ROLE_REDACTEUR };
 
+/**
+ * Jetons d'inscription restés sur des comptes déjà inscrits (comptes créés avec un mot de passe, comme ceux de
+ * démonstration) : /admin/register les accepte encore et permettrait de changer le mot de passe. Effacés au démarrage.
+ */
+export async function effacerJetonsInscription(strapi: Core.Strapi) {
+  const { count } = await strapi.db.query('admin::user').updateMany({
+    where: { password: { $notNull: true }, registrationToken: { $notNull: true } },
+    data: { registrationToken: null },
+  });
+  if (count) strapi.log.info(`[roles] ${count} jeton(s) d'inscription effacé(s) sur des comptes déjà inscrits`);
+}
+
 export async function harmoniserRoles(strapi: Core.Strapi) {
   for (const [code, valeurs] of Object.entries(NOMS_NATIFS)) {
     const role: any = await strapi.db.query('admin::role').findOne({ where: { code } });

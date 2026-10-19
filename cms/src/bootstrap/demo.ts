@@ -5,6 +5,7 @@ import { extname, join } from 'node:path';
 import type { Core } from '@strapi/strapi';
 import { slugifier } from '../utils/gestmax';
 import { MODELES } from '../utils/modeles';
+import { executerReglagesGestmax } from '../utils/garde-parametres';
 
 // --- Aides de construction du contenu « blocks » de Strapi ---
 const t = (text: string, extra: Record<string, unknown> = {}) => ({ type: 'text', text, ...extra });
@@ -71,7 +72,8 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
   };
 
   // ---------- Paramètres et menus ----------
-  await doc('api::parametres.parametres').create({
+  // Adresse et liens Gestmax : réservés à l'écran « Site Gestmax », écrits ici sous la même autorisation.
+  await executerReglagesGestmax(() => doc('api::parametres.parametres').create({
     data: {
       nomSite: 'Vallée Verte Emploi',
       baseline: "L'emploi au cœur de la Vallée Verte",
@@ -110,7 +112,7 @@ export async function initialiserDonneesDemo(strapi: Core.Strapi) {
         metaImage: img.hero,
       },
     } as any,
-  });
+  }));
 
   await doc('api::navigation.navigation').create({
     data: {

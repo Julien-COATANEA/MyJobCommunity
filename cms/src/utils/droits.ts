@@ -142,6 +142,23 @@ export async function initialiserCapacites(strapi: Core.Strapi) {
   strapi.log.info('[droits] capacités de l’espace attribuées aux rôles');
 }
 
+/**
+ * Informations du site en lecture seule pour le Rédacteur, appliqué une seule fois (ensuite, cela se règle dans
+ * « Mon équipe »). Le rôle reprend les droits de l'Éditeur, qui peut tout modifier : un rédacteur changerait sinon les
+ * adresses qui reçoivent les messages du formulaire de contact et les notifications d'inscription.
+ */
+export async function restreindreParametresRedacteur(strapi: Core.Strapi) {
+  const magasin = strapi.store({ type: 'core', name: 'mjc', key: 'parametres-redacteur-lecture' });
+  const role: any = await strapi.db.query('admin::role').findOne({ where: { code: ROLE_REDACTEUR } });
+  // Mémorisé par identifiant de rôle : un rôle Rédacteur recréé (droits recopiés de l'Éditeur) est restreint à nouveau.
+  if (!role || (await magasin.get({})) === role.id) return;
+  const { count } = await strapi.db.query('admin::permission').deleteMany({
+    where: { role: role.id, subject: UID_PARAMETRES, action: { $in: [A.creer, A.modifier, A.supprimer, A.publier] } },
+  });
+  await magasin.set({ value: role.id });
+  if (count) strapi.log.info('[droits] Informations du site passées en lecture seule pour le rôle Rédacteur');
+}
+
 /** La personne connectée a-t-elle cette capacité ? (le super administrateur les a toutes) */
 export const aCapacite = (ctx: any, cle: Capacite) => !!ctx.state?.userAbility?.can(actionCapacite(cle));
 

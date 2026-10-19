@@ -1,9 +1,10 @@
 // Espace « Site Gestmax » : le site Gestmax où les candidats postulent, habillé avec l'en-tête et le pied
 // de page du site (plugin Gestmax HeaderFooterWp qui lit la page /header-footer/ du site).
 import type { Core } from '@strapi/strapi';
+import { CHAMPS_GESTMAX, ecrireParametres } from '../../../utils/garde-parametres';
 
 const PARAMETRES = 'api::parametres.parametres';
-const CHAMPS = ['gestmaxUrlFront', 'lienEspaceCandidat', 'lienEspaceRecruteur', 'lienCandidatureSpontanee'] as const;
+const CHAMPS = CHAMPS_GESTMAX;
 const TTL_CACHE_SECONDES = 900;
 
 const sansSlashFinal = (url: string) => url.replace(/\/+$/, '');
@@ -71,8 +72,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         }
         data.gestmaxUrlFront = sansSlashFinal(data.gestmaxUrlFront);
       }
-      const p = await lireParametres();
-      ctx.body = await strapi.documents(PARAMETRES).update({ documentId: p.documentId, data } as any);
+      // Seul chemin d'écriture de ces champs (voir garde-parametres).
+      ctx.body = await ecrireParametres(strapi, 'gestmax', data);
     },
 
     /** Contrôle de bout en bout : page d'en-tête protégée, site Gestmax joignable et habillé, liens candidats. */

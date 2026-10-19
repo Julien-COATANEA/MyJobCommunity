@@ -22,7 +22,8 @@ export default function Chiffres() {
   const chiffres = [
     { valeur: c.offres, libelle: "offres d'emploi en ligne", to: '/mes-offres' },
     { valeur: c.evenementsAVenir, libelle: 'événements à venir', to: liste('api::evenement.evenement') },
-    { valeur: c.inscriptions30j, libelle: 'inscriptions (30 jours)', to: liste('api::inscription.inscription') },
+    // Pas de lien vers la collection des inscriptions : réservée au super administrateur (voir restreindreInscriptions).
+    { valeur: c.inscriptions30j, libelle: 'inscriptions (30 jours)', to: liste('api::evenement.evenement') },
     { valeur: c.articles, libelle: 'articles publiés', to: liste('api::article.article') },
     { valeur: c.entreprises, libelle: "entreprises dans l'annuaire", to: liste('api::entreprise.entreprise') },
     { valeur: c.pages, libelle: 'pages publiées', to: '/mes-pages' },

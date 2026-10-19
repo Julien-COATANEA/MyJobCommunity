@@ -1,5 +1,6 @@
 // Recherche globale du back-office (Ctrl + K) : pages, articles, événements, entreprises, offres, inscrits.
 import type { Core } from '@strapi/strapi';
+import { aCapacite } from '../../../utils/droits';
 
 const CM = '/content-manager/collection-types';
 
@@ -21,7 +22,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         db('api::evenement.evenement').findMany({ where: ressemble(['titre', 'lieu'], q), select: ['documentId', 'titre', 'dateDebut'], limit }),
         db('api::entreprise.entreprise').findMany({ where: ressemble(['nom', 'ville', 'nomEntiteGestmax'], q), select: ['documentId', 'nom', 'ville'], limit }),
         db('api::offre.offre').findMany({ where: ressemble(['titre', 'nomEntreprise', 'lieu'], q), select: ['documentId', 'titre', 'nomEntreprise', 'lieu'], limit }),
-        db('api::inscription.inscription').findMany({ where: ressemble(['nom', 'prenom', 'email', 'structure'], q), select: ['documentId', 'nom', 'prenom', 'email'], populate: { evenement: { select: ['documentId', 'titre'] } }, limit }),
+        // Données personnelles : seulement avec la capacité « Voir les inscrits ».
+        aCapacite(ctx, 'inscrits-voir')
+          ? db('api::inscription.inscription').findMany({ where: ressemble(['nom', 'prenom', 'email', 'structure'], q), select: ['documentId', 'nom', 'prenom', 'email'], populate: { evenement: { select: ['documentId', 'titre'] } }, limit })
+          : [],
       ]);
       // Brouillon et version publiée d'un même contenu : une seule ligne.
       const uniques = (liste: any[]) => liste.filter((x, i, t) => t.findIndex((y) => y.documentId === x.documentId) === i).slice(0, limit);
@@ -35,10 +39,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         { libelle: "Offres d'emploi", resultats: offres.map((o: any) => ({ titre: o.titre, detail: [o.nomEntreprise, o.lieu].filter(Boolean).join(' · '), lien: '/mes-offres' })) },
         {
           libelle: 'Inscrits aux événements',
-          resultats: inscrits.map((i: any) => ({
+          // Les inscrits se consultent dans l'encart de leur événement (pas de droit sur la collection, voir back-office).
+          resultats: inscrits.filter((i: any) => i.evenement).map((i: any) => ({
             titre: `${i.prenom} ${i.nom}`,
-            detail: `${i.email}${i.evenement ? ` · ${i.evenement.titre}` : ''}`,
-            lien: i.evenement ? `${CM}/api::evenement.evenement/${i.evenement.documentId}` : `${CM}/api::inscription.inscription/${i.documentId}`,
+            detail: `${i.email} · ${i.evenement.titre}`,
+            lien: `${CM}/api::evenement.evenement/${i.evenement.documentId}`,
           })),
         },
       ].filter((g) => g.resultats.length);

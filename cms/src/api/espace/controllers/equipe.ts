@@ -57,7 +57,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           prenom: u.firstname,
           nom: u.lastname,
           actif: !!u.isActive,
-          invitationEnAttente: !u.isActive && !!u.registrationToken,
+          invitationEnAttente: !u.password && !!u.registrationToken,
           roleCode: u.roles?.[0]?.code ?? null,
           roleNom: u.roles?.[0]?.name ?? '',
           modifiable: !codes(u).includes('strapi-super-admin') && u.id !== ctx.state.user.id,
@@ -90,8 +90,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     async renvoyer(ctx: any) {
       if (!autorise(ctx)) return;
-      const cible: any = await strapi.db.query('admin::user').findOne({ where: { id: ctx.params.id } });
-      if (!cible?.registrationToken) return ctx.badRequest("Ce compte est déjà activé.");
+      const cible: any = await strapi.db.query('admin::user').findOne({ where: { id: ctx.params.id }, populate: { roles: true } });
+      if (!cible) return ctx.notFound();
+      // Strapi laisse un jeton d'inscription sur les comptes déjà inscrits, et /admin/register ne vérifie pas isActive :
+      // renvoyer une « invitation » à un compte inscrit permettrait d'en changer le mot de passe et de s'en emparer. Le
+      // critère est le mot de passe, pas isActive : un compte désactivé dans « Mon équipe » reste un compte inscrit.
+      if (cible.password || cible.isActive || !cible.registrationToken) return ctx.badRequest('Ce compte est déjà activé.');
+      if (estSuperAdmin(cible) || cible.id === ctx.state.user.id) return ctx.forbidden();
       const jeton = (strapi.service('admin::token') as any).createToken();
       await strapi.db.query('admin::user').update({ where: { id: cible.id }, data: { registrationToken: jeton } });
       await envoyerInvitation(cible, jeton, ctx.state.user);

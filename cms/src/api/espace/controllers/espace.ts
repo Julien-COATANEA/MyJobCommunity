@@ -3,8 +3,9 @@ import { lireDerniereSynchro } from '../../../utils/synchro';
 import { offresEnLigne } from '../../../utils/garde-offres';
 import { rattacher } from '../../../utils/rattachement';
 import { PAGES_LEGALES } from '../../../utils/infos-legales';
-import { executerReglagesApparence } from '../../../utils/garde-parametres';
+import { ecrireParametres } from '../../../utils/garde-parametres';
 import { jetonEssaiGabarit } from '../../../utils/essai-gabarit';
+import { aCapacite } from '../../../utils/droits';
 
 const UID = {
   page: 'api::page.page',
@@ -210,12 +211,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           limit: 5,
           select: ['documentId', 'titre', 'slug', 'dateDebut', 'placesMax', 'inscriptionActive', 'inscriptionExterneUrl'],
         }),
-        db(UID.inscription).findMany({
-          orderBy: { createdAt: 'desc' },
-          limit: 5,
-          select: ['documentId', 'prenom', 'nom', 'createdAt'],
-          populate: { evenement: { select: ['titre'] } },
-        }),
+        // Noms des inscrits : seulement avec la capacité « Voir les inscrits » (le nombre reste visible).
+        aCapacite(ctx, 'inscrits-voir')
+          ? db(UID.inscription).findMany({
+              orderBy: { createdAt: 'desc' },
+              limit: 5,
+              select: ['documentId', 'prenom', 'nom', 'createdAt'],
+              populate: { evenement: { select: ['titre'] } },
+            })
+          : [],
         db(UID.parametres).findOne({
           select: ['nomSite', 'gestmaxUrlFront', 'couleurPrimaire', 'email', 'telephone'],
           populate: { logo: { select: ['id'] } },
@@ -347,15 +351,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         return;
       }
 
-      const existant = await strapi.documents(UID.parametres).findFirst();
       try {
         // Passe par le service documents : le contrôle des contrastes RGAA s'applique. Seul chemin d'écriture du template
         // (voir garde-parametres).
-        const resultat = await executerReglagesApparence(() =>
-          existant
-            ? strapi.documents(UID.parametres).update({ documentId: existant.documentId, data } as any)
-            : strapi.documents(UID.parametres).create({ data } as any),
-        );
+        const resultat = await ecrireParametres(strapi, 'apparence', data);
         ctx.body = resultat;
       } catch (e: any) {
         ctx.status = 400;

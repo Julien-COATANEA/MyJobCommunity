@@ -2,7 +2,7 @@
 // Un script collé ici s'exécute sur toutes les pages du site public : l'enregistrement exige la capacité « cookies ».
 import type { Core } from '@strapi/strapi';
 import { aCapacite } from '../../../utils/droits';
-import { executerReglagesSuivi } from '../../../utils/garde-parametres';
+import { ecrireParametres } from '../../../utils/garde-parametres';
 import { protocoleDangereux } from '../../../utils/garde-liens';
 
 const PARAMETRES = 'api::parametres.parametres';
@@ -67,13 +67,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         googleAnalyticsId: ga,
         scripts,
       };
-      const p = await lireParametres();
       // Seul chemin d'écriture de ces champs (voir garde-parametres).
-      await executerReglagesSuivi(() =>
-        p
-          ? strapi.documents(PARAMETRES).update({ documentId: p.documentId, data } as any)
-          : strapi.documents(PARAMETRES).create({ data } as any),
-      );
+      await ecrireParametres(strapi, 'suivi', data);
       ctx.body = data;
     },
   };

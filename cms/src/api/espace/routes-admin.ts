@@ -41,7 +41,8 @@ export const routesEspace = {
     route('GET', '/espace/pages', 'pages', 'lister'),
 
     // Site Gestmax
-    route('GET', '/espace/site-carriere', 'site-carriere', 'lire'),
+    // Lecture aussi réservée : la réponse contient le jeton de la page /header-footer/.
+    route('GET', '/espace/site-carriere', 'site-carriere', 'lire', avec(capacite('site-gestmax'))),
     route('PUT', '/espace/site-carriere', 'site-carriere', 'enregistrer', avec(capacite('site-gestmax'))),
     route('POST', '/espace/site-carriere/verifier', 'site-carriere', 'verifier', avec(capacite('site-gestmax'))),
 
