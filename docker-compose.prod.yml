@@ -1,0 +1,118 @@
+# Pile de PRODUCTION d'une instance My Job Community (un client) :
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Différences avec docker-compose.yml (développement) :
+#  - Strapi compilé dans l'image et lancé en NODE_ENV=production (constructeur de types désactivé, aucun code monté) ;
+#    il refuse de démarrer si un secret de .env est vide ou vaut encore « change_me » (voir cms/src/utils/production.ts) ;
+#  - code du site embarqué dans l'image du builder ;
+#  - jamais de données ni de comptes de démonstration (SEED_DEMO forcé à false) ;
+#  - pas de mailpit : SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SMTP_SECURE viennent de .env ;
+#  - ports publiés sur 127.0.0.1 seulement : un reverse proxy HTTPS (Caddy, Traefik, Nginx…) les expose
+#    (site → web:8080, back-office et API → strapi:1337, aperçu → apercu:4321). Mettre alors
+#    PROXY_DE_CONFIANCE=true dans .env, pour que les limiteurs des formulaires voient l'IP des visiteurs ;
+#  - fichiers téléversés dans un volume (strapi_uploads), à sauvegarder avec la base (scripts/sauvegarder.sh) ;
+#  - SITE_ENV=production dans .env pour que le site soit indexé (sinon noindex partout : utile pour une recette).
+#
+# Après une modification du code : `docker compose -f docker-compose.prod.yml up -d --build`.
+
+services:
+  mariadb:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DATABASE_NAME}
+      MARIADB_USER: ${DATABASE_USERNAME}
+      MARIADB_PASSWORD: ${DATABASE_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  strapi:
+    build:
+      context: ./cms
+      target: prod
+      args:
+        STRAPI_ADMIN_BRAND_NAME: ${STRAPI_ADMIN_BRAND_NAME:-My Job Community}
+        STRAPI_ADMIN_PRIMARY_COLOR: ${STRAPI_ADMIN_PRIMARY_COLOR:-#1a5f7a}
+        STRAPI_ADMIN_SUPPORT_EMAIL: ${STRAPI_ADMIN_SUPPORT_EMAIL:-}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      SEED_DEMO: "false"
+      DATABASE_CLIENT: mysql
+      DATABASE_HOST: mariadb
+      DATABASE_PORT: 3306
+      BUILDER_WEBHOOK_URL: http://builder:4000/build
+      SITE_INTERNAL_URL: http://web
+    ports:
+      - "127.0.0.1:1337:1337"
+    volumes:
+      - strapi_uploads:/opt/app/public/uploads
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:1337/_health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  builder:
+    build:
+      context: .
+      dockerfile: builder/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      STRAPI_URL: http://strapi:1337
+      SITE_DIR: /app
+      RELEASES_DIR: /srv/site
+      ASTRO_TELEMETRY_DISABLED: "1"
+      NODE_OPTIONS: --max-old-space-size=4096
+    volumes:
+      - site_releases:/srv/site
+    depends_on:
+      strapi:
+        condition: service_healthy
+
+  web:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    environment:
+      HEADER_FOOTER_TOKEN: ${HEADER_FOOTER_TOKEN}
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./web/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - site_releases:/srv/site:ro
+
+  # Aperçu des brouillons (bouton « Aperçu » du BO, APERCU_URL) : serveur de développement Astro, faute de mieux pour
+  # l'instant (voir docs/architecture.md). Il ne sert que les pages /apercu/… protégées par APERCU_SECRET, mais doit
+  # rester derrière le reverse proxy, idéalement réservé aux adresses de la collectivité.
+  apercu:
+    build:
+      context: .
+      dockerfile: builder/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      STRAPI_URL: http://strapi:1337
+      ASTRO_TELEMETRY_DISABLED: "1"
+    command: ["npx", "astro", "dev", "--host", "0.0.0.0"]
+    ports:
+      - "127.0.0.1:4321:4321"
+    depends_on:
+      strapi:
+        condition: service_healthy
+
+volumes:
+  mariadb_data:
+  strapi_uploads:
+  site_releases:

@@ -103,3 +103,22 @@ nouveau `.env` (secrets, URLs, Gestmax, `STRAPI_ADMIN_BRAND_NAME` / `STRAPI_ADMI
 logo du back-office dans `cms/src/admin/extensions/logo.svg`, puis template, identité et couleurs du site dans le BO
 (« Apparence »).
 Mettre `SEED_DEMO=false` en dehors des démonstrations.
+
+## Mise en production
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+`docker-compose.prod.yml` compile Strapi et son admin dans l'image (`NODE_ENV=production`, constructeur de types
+désactivé), embarque le code du site dans le builder, ne monte aucun code et n'a pas de mailpit. Les données et comptes
+de démonstration ne sont jamais créés (`SEED_DEMO` forcé à `false`).
+
+- **Secrets** : Strapi refuse de démarrer si un secret de `.env` est vide, vaut encore `change_me`, ou si
+  `BUILD_TOKEN`, `APERCU_SECRET` ou `HEADER_FOOTER_TOKEN` font moins de 16 caractères.
+- **Indexation** : `SITE_ENV=production` dans `.env` (toute autre valeur : `noindex` et `robots.txt` fermé, pour une recette).
+- **Reverse proxy HTTPS** devant les ports publiés sur `127.0.0.1` : site → `:8080`, back-office et API → `:1337`,
+  aperçu des brouillons → `:4321`. Mettre `PROXY_DE_CONFIANCE=true` (et `PROXY_NOMBRE`) dans `.env`.
+- **E-mails** : `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_SECURE` dans `.env`.
+- **Sauvegardes** : `scripts/sauvegarder.sh /chemin/des/sauvegardes` (base MariaDB + fichiers téléversés), à lancer
+  chaque nuit par cron et à copier hors du serveur. La restauration est décrite en tête du script.

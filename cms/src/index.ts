@@ -14,6 +14,7 @@ import { protegerParametres } from './utils/garde-parametres';
 import { protegerLiens } from './utils/garde-liens';
 import { declarerCapacites } from './utils/droits';
 import { INSCRIPTION, promouvoirListeAttente } from './utils/inscriptions';
+import { verifierConfigurationProduction } from './utils/production';
 
 // Lecture publique (rôle « Public ») : le site statique lit l'API sans jeton.
 const LECTURE_PUBLIQUE = [
@@ -41,6 +42,8 @@ const WEBHOOK_REBUILD = 'Régénération du site';
 
 export default {
   async register({ strapi }: { strapi: Core.Strapi }) {
+    // Secrets absents ou restés à « change_me » : Strapi ne démarre pas en production.
+    verifierConfigurationProduction();
     // Capacités de l'espace (droits réglés dans « Mon équipe ») : déclarées avant que l'admin nettoie les permissions.
     await declarerCapacites(strapi);
     strapi.server.routes(routesEspace as any);
@@ -133,15 +136,16 @@ async function accorderLecturePublique(strapi: Core.Strapi) {
   }
 }
 
-/** Crée le webhook Strapi → builder qui régénère le site statique après chaque modification. */
+/**
+ * Crée le webhook Strapi → builder qui régénère le site statique après chaque modification. S'il existe déjà, son
+ * adresse et son jeton sont remis à jour depuis .env : sinon, après un changement de BUILD_TOKEN, chaque appel serait
+ * refusé par le builder et le site ne serait plus régénéré, sans autre signe qu'une erreur dans les logs.
+ */
 async function assurerWebhookRebuild(strapi: Core.Strapi) {
   const url = process.env.BUILDER_WEBHOOK_URL;
   if (!url) return;
   const store: any = strapi.get('webhookStore');
-  const existants = await store.findWebhooks();
-  if (existants.some((w: any) => w.name === WEBHOOK_REBUILD)) return;
-
-  const webhook = await store.createWebhook({
+  const attendu = {
     name: WEBHOOK_REBUILD,
     url,
     headers: { Authorization: `Bearer ${process.env.BUILD_TOKEN ?? ''}` },
@@ -150,7 +154,17 @@ async function assurerWebhookRebuild(strapi: Core.Strapi) {
       'media.create', 'media.update', 'media.delete',
     ],
     isEnabled: true,
-  });
-  strapi.get('webhookRunner').add(webhook);
-  strapi.log.info(`[webhook] « ${WEBHOOK_REBUILD} » créé vers ${url}`);
+  };
+  const existant = (await store.findWebhooks()).find((w: any) => w.name === WEBHOOK_REBUILD);
+  if (!existant) {
+    const webhook = await store.createWebhook(attendu);
+    strapi.get('webhookRunner').add(webhook);
+    strapi.log.info(`[webhook] « ${WEBHOOK_REBUILD} » créé vers ${url}`);
+    return;
+  }
+  if (existant.url === url && existant.headers?.Authorization === attendu.headers.Authorization) return;
+  // Les événements et l'activation réglés à la main sont gardés : seuls l'adresse et le jeton suivent .env.
+  const webhook = await store.updateWebhook(existant.id, { ...existant, url, headers: { ...existant.headers, ...attendu.headers } });
+  strapi.get('webhookRunner').update(webhook);
+  strapi.log.info(`[webhook] « ${WEBHOOK_REBUILD} » : adresse ou jeton mis à jour depuis .env`);
 }

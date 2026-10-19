@@ -17,3 +17,6 @@ cms/types/generated/
 # Astro
 site/dist/
 site/.astro/
+
+# Sauvegardes locales (scripts/sauvegarder.sh)
+sauvegardes/

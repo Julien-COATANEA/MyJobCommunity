@@ -1,0 +1,11 @@
+# Contexte de l'image du builder (racine du dépôt) : seuls site/ et builder/ sont utiles.
+# .env n'entre jamais dans une image (secrets).
+.env
+.git
+.claude
+cms
+docs
+web
+**/node_modules
+site/dist
+site/.astro

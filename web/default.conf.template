@@ -57,9 +57,12 @@ server {
         try_files $uri =404;
     }
 
-    # En-tête/pied de page lus par le site Gestmax (plugin HeaderFooterWp) : uniquement avec le jeton.
+    # En-tête/pied de page lus par le site Gestmax (plugin HeaderFooterWp) : uniquement avec le jeton. Jeton non
+    # configuré : page refusée (sinon une requête sans jeton égalerait le jeton vide).
     location ^~ /header-footer/ {
-        if ($arg_token != "${HEADER_FOOTER_TOKEN}") { return 404; }
+        set $jeton_attendu "${HEADER_FOOTER_TOKEN}";
+        if ($jeton_attendu = "") { return 404; }
+        if ($arg_token != $jeton_attendu) { return 404; }
         add_header Cache-Control "no-cache" always;
         add_header Strict-Transport-Security "max-age=31536000" always;
         add_header X-Content-Type-Options "nosniff" always;

@@ -1,4 +1,5 @@
 # Pile de développement locale d'UNE instance My Job Community (un client).
+# Production : docker-compose.prod.yml (images compilées, aucun code monté, pas de données de démo).
 #
 #   mariadb  → base de Strapi
 #   strapi   → back-office + API         http://localhost:1337/admin
@@ -18,8 +19,9 @@ services:
       MARIADB_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD}
     volumes:
       - mariadb_data:/var/lib/mysql
+    # Accessible depuis ce poste seulement (outil de base de données), jamais depuis le réseau.
     ports:
-      - "3307:3306"
+      - "127.0.0.1:3307:3306"
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
@@ -27,7 +29,9 @@ services:
       retries: 10
 
   strapi:
-    build: ./cms
+    build:
+      context: ./cms
+      target: dev
     restart: unless-stopped
     env_file: .env
     environment:

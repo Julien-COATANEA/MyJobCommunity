@@ -4,6 +4,7 @@
 // Chaque build part dans un nouveau dossier releases/<horodatage>, puis le lien « current » (servi par Nginx)
 // est basculé atomiquement : aucune coupure, et retour arrière possible.
 import { spawn } from 'node:child_process';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, symlinkSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
@@ -12,6 +13,8 @@ const PORT = 4000;
 const SITE_DIR = process.env.SITE_DIR ?? '/app';
 const RELEASES_DIR = process.env.RELEASES_DIR ?? '/srv/site';
 const TOKEN = process.env.BUILD_TOKEN ?? '';
+// Corps d'un webhook Strapi : quelques Ko. Au-delà, la requête est refusée (pas de lecture sans limite en mémoire).
+const CORPS_MAX_OCTETS = 1024 ** 2;
 const DEBOUNCE_MS = Number(process.env.BUILD_DEBOUNCE_MS ?? 8000);
 const STRAPI_URL = process.env.STRAPI_URL ?? 'http://strapi:1337';
 // Versions gardées pour un retour arrière : 3, mais seulement 2 quand une version dépasse GROSSE_VERSION_OCTETS
@@ -246,13 +249,33 @@ async function nettoyer() {
   log(`ménage : version publiée de ${Math.round(taille / 1024 ** 2)} Mo, ${gardees} version(s) conservée(s)`);
 }
 
+/** Jeton Bearer attendu ? Sans BUILD_TOKEN, tout appel est refusé. Comparaison en temps constant (empreintes). */
+function jetonValide(entete) {
+  if (!TOKEN) return false;
+  const empreinte = (texte) => createHash('sha256').update(texte).digest();
+  return timingSafeEqual(empreinte(entete ?? ''), empreinte(`Bearer ${TOKEN}`));
+}
+
+/**
+ * Événement du webhook. Au-delà de CORPS_MAX_OCTETS, la suite n'est plus gardée en mémoire et l'événement est traité
+ * comme inconnu ({}) : un build est lancé (une grosse page publiée doit quand même arriver sur le site).
+ */
 function lireCorps(requete) {
   return new Promise((resolve) => {
     let corps = '';
-    requete.on('data', (morceau) => (corps += morceau));
+    let tropGros = false;
+    requete.on('data', (morceau) => {
+      if (tropGros) return;
+      corps += morceau;
+      if (corps.length > CORPS_MAX_OCTETS) {
+        tropGros = true;
+        corps = '';
+      }
+    });
     requete.on('end', () => {
       try {
-        resolve(JSON.parse(corps || '{}'));
+        const evenement = tropGros ? {} : JSON.parse(corps || '{}');
+        resolve(evenement && typeof evenement === 'object' ? evenement : {});
       } catch {
         resolve({});
       }
@@ -276,7 +299,7 @@ createServer(async (requete, reponse) => {
   if (requete.method === 'GET' && requete.url === '/status') return repondre(200, etat);
 
   if (requete.method === 'POST' && requete.url === '/build') {
-    if (TOKEN && requete.headers.authorization !== `Bearer ${TOKEN}`) return repondre(401, { erreur: 'jeton invalide' });
+    if (!jetonValide(requete.headers.authorization)) return repondre(401, { erreur: 'jeton invalide' });
     const evenement = await lireCorps(requete);
     if (!estPertinent(evenement)) return repondre(202, { planifie: false });
     planifier(`${evenement.event ?? 'manuel'} ${evenement.model ?? ''}`.trim());
@@ -284,17 +307,23 @@ createServer(async (requete, reponse) => {
   }
 
   repondre(404, { erreur: 'introuvable' });
-}).listen(PORT, () => log(`builder à l'écoute sur :${PORT}`));
+}).listen(PORT, () => {
+  log(`builder à l'écoute sur :${PORT}`);
+  if (!TOKEN) log('ATTENTION : BUILD_TOKEN vide, les demandes de build de Strapi seront refusées');
+});
 
 // Build initial dès que Strapi répond, puis un build quotidien (événements passés, offres expirées).
 mkdirSync(join(RELEASES_DIR, 'releases'), { recursive: true });
 attendreStrapi(Infinity).then(() => planifier('démarrage'));
 
+// Heure de Paris (le conteneur est en UTC) : 3 h toute l'année, heure d'été comprise.
+const HEURE_PARIS = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', hourCycle: 'h23' });
+const JOUR_PARIS = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Paris' });
 let dernierJour = null;
 setInterval(() => {
   const maintenant = new Date();
-  const jour = maintenant.toISOString().slice(0, 10);
-  if (maintenant.getHours() === 3 && dernierJour !== jour) {
+  const jour = JOUR_PARIS.format(maintenant);
+  if (Number(HEURE_PARIS.format(maintenant)) === 3 && dernierJour !== jour) {
     dernierJour = jour;
     planifier('build quotidien');
   }
