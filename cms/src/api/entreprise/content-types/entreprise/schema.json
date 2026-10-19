@@ -80,7 +80,8 @@
       "type": "relation",
       "relation": "oneToMany",
       "target": "api::offre.offre",
-      "mappedBy": "entreprise"
+      "mappedBy": "entreprise",
+      "private": true
     },
     "seo": {
       "type": "component",

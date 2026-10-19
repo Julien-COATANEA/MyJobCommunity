@@ -12,16 +12,24 @@ export interface DerniereSynchro {
   erreur?: string;
 }
 
+/**
+ * 0 : réussie ; 1 : partielle (synchronisation faite, quelques offres non importées : elle a un bilan) ; 2 : échec.
+ * L'alerte part quand la gravité augmente : une offre impossible à importer, signalée à chaque passage, ne doit pas
+ * masquer une vraie panne de Gestmax qui surviendrait ensuite.
+ */
+const gravite = (s: Pick<DerniereSynchro, 'statut' | 'bilan'> | null) => (s?.statut !== 'erreur' ? 0 : s.bilan ? 1 : 2);
+
 export async function enregistrerSynchro(strapi: Core.Strapi, valeur: Omit<DerniereSynchro, 'date'>) {
   const precedente = (await magasin(strapi).get({})) as DerniereSynchro | null;
   await magasin(strapi).set({ value: { ...valeur, date: new Date().toISOString() } });
 
-  if (valeur.statut === 'erreur' && precedente?.statut !== 'erreur') {
+  if (gravite(valeur) > gravite(precedente)) {
+    const partielle = gravite(valeur) === 1;
     await alerterCollectivite(
       strapi,
-      'La synchronisation des offres Gestmax a échoué',
+      partielle ? 'Des offres Gestmax n’ont pas pu être importées' : 'La synchronisation des offres Gestmax a échoué',
       [
-        'Les offres n’ont pas pu être mises à jour depuis Gestmax.',
+        partielle ? 'La synchronisation a eu lieu, mais certaines offres n’ont pas pu être importées.' : 'Les offres n’ont pas pu être mises à jour depuis Gestmax.',
         '',
         `Détail : ${valeur.erreur ?? 'erreur inconnue'}`,
         '',
@@ -36,6 +44,11 @@ export async function enregistrerSynchro(strapi: Core.Strapi, valeur: Omit<Derni
 export async function lireDerniereSynchro(strapi: Core.Strapi): Promise<DerniereSynchro> {
   return ((await magasin(strapi).get({})) as DerniereSynchro | null) ?? { date: null, statut: null };
 }
+
+// Offres absentes de la dernière lecture incomplète de Gestmax, pas encore supprimées (identifiants Gestmax).
+const magasinAbsentes = (strapi: Core.Strapi) => strapi.store({ type: 'core', name: 'mjc', key: 'offres-absentes' });
+export const lireAbsentes = async (strapi: Core.Strapi) => new Set(((await magasinAbsentes(strapi).get({})) as string[] | null) ?? []);
+export const memoriserAbsentes = (strapi: Core.Strapi, sourceIds: string[]) => magasinAbsentes(strapi).set({ value: sourceIds });
 
 /** Identifie la source des offres (instance, section, mode démo) : un changement dans .env impose de resynchroniser. */
 const cleSource = (strapi: Core.Strapi) => {

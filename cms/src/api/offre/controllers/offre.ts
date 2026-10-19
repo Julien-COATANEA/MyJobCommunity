@@ -1,22 +1,24 @@
 import { factories } from '@strapi/strapi';
-import { OFFRES_VISIBLES } from '../../../utils/garde-offres';
+import { offresEnLigne } from '../../../utils/garde-offres';
 
-/** Ajoute « offre non masquée » aux filtres de la requête publique. */
-const sansOffresMasquees = (ctx: any) => {
+/** Ajoute « offre non masquée et pas expirée » aux filtres de la requête publique. */
+const seulementEnLigne = (ctx: any) => {
   const filtres = ctx.query?.filters;
-  ctx.query = { ...ctx.query, filters: filtres ? { $and: [filtres, OFFRES_VISIBLES] } : OFFRES_VISIBLES };
+  ctx.query = { ...ctx.query, filters: filtres ? { $and: [filtres, offresEnLigne()] } : offresEnLigne() };
 };
 
 export default factories.createCoreController('api::offre.offre', ({ strapi }) => ({
-  // Les offres masquées par la collectivité ne sont plus servies par l'API publique (donc ni listées ni cherchables).
+  // Les offres masquées par la collectivité ou expirées ne sont pas servies par l'API publique (ni listées ni cherchables).
   async find(ctx) {
-    sansOffresMasquees(ctx);
+    seulementEnLigne(ctx);
     return super.find(ctx);
   },
 
+  // Contrôle en base, pas sur la réponse : avec `?fields[0]=titre`, « masquee » n'y figurerait pas.
   async findOne(ctx) {
-    const resultat = await super.findOne(ctx);
-    return resultat?.data?.masquee ? ctx.notFound() : resultat;
+    const enLigne = await strapi.db.query('api::offre.offre').count({ where: { $and: [{ documentId: ctx.params.id }, offresEnLigne()] } });
+    if (!enLigne) return ctx.notFound();
+    return super.findOne(ctx);
   },
 
   /** POST /api/offres/synchroniser (jeton d'API avec la permission « synchroniser »). */

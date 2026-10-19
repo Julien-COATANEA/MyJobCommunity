@@ -51,3 +51,22 @@ export function protegerOffres(strapi: Core.Strapi) {
 
 /** Filtre « offre visible sur le site » (tolère les anciennes lignes sans valeur). */
 export const OFFRES_VISIBLES = { $or: [{ masquee: { $null: true } }, { masquee: false }] };
+
+/**
+ * Seuil d'expiration : début du jour courant (UTC). Une date sans heure venue de Gestmax (« 31/10/2026 ») est lue à
+ * 00:00 UTC, l'offre reste ainsi en ligne toute cette dernière journée. Seuil fixe dans la journée : un build qui lit
+ * les offres page par page ne voit pas le filtre changer entre deux pages (une offre expirant en cours de lecture
+ * décalerait les pages suivantes et en ferait sauter une autre).
+ */
+const debutDuJour = () => new Date(new Date().toISOString().slice(0, 10)).toISOString();
+
+/**
+ * Offre en ligne : visible ET pas expirée. Normalement, une offre expirée quitte Gestmax et la synchronisation la
+ * supprime ; ce filtre la retire aussi du site quand Gestmax est injoignable plusieurs jours (build quotidien).
+ */
+export const offresEnLigne = () => ({
+  $and: [
+    OFFRES_VISIBLES,
+    { $or: [{ dateFinPublication: { $null: true } }, { dateFinPublication: { $gte: debutDuJour() } }] },
+  ],
+});

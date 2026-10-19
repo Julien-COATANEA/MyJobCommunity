@@ -146,9 +146,14 @@ function description(v: OffreGestmax, conf: ConfigGestmax): string | null {
 // Pages lues en même temps (l'API Gestmax répond en 1 à 2 s pour 500 offres).
 const PAGES_SIMULTANEES = 4;
 
-export async function recupererOffresGestmax(conf: ConfigGestmax, dossierDonnees: string): Promise<OffreGestmax[]> {
+/**
+ * Offres en ligne. `complete` : la lecture a atteint le total annoncé par Gestmax (ou la limite volontaire). Sinon, une
+ * offre peut manquer sans avoir quitté Gestmax (tri instable pendant la lecture, total inconnu) : la synchronisation
+ * attend alors de ne plus la voir deux fois de suite avant de la supprimer.
+ */
+export async function recupererOffresGestmax(conf: ConfigGestmax, dossierDonnees: string): Promise<{ offres: OffreGestmax[]; complete: boolean }> {
   if (conf.mock) {
-    return JSON.parse(readFileSync(join(dossierDonnees, 'gestmax-mock.json'), 'utf8')).data;
+    return { offres: JSON.parse(readFileSync(join(dossierDonnees, 'gestmax-mock.json'), 'utf8')).data, complete: true };
   }
 
   const auth = Buffer.from(`${conf.user}:${conf.password}`).toString('base64');
@@ -221,8 +226,10 @@ export async function recupererOffresGestmax(conf: ConfigGestmax, dossierDonnees
   }
   // Limite volontaire : on garde les plus récentes.
   if (offres.size > limite) for (const id of [...offres.keys()].slice(limite)) offres.delete(id);
-  // Total annoncé non atteint (doublons du tri, offres filtrées par frontOffice…) : simple signalement, le garde-fou
-  // de la synchronisation (forte baisse du nombre d'offres) protège le site.
-  if (!Number.isFinite(limite) && total !== null && offres.size < total) console.warn(`[gestmax] ${offres.size} offres lues sur ${total} annoncées`);
-  return [...offres.values()];
+  // Total annoncé non atteint (offre retirée pendant la lecture, qui décale les pages ; offres filtrées par frontOffice…) :
+  // des offres encore en ligne peuvent manquer, la synchronisation diffère leur suppression.
+  // Sans total annoncé : complète si tout tient sur une page (aucune page suivante ne peut s'être décalée).
+  const complete = total !== null ? offres.size >= Math.min(total, limite) : lots.length === 1;
+  if (total !== null && !complete) console.warn(`[gestmax] ${offres.size} offres lues sur ${total} annoncées`);
+  return { offres: [...offres.values()], complete };
 }

@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { factories, type Core } from '@strapi/strapi';
 import { executerSynchro } from '../../../utils/garde-offres';
 import { convertirOffre, estCandidatureSpontanee, recupererOffresGestmax, type ConfigGestmax } from '../../../utils/gestmax';
-import { enregistrerSynchro, memoriserSource } from '../../../utils/synchro';
+import { enregistrerSynchro, lireAbsentes, memoriserAbsentes, memoriserSource } from '../../../utils/synchro';
 import { creerGeocodeur } from '../../../utils/geocodage';
 import { indexEntreprises, normaliserNom } from '../../../utils/rattachement';
 
@@ -63,9 +63,9 @@ async function synchroniser(strapi: Core.Strapi, forcer: boolean) {
     }
 
     const debut = Date.now();
-    let brutes;
+    let brutes, complete;
     try {
-      brutes = await recupererOffresGestmax(conf, join(strapi.dirs.app.root, 'data'));
+      ({ offres: brutes, complete } = await recupererOffresGestmax(conf, join(strapi.dirs.app.root, 'data')));
     } catch (e) {
       await enregistrerSynchro(strapi, { statut: 'erreur', erreur: (e as Error).message });
       throw e;
@@ -98,7 +98,7 @@ async function synchroniser(strapi: Core.Strapi, forcer: boolean) {
     if (villes) strapi.log.info(`[gestmax] ${villes} ville(s) géocodée(s)`);
     const parSourceId = new Map(existantes.map((o: any) => [o.sourceId, o]));
 
-    const bilan = { statut: 'ok', total: offres.length, creees: 0, modifiees: 0, supprimees: 0, dureeMs: 0 };
+    const bilan = { statut: 'ok', total: offres.length, creees: 0, modifiees: 0, supprimees: 0, reportees: 0, dureeMs: 0 };
     const vues = new Set<string>();
     const echecs: string[] = [];
 
@@ -131,12 +131,23 @@ async function synchroniser(strapi: Core.Strapi, forcer: boolean) {
       if (++traitees % 5000 === 0) strapi.log.info(`[gestmax] ${traitees}/${offres.length} offres traitées`);
     });
 
-    // Offres disparues de Gestmax : suppression par lots (une requête par lot, pas une par offre).
-    const disparues = (existantes as any[]).filter((e) => !vues.has(e.sourceId)).map((e) => e.documentId);
+    // Offres disparues de Gestmax. Lecture incomplète (total annoncé non atteint) : une offre absente peut être encore en
+    // ligne, sautée parce que les pages se sont décalées pendant la lecture. La supprimer ferait perdre « à la une » et
+    // « masquée » (elle reviendrait publique au passage suivant) : on attend qu'elle manque deux fois de suite.
+    const absentes = (existantes as any[]).filter((e) => !vues.has(e.sourceId));
+    // « Forcer » ne lève que le garde-fou de forte baisse : une offre sautée par une lecture incomplète reste protégée.
+    const dejaAbsentes = complete ? null : await lireAbsentes(strapi);
+    const aSupprimer = dejaAbsentes ? absentes.filter((e) => dejaAbsentes.has(e.sourceId)) : absentes;
+    const differees = dejaAbsentes ? absentes.filter((e) => !dejaAbsentes.has(e.sourceId)).map((e) => e.sourceId) : [];
+    if (differees.length) strapi.log.warn(`[gestmax] lecture incomplète : suppression de ${differees.length} offre(s) absente(s) reportée au prochain passage`);
+    // Suppression par lots (une requête par lot, pas une par offre).
+    const disparues = aSupprimer.map((e) => e.documentId);
     for (let i = 0; i < disparues.length; i += 500) {
       await strapi.db.query(UID).deleteMany({ where: { documentId: { $in: disparues.slice(i, i + 500) } } });
     }
     bilan.supprimees = disparues.length;
+    bilan.reportees = differees.length;
+    await memoriserAbsentes(strapi, differees);
 
     await geocodeur.enregistrer();
     bilan.dureeMs = Date.now() - debut;

@@ -254,7 +254,9 @@ const types = {
       miseEnAvant: { type: 'boolean', default: false },
       // Nom de l'entité dans Gestmax (customer_company) pour rattacher les offres synchronisées
       nomEntiteGestmax: str(),
-      offres: { type: 'relation', relation: 'oneToMany', target: 'api::offre.offre', mappedBy: 'entreprise' },
+      // Privée : jamais servie ni peuplée par l'API publique (offres masquées, et des milliers d'offres par entreprise
+      // chargées en une requête anonyme). Le site lit les offres d'une entreprise par /api/offres.
+      offres: { type: 'relation', relation: 'oneToMany', target: 'api::offre.offre', mappedBy: 'entreprise', private: true },
       seo,
     },
   },

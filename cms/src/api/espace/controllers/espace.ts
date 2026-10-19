@@ -1,6 +1,6 @@
 import type { Core } from '@strapi/strapi';
 import { lireDerniereSynchro } from '../../../utils/synchro';
-import { OFFRES_VISIBLES } from '../../../utils/garde-offres';
+import { offresEnLigne } from '../../../utils/garde-offres';
 import { rattacher } from '../../../utils/rattachement';
 import { PAGES_LEGALES } from '../../../utils/infos-legales';
 import { executerReglagesApparence } from '../../../utils/garde-parametres';
@@ -201,7 +201,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         db(UID.page).count({ where: publies }),
         db(UID.article).count({ where: publies }),
         db(UID.entreprise).count({ where: pub(UID.entreprise) }),
-        db(UID.offre).count({ where: OFFRES_VISIBLES }),
+        db(UID.offre).count({ where: offresEnLigne() }),
         db(UID.evenement).count({ where: { ...pub(UID.evenement), dateDebut: { $gte: maintenant } } }),
         db(UID.inscription).count({ where: { createdAt: { $gte: il30Jours }, statut: 'confirmee' } }),
         db(UID.evenement).findMany({
