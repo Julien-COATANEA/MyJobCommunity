@@ -70,7 +70,6 @@
     content: ''; position: absolute; inset: 0;
     background: linear-gradient(180deg, color-mix(in srgb, var(--c-fonce) 72%, transparent), color-mix(in srgb, var(--c-fonce) 84%, transparent));
   }
-  & .hero__vignette { z-index: 1; top: 1.25rem; right: 1.25rem; bottom: auto; left: auto; }
   & .hero__titre { color: #fff; text-shadow: 0 2px 24px rgb(0 0 0 / 0.25); font-size: clamp(2.3rem, 1.4rem + 3.4vw, 3.9rem); }
   & .hero__texte { max-width: 38rem; margin-inline: auto; color: #fff; }
   & .hero__pastille { background: rgb(255 255 255 / 0.14); border-color: rgb(255 255 255 / 0.35); box-shadow: none; color: #fff; backdrop-filter: blur(6px); }
@@ -78,9 +77,6 @@
   & .hero__compteur, & .hero__compteur strong { color: #fff; }
   & .hero :focus-visible { outline-color: #fff; }
   & .carte-recherche-wrap { margin-top: -3.5rem; }
-}
-@media (max-width: 760px) {
-  :root[data-mjc-accueil='banniere'] .hero__vignette { display: none; }
 }
 
 /* ---------- Accueil : texte centré, photo en grand en dessous ---------- */

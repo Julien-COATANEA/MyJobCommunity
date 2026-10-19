@@ -55,14 +55,6 @@ const tailles = disposition === 'banniere' ? '100vw' : disposition === 'empile' 
             prioritaire
             decorative
           />
-          {
-            compteurs.recrutent > 0 && (
-              <figcaption class="hero__vignette">
-                <span class="hero__vignette-icone" aria-hidden="true"><Icone nom="entreprise" taille={20} /></span>
-                <span><strong>{nombre(compteurs.recrutent)}</strong> entreprise{s(compteurs.recrutent)} qui recrute{compteurs.recrutent > 1 ? 'nt' : ''}</span>
-              </figcaption>
-            )
-          }
         </figure>
       )
     }

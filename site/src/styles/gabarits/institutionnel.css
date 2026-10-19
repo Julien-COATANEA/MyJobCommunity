@@ -74,12 +74,12 @@
 
   /* Étiquettes et pastilles rectangulaires. */
   & :is(.tag, .offre__secteur, .etiquette, .badge-contrat, .badge-nouveau, .badge-une, .pastille-filtre, .pastille-choix span,
-      .en-tete-page__pastilles li, .a-la-une__pastille, .carte-photo__etiquette, .hero__pastille, .hero__vignette) { border-radius: min(var(--rayon), 6px); }
+      .en-tete-page__pastilles li, .a-la-une__pastille, .carte-photo__etiquette, .hero__pastille) { border-radius: min(var(--rayon), 6px); }
 
   /* Cartes, encadrés et champs : angles du thème, liseré de couleur en haut des cartes. */
   & :is(.carte, .tuile, .logos__item, .faq__item, .temoignage, .aside-carte, .a-la-une, .espace, .carte-photo, .carte-recherche,
       .filtres-offres, .filtres-liste, .section .recherche, .appel-action, .evenement__infos, .aucun-resultat, .cookies) { border-radius: var(--rayon); }
-  & :is(.tuile__icone, .espace__icone, .atout__icone, .hero__vignette-icone, .partage__liens a, .partage__liens button) { border-radius: var(--rayon); }
+  & :is(.tuile__icone, .espace__icone, .atout__icone, .partage__liens a, .partage__liens button) { border-radius: var(--rayon); }
   & .faq__question::after { border-radius: var(--rayon); }
   & :is(.texte-image__image img, .article__image img, .evenement__image, .galerie__item figure) { border-radius: var(--rayon); }
   & :is(.carte, .tuile) { border-top: 3px solid var(--c-primaire); }
