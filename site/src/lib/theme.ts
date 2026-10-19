@@ -40,9 +40,23 @@ export function contraste(a: string, b: string): number {
   return (l1 + 0.05) / (l2 + 0.05);
 }
 
-/** Couleur de texte (blanc ou texte du thème) la plus lisible sur un fond donné. */
+/**
+ * Couleur de texte lisible sur un fond donné : blanc ou texte du thème (le plus contrasté), sinon noir ou blanc purs
+ * quand aucun des deux n'atteint 4,5:1 (fond de luminance moyenne : bleu #3a8ee8, par exemple). L'un des deux atteint
+ * toujours 4,5:1, quel que soit le fond.
+ */
 export function texteSur(fond: string, texteSombre: string): string {
-  return contraste('#ffffff', fond) >= contraste(texteSombre, fond) ? '#ffffff' : texteSombre;
+  const prefere = contraste('#ffffff', fond) >= contraste(texteSombre, fond) ? '#ffffff' : texteSombre;
+  if (contraste(prefere, fond) >= 4.5) return prefere;
+  return contraste('#000000', fond) >= contraste('#ffffff', fond) ? '#000000' : '#ffffff';
+}
+
+/**
+ * Fond d'un bouton au survol : assombri sous un texte clair, éclairci sous un texte sombre. Le contraste ne peut
+ * qu'augmenter (un assombrissement fixe le faisait tomber sous 4,5:1 avec un texte sombre).
+ */
+export function fondSurvol(fond: string, texte: string): string {
+  return luminance(texte) > luminance(fond) ? melanger(fond, '#000000', 0.88) : melanger(fond, '#ffffff', 0.88);
 }
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -60,9 +74,9 @@ export function melanger(a: string, b: string, p: number): string {
  * si `couleur` elle-même n'y suffit pas, elle est poussée vers le noir (ou le blanc sur un fond sombre).
  * Sans réglage possible (couleurs invalides), null : la feuille de style garde sa valeur de repli.
  */
-function versContraste(couleur: string, cible: string, depart: number, fonds: string[]): string | null {
+function versContraste(couleur: string, cible: string, depart: number, fonds: string[], ratio = 4.5): string | null {
   if (![couleur, cible, ...fonds].every((c) => HEX.test(c))) return null;
-  const lisible = (c: string) => fonds.every((f) => contraste(c, f) >= 4.5);
+  const lisible = (c: string) => fonds.every((f) => contraste(c, f) >= ratio);
   for (let p = depart; p < 1; p += 0.02) {
     const c = melanger(couleur, cible, p);
     if (lisible(c)) return c;
@@ -76,25 +90,55 @@ function versContraste(couleur: string, cible: string, depart: number, fonds: st
 }
 
 /**
- * Nuances de texte dont le contraste est garanti (RGAA 3.2), quelles que soient les couleurs du BO :
- *  - texte doux : texte éclairci vers le fond, lisible sur le fond et les fonds pâles (primaire, secondaire) ;
- *  - secondaire « texte » : secondaire assombri, lisible sur son fond pâle (bouton espace recruteur, étiquettes).
- * Les fonds pâles reprennent les mélanges de jetons.css.
+ * Fonds clairs du thème (mêmes mélanges que jetons.css). Chaque fond vaut null si une couleur dont il dépend est
+ * invalide : les autres nuances restent calculées (une couleur d'accent mal saisie ne retire pas le texte doux).
+ */
+export function fondsTheme(t: TokensTheme) {
+  const fond = HEX.test(t.couleurFond) ? t.couleurFond : null;
+  const pale = (couleur: string, p: number) => (fond && HEX.test(couleur) ? melanger(couleur, fond, p) : null);
+  return {
+    fond,
+    primairePale: pale(t.couleurPrimaire, 0.11),
+    secondairePale: pale(t.couleurSecondaire, 0.09),
+    accentPale: pale(t.couleurAccent, 0.2),
+    // Fond des champs et de certains gabarits (Facettes : tout le contenu).
+    surface: fond && HEX.test(t.couleurTexte) && HEX.test(t.couleurPrimaire)
+      ? melanger(t.couleurPrimaire, melanger(t.couleurTexte, fond, 0.02), 0.04)
+      : null,
+  };
+}
+
+/**
+ * Nuances dont le contraste est garanti (RGAA 3.2 et 3.3), quelles que soient les couleurs du BO :
+ *  - texte doux : texte éclairci vers le fond, lisible sur le fond, la surface et les fonds pâles ;
+ *  - secondaire « texte » : secondaire assombri, lisible sur son fond pâle (bouton espace recruteur, étiquettes) ;
+ *  - accent « texte » : accent assombri juste ce qu'il faut (surtitres, liens du texte riche, badge « Nouveau ») ;
+ *  - liens : primaire, assombri s'il le faut pour rester lisible sur les fonds teintés des gabarits ;
+ *  - bordure des champs : 3:1 au moins sur le fond et sur la surface (composant d'interface, RGAA 3.3) ;
+ *  - texte sur l'accent et fond de survol des boutons d'accent.
+ * Une nuance dont une couleur est invalide est omise : la feuille de style garde alors sa valeur de repli.
  */
 export function nuancesTexte(t: TokensTheme): Record<string, string> {
-  const fond = t.couleurFond;
-  const fonds = [fond];
-  if (HEX.test(fond) && HEX.test(t.couleurPrimaire)) fonds.push(melanger(t.couleurPrimaire, fond, 0.11));
-  if (HEX.test(fond) && HEX.test(t.couleurSecondaire)) fonds.push(melanger(t.couleurSecondaire, fond, 0.09));
-  // Texte doux : au moins 78 % de texte, plus si nécessaire (jusqu'au texte lui-même).
-  const doux = versContraste(t.couleurTexte, fond, 0.78, fonds);
-  // Secondaire : de la couleur pure (p = 0 côté noir) vers le noir.
-  const secondaire = HEX.test(t.couleurSecondaire)
-    ? versContraste('#000000', t.couleurSecondaire, 0, fonds.length > 2 ? [fonds[2]] : fonds)
-    : null;
+  // Texte sur l'accent : ne dépend que de l'accent et du texte, calculé même si le fond est invalide.
+  const surAccent = HEX.test(t.couleurAccent) && HEX.test(t.couleurTexte) ? texteSur(t.couleurAccent, t.couleurTexte) : null;
+  const variablesAccent = surAccent ? { '--c-sur-accent': surAccent, '--c-accent-survol-theme': fondSurvol(t.couleurAccent, surAccent) } : {};
+  const f = fondsTheme(t);
+  if (!f.fond) return variablesAccent;
+  const sur = (...fonds: (string | null)[]) => fonds.filter((x): x is string => !!x);
+  const doux = versContraste(t.couleurTexte, f.fond, 0.78, sur(f.fond, f.primairePale, f.secondairePale, f.surface));
+  // De la couleur pure (p = 0 côté noir) vers le noir.
+  const secondaire = f.secondairePale ? versContraste('#000000', t.couleurSecondaire, 0, [f.secondairePale]) : null;
+  const accent = versContraste('#000000', t.couleurAccent, 0, sur(f.fond, f.accentPale, f.primairePale, f.surface));
+  const lien = versContraste('#000000', t.couleurPrimaire, 0, sur(f.fond, f.primairePale, f.surface));
+  // Au moins 45 % de texte : une bordure franche, même quand 3:1 est atteint plus tôt.
+  const bordure = versContraste(t.couleurTexte, f.fond, 0.45, sur(f.fond, f.surface), 3);
   return {
     ...(doux ? { '--c-texte-doux-theme': doux } : {}),
     ...(secondaire ? { '--c-secondaire-texte-theme': secondaire } : {}),
+    ...(accent ? { '--c-accent-texte-theme': accent } : {}),
+    ...(lien ? { '--c-lien-theme': lien } : {}),
+    ...(bordure ? { '--c-bordure-champ-theme': bordure } : {}),
+    ...variablesAccent,
   };
 }
 
@@ -121,7 +165,6 @@ export function cssTheme(t: TokensTheme): string {
     '--c-primaire': t.couleurPrimaire,
     '--c-secondaire': t.couleurSecondaire,
     '--c-accent': t.couleurAccent,
-    '--c-sur-accent': texteSur(t.couleurAccent, t.couleurTexte),
     '--c-texte': t.couleurTexte,
     '--c-fond': t.couleurFond,
     '--police-titres': pile(t.policeTitres),

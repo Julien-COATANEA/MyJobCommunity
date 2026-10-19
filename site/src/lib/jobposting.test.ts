@@ -58,8 +58,38 @@ describe('salaireJobPosting', () => {
     expect(salaireJobPosting('2 500 € / mois')).toMatchObject({ value: { unitText: 'MONTH', value: 2500 } });
     expect(salaireJobPosting('12,50 €/heure')).toMatchObject({ value: { unitText: 'HOUR', value: 12.5 } });
   });
+
+  it('ne prend pas le « 13e mois » pour un montant ni pour l’unité', () => {
+    expect(salaireJobPosting('45 K€ brut annuel + 13e mois')).toEqual(annuel({ value: 45000 }));
+    expect(salaireJobPosting('1 800 € / mois + 13ème mois')).toMatchObject({ value: { unitText: 'MONTH', value: 1800 } });
+    expect(salaireJobPosting('38 000 € brut/an, treizième mois')).toEqual(annuel({ value: 38000 }));
+  });
+
+  it('ne prend pas le temps de travail pour l’unité du salaire', () => {
+    expect(salaireJobPosting("11,88 € brut de l'heure, 35 heures par semaine")).toMatchObject({ value: { unitText: 'HOUR', value: 11.88 } });
+    expect(salaireJobPosting('1 800 € par mois, 7 h par jour')).toMatchObject({ value: { unitText: 'MONTH', value: 1800 } });
+  });
+
+  it('lit l’unité près des montants, pas dans le reste du texte', () => {
+    const mensuel = (value: number) => ({ value: { unitText: 'MONTH', value } });
+    expect(salaireJobPosting("1 800 € brut / mois, CDD d'un an")).toMatchObject(mensuel(1800));
+    expect(salaireJobPosting('2 000 € par mois + prime annuelle')).toMatchObject(mensuel(2000));
+    expect(salaireJobPosting('1 700 € net/mois, une semaine sur deux')).toMatchObject(mensuel(1700));
+    expect(salaireJobPosting('Salaire mensuel : 2 100 €')).toMatchObject(mensuel(2100));
+    expect(salaireJobPosting('Salaire mensuel brut selon expérience : 2 000 €')).toMatchObject(mensuel(2000));
+    expect(salaireJobPosting("CDD d'un an, 1 800 € par mois")).toMatchObject(mensuel(1800));
+    // « eur » de « heure » n'est pas un symbole monétaire.
+    expect(salaireJobPosting('1 900 € brut par mois, majoration de nuit par heure')).toMatchObject(mensuel(1900));
+    // Unité hors de la partie de phrase des montants : cherchée dans tout le texte.
+    expect(salaireJobPosting('2 000 € brut, par mois')).toMatchObject(mensuel(2000));
+    expect(salaireJobPosting('1 800 € brut + primes par mois')).toMatchObject(mensuel(1800));
+    // « un an » ailleurs dans le texte : 1 800 € par an serait invraisemblable, rien n'est publié.
+    expect(salaireJobPosting("CDD d'un an, 1 800 €")).toBeNull();
+  });
   it("n'invente pas : texte libre, montant sans unité ou sans devise → null", () => {
     expect(salaireJobPosting('selon profil')).toBeNull();
+    // Plusieurs unités : montants impossibles à rattacher.
+    expect(salaireJobPosting('1 500 € par mois soit 18 000 €/an')).toBeNull();
     expect(salaireJobPosting('à négocier')).toBeNull();
     expect(salaireJobPosting('2 500 €')).toBeNull();
     expect(salaireJobPosting('35h/semaine')).toBeNull();

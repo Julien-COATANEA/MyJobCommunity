@@ -3,7 +3,7 @@
 // Approximation des feuilles du site (site/src/styles/gabarits/) : à garder cohérente quand un template évolue.
 import * as React from 'react';
 import type { Options } from '../../../utils/gabarits';
-import { ARRONDIS, POLICES, melange, texteSur, type Logo, type Theme } from './theme';
+import { ARRONDIS, POLICES, accentLisible, melange, texteSur, type Logo, type Theme } from './theme';
 
 export type PageApercu = 'accueil' | 'offres' | 'page';
 
@@ -115,7 +115,13 @@ export function Apercu({ t, logo, gabarit, options: o, page = 'accueil', image =
     primaireFonce: melange(t.couleurPrimaire, 0.78, '#000000'),
     pale: melange(t.couleurPrimaire, 0.11, t.couleurFond),
     accentPale: melange(t.couleurAccent, 0.2, t.couleurFond),
-    accentTexte: melange(t.couleurAccent, 0.6, '#000000'),
+    // Mêmes fonds que --c-accent-texte du site (theme.ts) : fond, accent pâle, primaire pâle, surface.
+    accentTexte: accentLisible(t.couleurAccent, [
+      t.couleurFond,
+      melange(t.couleurAccent, 0.2, t.couleurFond),
+      melange(t.couleurPrimaire, 0.11, t.couleurFond),
+      melange(t.couleurPrimaire, 0.04, melange(t.couleurTexte, 0.02, t.couleurFond)),
+    ]),
     surface: epure ? melange(t.couleurTexte, 0.03, t.couleurFond) : melange(t.couleurPrimaire, 0.05, melange(t.couleurTexte, 0.03, t.couleurFond)),
     bord: melange(t.couleurTexte, 0.13, t.couleurFond),
     filet: melange(t.couleurTexte, 0.7, t.couleurFond),

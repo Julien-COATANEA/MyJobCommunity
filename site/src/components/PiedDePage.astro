@@ -3,7 +3,7 @@
 // Repris aussi par le site Gestmax (voir shell.css).
 import Icone from './Icone.astro';
 import { lirePages, type Navigation, type Parametres } from '../lib/contenus';
-import { liensLegauxParDefaut } from '../lib/pages-legales';
+import { avecConformite, liensLegauxParDefaut } from '../lib/pages-legales';
 import { absolu, resoudreLien } from '../lib/liens';
 import { urlMedia } from '../lib/strapi';
 import { resoudreGabarit } from '../lib/gabarits';
@@ -24,7 +24,11 @@ const lien = (url: string) => absolu(resoudreLien(url, parametres.gestmaxUrlFron
 const avecLien = <T extends { url: string }>(liens: T[]) => liens.map((l) => ({ ...l, href: lien(l.url) })).filter((l) => l.href);
 const liensUtiles = avecLien(navigation.liensPiedDePage);
 // Sans liens légaux saisis dans le BO : les pages légales publiées (jamais un brouillon, qui serait en 404).
-const liensLegaux = avecLien(navigation.liensLegaux?.length ? navigation.liensLegaux : liensLegauxParDefaut(await lirePages()));
+const liensLegaux = avecLien(
+  navigation.liensLegaux?.length
+    ? avecConformite(navigation.liensLegaux, parametres.conformiteAccessibilite)
+    : liensLegauxParDefaut(await lirePages(), parametres.conformiteAccessibilite),
+);
 const reseaux = reseauxSurs(parametres.reseauxSociaux);
 const logo = urlMedia(parametres.logo, true);
 const gabarit = Astro.locals.gabarit ?? resoudreGabarit(parametres);
@@ -100,6 +104,8 @@ const annee = new Date().getFullYear();
       <p class="pied__copyright">© {annee} {parametres.nomSite}. Tous droits réservés.</p>
       <ul>
         {liensLegaux.map((l) => <li><a href={l.href}>{l.libelle}</a></li>)}
+        {/* Toujours présent : le site n'a pas de moteur de recherche global (RGAA 12.1, deux systèmes de navigation). */}
+        <li><a href={absolu('/plan-du-site/', base)}>Plan du site</a></li>
         {/* Révélé par le script du bandeau : sans JavaScript, le bouton ne servirait à rien. */}
         {gestionCookies && <li hidden><button type="button" class="pied__cookies" data-mjc-cookies-ouvrir>Gestion des cookies</button></li>}
       </ul>

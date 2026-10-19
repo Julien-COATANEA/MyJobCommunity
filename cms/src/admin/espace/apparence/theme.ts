@@ -48,9 +48,23 @@ export const COULEURS: { cle: keyof Theme; libelle: string; aide: string }[] = [
 
 export const HEX = /^#[0-9A-Fa-f]{6}$/;
 
-/** Blanc ou couleur sombre, la plus lisible sur un fond. */
-export const texteSur = (fond: string, sombre: string) =>
-  HEX.test(fond) && ratioContraste('#ffffff', fond) >= ratioContraste(sombre, fond) ? '#ffffff' : sombre;
+/** Blanc ou couleur sombre, la plus lisible sur un fond ; noir ou blanc purs sous 4,5:1 (même règle que le site, theme.ts). */
+export const texteSur = (fond: string, sombre: string) => {
+  if (!HEX.test(fond)) return sombre;
+  const prefere = ratioContraste('#ffffff', fond) >= ratioContraste(sombre, fond) ? '#ffffff' : sombre;
+  if (ratioContraste(prefere, fond) >= 4.5) return prefere;
+  return ratioContraste('#000000', fond) >= ratioContraste('#ffffff', fond) ? '#000000' : '#ffffff';
+};
+
+/** Accent assombri juste assez pour être lisible (4,5:1) sur chacun des fonds, comme --c-accent-texte du site. */
+export const accentLisible = (accent: string, fonds: string[]) => {
+  if (!HEX.test(accent) || !fonds.every((f) => HEX.test(f))) return accent;
+  for (let p = 1; p > 0; p -= 0.02) {
+    const c = melange(accent, p, '#000000');
+    if (fonds.every((f) => ratioContraste(c, f) >= 4.5)) return c;
+  }
+  return '#000000';
+};
 
 /** Équivalent de color-mix(in srgb, hex ratio, avec) : mêmes nuances que jetons.css sur le site. */
 export const melange = (hex: string, ratio: number, avec = '#ffffff') => {

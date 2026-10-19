@@ -52,11 +52,19 @@ export function typesEmploi(contrat: string | null): string[] {
   return [...trouves];
 }
 
+// « € » ou « eur », « euros » comme mots (pas le « eur » de « heure » ou « chauffeur »).
+const EURO = /€|\beur(?:os?)?\b/g;
+// Fin d'une partie de phrase ; une virgule ou un point sans espace après sont des décimales (« 11,88 »).
+const SEPARATEUR = /[;+\n]|[,.](?=\s)/g;
+// Bornes plausibles d'un salaire brut par unité (€), pour écarter une lecture manifestement fausse.
+const VRAISEMBLANCE: Record<string, [number, number]> = {
+  HOUR: [5, 300], DAY: [40, 3_000], WEEK: [150, 10_000], MONTH: [400, 40_000], YEAR: [5_000, 500_000],
+};
 const UNITES: [RegExp, string][] = [
   [/\b(heure|horaire)\b|\/\s*h\b/, 'HOUR'],
   [/\b(jour|journalier)\b|\/\s*j\b/, 'DAY'],
   [/\bsemaine\b/, 'WEEK'],
-  [/\bmois\b|\/\s*m\b/, 'MONTH'],
+  [/\b(mois|mensuel|mensuelle)\b|\/\s*m\b/, 'MONTH'],
   [/\b(an|annee|annuel|annuelle)\b|\/\s*an\b/, 'YEAR'],
 ];
 
@@ -66,23 +74,51 @@ const UNITES: [RegExp, string][] = [
  */
 export function salaireJobPosting(salaire: string | null): Record<string, unknown> | null {
   if (!salaire) return null;
-  const texte = normaliser(salaire).replace(/ /g, ' ');
-  if (!/€|eur/.test(texte)) return null;
+  // « 13e mois », « 13ème mois », « treizième mois » : un avantage, pas un montant ni une unité de salaire.
+  const texte = normaliser(salaire)
+    .replace(/ /g, ' ')
+    .replace(/\b(\d+\s*(e|eme|ieme)|treizieme|quatorzieme)\s+mois\b/g, ' ')
+    // Temps de travail (« 35 heures par semaine », « 35h/semaine », « 7 h par jour ») : ni un montant ni l'unité du salaire.
+    .replace(/\b\d+(?:[.,]\d+)?\s*(h|heures?)\s*(par|\/)\s*(semaine|jour|mois)\b/g, ' ');
+  // search() ignore l'état (lastIndex) de l'expression globale, contrairement à test().
+  if (texte.search(EURO) < 0) return null;
 
   const montants: number[] = [];
+  let debutMontants = -1;
   const motif = /(\d{1,3}(?:[ .]\d{3})+|\d+)(?:[.,](\d{1,2}))?\s*(k)?(?![\d])/g;
   for (const m of texte.matchAll(motif)) {
     let valeur = Number(`${m[1].replace(/[ .]/g, '')}${m[2] ? `.${m[2]}` : ''}`);
     if (m[3] === 'k') valeur *= 1000;
     montants.push(valeur);
+    if (debutMontants < 0) debutMontants = m.index ?? 0;
   }
   // Un « k » collé au dernier montant vaut pour toute la fourchette : « 50-55 K€ ».
   if (montants.length === 2 && /\d\s*-\s*\d+(?:[.,]\d+)?\s*k/.test(texte) && montants[0] < 1000) montants[0] *= 1000;
   if (!montants.length || montants.length > 2 || montants.some((v) => !Number.isFinite(v) || v <= 0)) return null;
 
-  const unite = UNITES.find(([re]) => re.test(texte))?.[1] ?? (Math.min(...montants) >= 10_000 ? 'YEAR' : null);
+  // L'unité se lit dans la partie de phrase qui contient les montants, entre deux séparateurs (« ; », « + », « , » ou
+  // « . » suivis d'une espace) : ailleurs, « CDD d'un an », « prime annuelle » ou « une semaine sur deux » ne disent
+  // rien du salaire. Plusieurs unités dans cette zone (« 1 500 € par mois, soit 18 000 € par an ») : on ne sait pas à
+  // quoi rattacher chaque montant.
+  const finEuro = Math.max(...[...texte.matchAll(EURO)].map((m) => (m.index ?? 0) + m[0].length));
+  let debutZone = 0;
+  let finZone = texte.length;
+  for (const m of texte.matchAll(SEPARATEUR)) {
+    const i = m.index ?? 0;
+    if (i < debutMontants) debutZone = i + 1;
+    else if (i >= finEuro && finZone === texte.length) finZone = i;
+  }
+  const zone = texte.slice(debutZone, finZone);
+  // Rien dans cette partie de phrase (« 2 000 € brut, par mois ») : l'unité est cherchée dans tout le texte.
+  let unites = UNITES.filter(([re]) => re.test(zone));
+  if (!unites.length) unites = UNITES.filter(([re]) => re.test(texte));
+  if (unites.length > 1) return null;
+  const unite = unites[0]?.[1] ?? (Math.min(...montants) >= 10_000 ? 'YEAR' : null);
   // Sans unité et un petit montant (« 2 500 € »), annuel ou mensuel ? On ne devine pas.
   if (!unite) return null;
+  // Montant invraisemblable pour l'unité (« CDD d'un an, 1 800 € » lu comme 1 800 € par an) : mieux vaut rien que faux.
+  const [plancherUnite, plafondUnite] = VRAISEMBLANCE[unite];
+  if (montants.some((v) => v < plancherUnite || v > plafondUnite)) return null;
 
   const [min, max] = montants.length === 2 ? [Math.min(...montants), Math.max(...montants)] : [montants[0], montants[0]];
   const plancher = /\b(plus de|a partir de|minimum|min)\b/.test(texte);

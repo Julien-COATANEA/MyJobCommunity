@@ -15,11 +15,16 @@ html:root {
   --c-secondaire-pale: color-mix(in srgb, var(--c-secondaire) 9%, var(--c-fond));
   --c-secondaire-clair: color-mix(in srgb, var(--c-secondaire) 45%, var(--c-fond));
   --c-accent-pale: color-mix(in srgb, var(--c-accent) 20%, var(--c-fond));
-  /* Accent assombri : seul usage de l'accent pour du texte sur fond clair (contraste RGAA). */
-  --c-accent-texte: color-mix(in srgb, var(--c-accent) 60%, #000);
-  /* Texte doux et secondaire « texte » : valeurs calculées par theme.ts (contraste ≥ 4,5:1 garanti), repli ici. */
+  /* Nuances calculées par theme.ts (contraste garanti : 4,5:1 pour le texte, 3:1 pour la bordure des champs) ;
+     les valeurs après la virgule ne servent que de repli. */
+  /* Accent assombri : seul usage de l'accent pour du texte sur fond clair. */
+  --c-accent-texte: var(--c-accent-texte-theme, color-mix(in srgb, var(--c-accent) 60%, #000));
+  --c-accent-survol: var(--c-accent-survol-theme, color-mix(in srgb, var(--c-accent) 88%, #000));
   --c-texte-doux: var(--c-texte-doux-theme, color-mix(in srgb, var(--c-texte) 80%, var(--c-fond)));
   --c-secondaire-texte: var(--c-secondaire-texte-theme, color-mix(in srgb, var(--c-secondaire) 80%, #000));
+  /* Texte couleur primaire (liens, boutons-liens…) : à utiliser plutôt que --c-primaire pour du texte. */
+  --c-lien: var(--c-lien-theme, var(--c-primaire));
+  --c-bordure-champ: var(--c-bordure-champ-theme, color-mix(in srgb, var(--c-texte) 60%, var(--c-fond)));
   --c-bordure: color-mix(in srgb, var(--c-primaire) 8%, color-mix(in srgb, var(--c-texte) 8%, var(--c-fond)));
   --c-surface: color-mix(in srgb, var(--c-primaire) 4%, color-mix(in srgb, var(--c-texte) 2%, var(--c-fond)));
   --c-erreur: #b3261e;

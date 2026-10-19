@@ -26,7 +26,7 @@
   & .acces--recruteur { color: #fff; background: rgb(255 255 255 / 0.1); border-color: rgb(255 255 255 / 0.4); }
   & .acces--recruteur:hover { color: var(--c-fonce); background: #fff; border-color: #fff; }
   & .acces--candidat { color: var(--c-sur-accent); background: var(--c-accent); box-shadow: none; }
-  & .acces--candidat:hover { background: color-mix(in srgb, var(--c-accent) 88%, #000); }
+  & .acces--candidat:hover { background: var(--c-accent-survol); }
   & .entete__burger { border-radius: var(--rayon); background: rgb(255 255 255 / 0.12); color: #fff; }
 }
 /* Petits écrans : le menu déplié (et ses sous-menus, alors dans le flux) reste sur fond sombre. */

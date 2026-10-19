@@ -79,7 +79,17 @@ export default {
     // Refuse l'enregistrement de couleurs non conformes RGAA (le message s'affiche dans le BO) et nettoie les réglages des templates.
     strapi.documents.use(async (context, next) => {
       if (context.uid === 'api::parametres.parametres' && (context.action === 'create' || context.action === 'update')) {
-        const erreurs = verifierContrastes((context.params as any).data ?? {});
+        // Mise à jour partielle (une seule couleur, par l'API ou le gestionnaire de contenu) : elle est confrontée aux
+        // couleurs déjà enregistrées, sinon une couleur de fond seule passerait sans contrôle face au texte existant.
+        // Seulement si une couleur change : un enregistrement sans couleur n'est pas bloqué par des couleurs anciennes.
+        const COULEURS = ['couleurPrimaire', 'couleurSecondaire', 'couleurTexte', 'couleurFond'];
+        const nouvelles = Object.fromEntries(
+          Object.entries((context.params as any).data ?? {}).filter(([k, v]) => COULEURS.includes(k) && v != null && v !== ''),
+        );
+        const enregistrees: any = Object.keys(nouvelles).length
+          ? await strapi.db.query('api::parametres.parametres').findOne({ select: COULEURS })
+          : null;
+        const erreurs = Object.keys(nouvelles).length ? verifierContrastes({ ...(enregistrees ?? {}), ...nouvelles }) : [];
         if (erreurs.length) {
           throw new errors.ValidationError(`Couleurs non conformes à l'accessibilité (RGAA) : ${erreurs.join(' ; ')}`);
         }

@@ -39,6 +39,7 @@ export interface Parametres {
   hebergeurTelephone: string | null;
   contactDonneesEmail: string | null;
   prestataireNom: string | null;
+  conformiteAccessibilite?: 'non-conforme' | 'partiellement-conforme' | 'totalement-conforme' | null;
   reseauxSociaux: { reseau: string; url: string }[];
   gestmaxUrlFront: string | null;
   lienEspaceCandidat: string | null;

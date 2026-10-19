@@ -5,18 +5,59 @@ import node from '@astrojs/node';
 const STRAPI_URL = process.env.STRAPI_URL ?? 'http://localhost:1337';
 const strapi = new URL(STRAPI_URL);
 
-// Pages exclues du plan de site XML (techniques ou marquées « noIndex » dans le BO).
+// Pages exclues du plan de site XML : techniques, ou marquées « noIndex » dans le BO (pages, actualités, événements,
+// entreprises). Les mêmes contenus donnent la date de dernière modification (lastmod) de leur adresse.
 const EXCLUSIONS = ['/header-footer', '/evenements/inscription-', '/evenements/annuler', '/message-envoye', '/message-impossible', '/404', '/apercu'];
-let pagesNoIndex = new Set();
-try {
-  const reponse = await fetch(`${STRAPI_URL}/api/pages?fields[0]=slug&filters[seo][noIndex][$eq]=true&pagination[pageSize]=100`);
-  pagesNoIndex = new Set((await reponse.json()).data?.map((p) => `/${p.slug}`) ?? []);
-} catch {
-  // Strapi indisponible : le build échouera plus loin avec un message explicite.
+const CONTENUS = [
+  { type: 'pages', prefixe: '' },
+  { type: 'articles', prefixe: '/actualites' },
+  { type: 'evenements', prefixe: '/evenements' },
+  { type: 'entreprises', prefixe: '/entreprises' },
+];
+const pagesNoIndex = new Set();
+const dernieresModifs = new Map();
+
+async function lireContenus({ type, prefixe }) {
+  for (let page = 1, pages = 1; page <= pages; page++) {
+    const params = new URLSearchParams({
+      'fields[0]': 'slug',
+      'fields[1]': 'updatedAt',
+      'populate[seo][fields][0]': 'noIndex',
+      'pagination[pageSize]': '100',
+      'pagination[page]': String(page),
+    });
+    const reponse = await fetch(`${STRAPI_URL}/api/${type}?${params}`);
+    if (!reponse.ok) throw new Error(`plan du site : /api/${type} a répondu ${reponse.status}`);
+    const json = await reponse.json();
+    pages = json.meta?.pagination?.pageCount ?? 1;
+    for (const doc of json.data ?? []) {
+      const chemin = `${prefixe}/${doc.slug}`;
+      if (doc.seo?.noIndex) pagesNoIndex.add(chemin);
+      if (doc.updatedAt) dernieresModifs.set(chemin, doc.updatedAt);
+    }
+  }
 }
+
+// Seulement au build : le plan de site n'est produit qu'à ce moment-là (inutile au démarrage de `astro dev` et de
+// l'aperçu). Une erreur arrête le build : une page « noIndex » ne doit pas se retrouver dans le plan de site (le
+// builder garde alors la version en ligne).
+if (process.env.MJC_BUILD_STATIQUE === '1' || process.argv.includes('build')) {
+  await Promise.all(CONTENUS.map(lireContenus));
+}
+
+// Serveur d'aperçu des brouillons (astro dev, service « apercu » en production) : Vite refuse les requêtes dont l'hôte
+// n'est pas localhost. On autorise celui d'APERCU_URL, l'adresse publique derrière le reverse proxy.
+const hoteApercu = (() => {
+  try {
+    return process.env.APERCU_URL ? new URL(process.env.APERCU_URL).hostname : null;
+  } catch {
+    return null;
+  }
+})();
 
 export default defineConfig({
   site: process.env.SITE_URL ?? 'http://localhost:8080',
+  server: { allowedHosts: hoteApercu && hoteApercu !== 'localhost' ? [hoteApercu] : [] },
   outDir: process.env.OUT_DIR ?? './dist',
   trailingSlash: 'ignore',
   // Tout le site est statique ; seule la page /apercu (brouillons du BO) est rendue à la demande par Node.
@@ -40,6 +81,10 @@ export default defineConfig({
       filter: (page) => {
         const chemin = new URL(page).pathname.replace(/\/$/, '');
         return !EXCLUSIONS.some((e) => chemin.startsWith(e)) && !pagesNoIndex.has(chemin);
+      },
+      serialize: (element) => {
+        const lastmod = dernieresModifs.get(new URL(element.url).pathname.replace(/\/$/, ''));
+        return lastmod ? { ...element, lastmod } : element;
       },
     }),
   ],

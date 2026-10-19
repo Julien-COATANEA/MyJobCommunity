@@ -180,6 +180,16 @@
       "type": "string",
       "maxLength": 160
     },
+    "conformiteAccessibilite": {
+      "type": "enumeration",
+      "enum": [
+        "non-conforme",
+        "partiellement-conforme",
+        "totalement-conforme"
+      ],
+      "default": "non-conforme",
+      "required": true
+    },
     "emailNotificationInscriptions": {
       "type": "email",
       "private": true

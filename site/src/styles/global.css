@@ -38,7 +38,7 @@ h1, h2, h3, h4 { font-family: var(--police-titres); line-height: 1.15; letter-sp
 h1 { font-size: clamp(2.1rem, 1.4rem + 2.6vw, 3.3rem); letter-spacing: -0.025em; }
 h2 { font-size: clamp(1.7rem, 1.2rem + 1.6vw, 2.5rem); }
 h3 { font-size: 1.18rem; line-height: 1.25; letter-spacing: -0.01em; }
-a { color: var(--c-primaire); text-underline-offset: 0.18em; }
+a { color: var(--c-lien); text-underline-offset: 0.18em; }
 a:hover { text-decoration-thickness: 2px; }
 p, ul, ol, dl { overflow-wrap: break-word; }
 input, select, textarea, button { font: inherit; color: inherit; }
@@ -77,7 +77,7 @@ main:focus { outline: none; }
 .bouton--plein { background: var(--c-primaire); color: #fff; box-shadow: 0 10px 24px color-mix(in srgb, var(--c-primaire) 30%, transparent); }
 .bouton--plein:hover { background: var(--c-primaire-fonce); }
 .bouton--accent { background: var(--c-accent); color: var(--c-sur-accent); box-shadow: 0 10px 24px color-mix(in srgb, var(--c-accent) 35%, transparent); }
-.bouton--accent:hover { background: color-mix(in srgb, var(--c-accent) 88%, #000); }
+.bouton--accent:hover { background: var(--c-accent-survol); }
 .bouton--contour { background: transparent; color: var(--c-primaire-fonce); border-color: var(--c-primaire-clair); }
 .bouton--contour:hover { background: var(--c-primaire-pale); }
 .bouton--clair { background: #fff; color: var(--c-primaire-fonce); }
@@ -103,7 +103,7 @@ main:focus { outline: none; }
 .ariane ol { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.5rem; list-style: none; padding: 0; color: var(--c-texte-doux); }
 .ariane li + li::before { content: '›'; margin-right: 0.5rem; opacity: 0.6; }
 .ariane a { color: var(--c-texte-doux); text-decoration: none; }
-.ariane a:hover { color: var(--c-primaire); text-decoration: underline; }
+.ariane a:hover { color: var(--c-lien); text-decoration: underline; }
 .ariane [aria-current] { color: var(--c-fonce); font-weight: 700; }
 /* Dans le bandeau d'un en-tête de page immersif (comme la maquette) : dans le flux, au-dessus du titre, en blanc. */
 .ariane--bandeau { padding: 0 0 1.25rem; text-shadow: 0 1px 8px rgb(0 0 0 / 0.35); }
@@ -159,7 +159,7 @@ main:focus { outline: none; }
 .recherche input, .recherche select, .champ input, .champ textarea, .filtres select,
 .filtres-offres input, .filtres-offres select, .filtres-liste input, .filtres-liste select {
   width: 100%; min-height: 48px; padding: 0.6rem 0.9rem;
-  background: var(--c-surface); border: 1.5px solid color-mix(in srgb, var(--c-texte) 30%, var(--c-fond)); border-radius: var(--rayon);
+  background: var(--c-surface); border: 1.5px solid var(--c-bordure-champ); border-radius: var(--rayon);
   transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
 .recherche input:focus, .recherche select:focus, .champ input:focus, .champ textarea:focus, .filtres select:focus,
@@ -174,7 +174,7 @@ main:focus { outline: none; }
 .recherche__plus { display: contents; }
 .recherche__deplier {
   display: none; align-items: center; justify-content: center; gap: 0.4rem; min-height: 44px;
-  background: none; border: 0; color: var(--c-primaire); font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 0.2em;
+  background: none; border: 0; color: var(--c-lien); font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 0.2em;
 }
 @media (max-width: 860px) {
   .recherche { grid-template-columns: 1fr; }
@@ -214,7 +214,7 @@ main:focus { outline: none; }
 }
 .pastille-filtre:hover { background: var(--c-primaire-clair); }
 .pastille-filtre span[aria-hidden] { font-size: 1.2em; line-height: 1; }
-.lien-bouton { background: none; border: 0; padding: 0.25rem; color: var(--c-primaire); font-weight: 650; text-decoration: underline; cursor: pointer; }
+.lien-bouton { background: none; border: 0; padding: 0.25rem; color: var(--c-lien); font-weight: 650; text-decoration: underline; cursor: pointer; }
 
 .aucun-resultat {
   display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding: 2.5rem 1rem; text-align: center;
@@ -230,7 +230,7 @@ main:focus { outline: none; }
 .offre__logo { width: 44px; height: 44px; object-fit: contain; border-radius: var(--rayon); background: #fff; border: 1px solid var(--c-bordure); padding: 4px; flex: none; }
 .offre__logo--initiales {
   display: grid; place-items: center; padding: 0; font-family: var(--police-titres); font-weight: 800; font-size: 0.9rem;
-  color: var(--c-primaire); background: var(--c-primaire-pale); border-color: transparent;
+  color: var(--c-lien); background: var(--c-primaire-pale); border-color: transparent;
 }
 .offre__secteur { padding: 0.3rem 0.75rem; border-radius: 8px; background: var(--c-primaire-pale); color: var(--c-primaire-fonce); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; }
 .offre__badges { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.35rem; margin-left: auto; }
@@ -603,7 +603,7 @@ main:focus { outline: none; }
 .formulaire .bouton { align-self: flex-start; }
 .piege { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 
-.inscription__places:not(:empty) { margin-bottom: 1rem; font-weight: 700; color: var(--c-primaire); }
+.inscription__places:not(:empty) { margin-bottom: 1rem; font-weight: 700; color: var(--c-lien); }
 .alerte { margin-bottom: 1.5rem; padding: 1rem 1.25rem; border-radius: var(--rayon); border-left: 5px solid; }
 .alerte:focus { outline: 3px solid currentColor; outline-offset: 2px; }
 .alerte--erreur { border-color: var(--c-erreur); background: color-mix(in srgb, var(--c-erreur) 7%, var(--c-fond)); }
@@ -774,7 +774,7 @@ main:focus { outline: none; }
 .mini-liste__vignette { flex: none; width: 64px; height: 56px; object-fit: cover; border-radius: 10px; }
 .mini-liste__date { font-size: 0.76rem; font-weight: 600; color: var(--c-texte-doux); }
 .mini-liste__lien { font-size: 0.92rem; font-weight: 700; line-height: 1.3; color: var(--c-fonce); text-decoration: none; }
-.mini-liste__lien:hover { color: var(--c-primaire); text-decoration: underline; }
+.mini-liste__lien:hover { color: var(--c-lien); text-decoration: underline; }
 @media (max-width: 980px) { .detail { grid-template-columns: 1fr; } .detail__aside { position: static; } }
 
 /* Partage (maquette « Partager ») : liens en carrés arrondis. */

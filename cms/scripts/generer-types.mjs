@@ -68,6 +68,9 @@ const types = {
       hebergeurTelephone: str({ maxLength: 30 }),
       contactDonneesEmail: { type: 'email' },
       prestataireNom: str({ maxLength: 160 }),
+      // État de conformité RGAA, affiché dans le lien du pied de page (« Accessibilité : non conforme »), obligatoire.
+      // « Non conforme » tant qu'aucun audit n'a été fait.
+      conformiteAccessibilite: { type: 'enumeration', enum: ['non-conforme', 'partiellement-conforme', 'totalement-conforme'], default: 'non-conforme', required: true },
       emailNotificationInscriptions: { type: 'email', private: true },
       // Gestmax
       gestmaxUrlFront: str(),

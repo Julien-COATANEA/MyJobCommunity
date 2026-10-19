@@ -26,12 +26,14 @@ const titreComplet = titre
 const desc = seo?.metaDescription ?? description ?? parametres.seoParDefaut?.metaDescription ?? parametres.baseline ?? '';
 const imageOg = urlMedia(seo?.metaImage, true) ?? image ?? urlMedia(parametres.seoParDefaut?.metaImage, true);
 const canonique = new URL(Astro.url.pathname, Astro.site).toString();
-const indexable = process.env.SITE_ENV === 'production' && !noIndex && !seo?.noIndex;
+const pageNoIndex = noIndex || !!seo?.noIndex;
+const indexable = process.env.SITE_ENV === 'production' && !pageNoIndex;
 ---
 
 <title>{titreComplet}</title>
 {desc && <meta name="description" content={desc} />}
-<link rel="canonical" href={canonique} />
+{/* Pas d'adresse canonique sur une page exclue de l'index (404, pages « noIndex ») : signaux contradictoires. */}
+{!pageNoIndex && <link rel="canonical" href={canonique} />}
 {!indexable && <meta name="robots" content="noindex, nofollow" />}
 
 <meta property="og:type" content={type} />
